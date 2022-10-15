@@ -1,0 +1,19 @@
+--@name Holo Bridge Dome
+--@author Nova Astral
+
+--This isn't used anymore as the bug that made me make this is fixed
+
+wire.createInputs({"ParentEnt"},{"entity"})
+
+if SERVER then
+    Scale = 1
+    Offset = Vector(0,0,0)
+
+    PEnt = wire.ports.ParentEnt
+
+    H1 = holograms.create(PEnt.pos()+Offset,PEnt.ang(),"models/props_phx/construct/windows/window_dome360.mdl")
+    H1:setParent(PEnt)
+    H1:setScale(vector(Scale,Scale,Scale))
+    H1:setSubMaterial(1,"veegi/light")
+
+end

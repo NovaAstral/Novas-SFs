@@ -1,0 +1,71 @@
+--@name Music Player
+--@author Nova Astral
+--@class emitter
+--@shared
+
+if SERVER then
+    wire.createInputs( { "Activate","SoundString"}, { "number","string"} )
+
+    function WireDetect(name,value)
+        if(name == "Activate") then
+            if(value == 1) then
+                if(wire.ports.SoundString ~= nil) then
+                    local Sound = wire.ports.SoundString
+
+                    timer.simple(2, function()
+                        if(net.start()) then
+                            net.writeString(Sound)
+                            net.writeBool(true)
+                            net.sendPVS(ents.self():pos())
+                        end
+                        --print("sent")
+                    end)
+                end
+            end
+
+            if(value == 0) then
+                timer.simple(2, function()
+                    if(net.start()) then
+                        net.writeBool(false)
+                        net.sendPVS(ents.self():pos())
+                    end
+                    --print("activate send")
+                end)
+            end
+        end
+    end
+
+    hook.add("input","wiredetect",WireDetect)
+end
+
+if CLIENT then
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    snd = nil
+
+    function playURL()
+        local ClSound = net.readString()
+        local SoundPlay = net.readBool()
+        snd = nil
+
+        sounds.playURL(ClSound, '3d', function(audio, id, reason)
+            audio:setPos(ents.self():pos())
+            audio:stop()
+
+            snd = audio
+
+            if(not audio) then
+                print("Sound Error: ", audio, id, reason)
+                return
+            end
+        end)
+
+        if(SoundPlay == true) then
+            snd:start()
+        else
+            snd:stop()
+        end
+    end
+
+    hook.add("net","sound",playURL)
+end

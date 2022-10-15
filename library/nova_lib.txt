@@ -1,0 +1,335 @@
+--@name Nova Lib
+--@author Nova Astral
+--@class none
+--@updater STEAM_0:0:53930685
+--@autoupdate
+
+ColTeam = ents.self():owner():getTeamColor()
+ColPink = Color(255,95,215,255)
+ColOng = Color(230,110,0,255)
+ColRed = Color(255,0,0,255)
+ColGrn = Color(0,255,0,255)
+ColBlu = Color(0,0,255,255)
+ColWht = Color(255,255,255,255)
+ColBlk = Color(0,0,0,255)
+
+ZeiaOng = Color(255,90,0)
+ZeiaTBlu = Color(200,255,255)
+ZeiaMBlu = Color(0,255,255)
+ZeiaWht = Color(230,230,230)
+ZeiaBlk = Color(99,99,99)
+
+--Version checking for Vethian because of non-file based config.
+if(starfall.getName(ents.self()) == "Vethian" or starfall.getName(ents.self()) == "Si'ka zal'el") then
+    if(AIVersion ~= "2.0") then
+        printColor(ColPink,"[NovaLib] ",ColOng,"Your version of ",ColPink,"Vethian ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,"2.0")
+    end
+end
+
+--Drive Selector types
+DriveName = {
+    ["ship"] = "ship_drive",
+    ["bsg"] = "bsg_drive",
+    ["ftl"] = "bsg_drive",
+    ["warp"] = "st_warp_drive",
+    ["sg"] = "sg_hyperdrive",
+    ["hyper"] = "sg_hyperdrive",
+    ["spore"] =  "spore_drive",
+    ["wiretp"] = "gmod_wire_teleporter",
+    ["sbep"] = "warpdrive",
+    ["qsd"] = "quantum_slipstream_drive",
+    ["slipstream"] = "quantum_slipstream_drive",
+    ["e2"] = "gmod_wire_expression2"
+}
+
+--Warp Locations
+WarpLoc = {
+    ["earth"] = Vector(-89,8258,10690),
+    ["shakur"] = Vector(-7576,-7152,9060),
+    ["desert"] = Vector(10813,-9631,-8541),
+    ["hiigara"] = Vector(6144,9267,-4660),
+    ["lava"] = Vector(-9891,167,-4283),
+    ["milk"] = Vector(-7659,8215,8300),
+    ["pegasus"] = Vector(1703,-8593,9143),
+    ["universe"] = Vector(111,-2874,-3954),
+    ["unicorner"] = Vector(-7179,-7562,-10663),
+    ["hangar"] = Vector(-7576,-7152,5560),
+    ["moon"] = Vector(-4938,13441,10444),
+    ["members"] = Vector(13,-94,-15202),
+    ["secret"] = Vector(-6797,-6485,-15328),
+    ["phoenix"] = Vector(-7539,-6805,3581),
+    ["build"] = Vector(10696,12179,-15484),
+    ["build2"] = Vector(12820,4475,-15105),
+    ["build3"] = Vector(12820,-4130,-15105),
+    ["build4"] = Vector(12820,-12345,-15105),
+    ["hiigarabase"] = Vector(7556,6805,-7450)
+}
+
+--Transport Locations
+TransportLoc = {
+    ["earth"] = Vector(2982,8034,7944),
+    ["sgc"] = Vector(2263,8033,6736),
+    ["moon"] = Vector(-3411,13023,9952),
+    ["shakur"] = Vector(-7725,-3554,6889),
+    ["shakbase"] = Vector(-7540,-7063,5040),
+    ["station"] = Vector(7823,-5866,9408),
+    ["hangar"] = Vector(9156,-7225,9392),
+    ["hiigara"] = Vector(7167,11826,-5856),
+    ["hiibase"] = Vector(7128,9616,-8191),
+    ["desert"] = Vector(11643,-10660,-9184),
+    ["pyramid"] = Vector(12920,-10097,-9120),
+    ["pyramidbase"] = Vector(10753,-12992,-10224),
+    ["lava"] = Vector(-11241,753,-4656),
+    ["lavabase"] = Vector(-9416,-1104,-5376),
+    ["hell"] = Vector(-8235,-970,-4815),
+    ["space"] = Vector(-707,-2889,-5946)
+}
+
+--Beam Weapon Types
+BeamType = {
+    ["disruptor"] = 1,
+    ["disrupt"] = 1,
+    ["dis"] = 1,
+    ["tetryon"] = 2,
+    ["tet"] = 2,
+    ["antiproton"] = 3,
+    ["antip"] = 3,
+    ["plasma"] = 4,
+    ["plas"] = 4,
+    ["polaron"] = 5,
+    ["pol"] = 5,
+    ["phaser"] = 6,
+    ["phas"] = 6,
+    ["proton"] = 7,
+    ["prot"] = 7,
+    ["protonicpolaron"] = 8,
+    ["protpol"] = 8,
+    ["spiralwavedisruptor"] = 9,
+    ["spiral"] = 9,
+    ["cardie"] = 9,
+    ["vothantiproton"] = 10,
+    ["vothap"] = 10,
+    ["destabilizingtetryon"] = 11,
+    ["destet"] = 11,
+    ["phasertmp"] = 12,
+    ["phastmp"] = 12,
+    ["tmp"] = 12,
+    ["tmpphas"] = 12,
+    ["phasertos"] = 13,
+    ["phastos"] = 13,
+    ["tos"] = 13,
+    ["tosphas"] = 13,
+    ["chroniton"] = 14,
+    ["chron"] = 14,
+    ["gay"] = 14,
+    ["rainbow"] = 14,
+    ["phaserdsc"] = 15,
+    ["phasdsc"] = 15,
+    ["dsc"] = 15,
+    ["dscphas"] = 15
+}
+
+TorpType = {
+    ["photon"] = 1,
+    ["phot"] = 1,
+    ["quantum"] = 2,
+    ["quan"] = 2,
+    ["plasma"] = 3,
+    ["plas"] = 3,
+    ["transphasic"] = 4,
+    ["trans"] = 4,
+    ["chroniton"] = 5,
+    ["chron"] = 5,
+    ["transpahsicchroniton"] = 6,
+    ["transchron"] = 6,
+    ["tchron"] = 6,
+    ["biomolecular"] = 7,
+    ["bio"] = 7,
+    ["tricobalt"] = 8,
+    ["trico"] = 8,
+    ["photontmp"] = 9,
+    ["phottmp"] = 9,
+    ["tmp"] = 9,
+    ["tmpphot"] = 9,
+    ["photontos"] = 10,
+    ["phottos"] = 10,
+    ["tos"] = 10,
+    ["tosphot"] = 10
+}
+
+TurretType = {
+    ["ionlaser"] = 1,
+    ["ion"] = 1,
+    ["phaser"] = 2,
+    ["phas"] = 2,
+    ["antiproton"] = 3,
+    ["antip"] = 3,
+    ["ap"] = 3,
+    ["disruptor"] = 4,
+    ["dis"] = 4,
+    ["tetryon"] = 5,
+    ["tet"] = 5,
+    ["plasma"] = 6,
+    ["plas"] = 6,
+    ["polaron"] = 7,
+    ["pol"] = 7,
+    ["flak"] = 8,
+    ["kinetic"] = 9,
+    ["kin"] = 9,
+    ["proton"] = 10,
+    ["prot"] = 10,
+    ["protonicpolaron"] = 11,
+    ["protpol"] = 11,
+    ["vothantiproton"] = 12,
+    ["vothap"] = 12,
+    ["spiralwavedisruptor"] = 13,
+    ["spiral"] = 13,
+    ["cardie"] = 13,
+}
+
+PlanetCenter = {
+    ["Shakuras"] = Vector(-7552, -7056, 6832),
+    ["Hiigara"] = Vector(7168, 8704, -6064),
+    ["Earth"] = Vector(0, 8032, 8064),
+    ["Somewhere..."] = Vector(0, 0, -15168),
+    ["Desert Planet"] = Vector(10624, -10668, -9384),
+    ["Lava Planet"] = Vector(-9792, -79.999496459961, -4688),
+    ["Spawn"] = Vector(0, -7, 16101),
+    ["Moon"] = Vector(-4480, 13792, 9920)
+}
+
+WaterPlanets = {
+    ["Shakuras"] = Vector(-7552, -7056, 6832),
+    ["Hiigara"] = Vector(7168, 8704, -6064),
+    ["Earth"] = Vector(0, 8032, 8064),
+    ["Desert Planet"] = Vector(10624, -10668, -9384)
+}
+
+local waterLocations = {
+    ["Desert"]         = Vector( 11645.83, -9656.96, -9364.97 ),
+    ["Shakuras"]     = Vector( -7749.50, -6938.28, 6695.98 ),
+    ["Hiigara"]     = Vector( 7294.11, 8544.17, -6387.88 ),
+    ["Earth"]         = Vector( -618.42, 8021.36, 7838.77 ),
+}
+
+local planetCenter = {
+    ["Shakuras"] = Vector(-7552, -7056, 6832),
+    ["Hiigara"] = Vector(7168, 8704, -6064),
+    ["Earth"] = Vector(0, 8032, 8064),
+    ["Desert Planet"] = Vector(10624, -10668, -9384),
+    ["Lava Planet"] = Vector(-9792, -80, -4688),
+    ["Moon"] = Vector(-4480, 13792, 9920)
+}
+
+--Easy Wire In/Out creation function made by Princess Nova
+function wire.adjust(fn)
+    local inames = {}
+    local itypes = {}
+    local idescriptions = {}
+
+    local onames = {}
+    local otypes = {}
+    local odescriptions = {}
+
+    local function addInput(name, ty, desc)
+        if type(name) == 'table' then
+            for _, name in ipairs(name) do
+                table.insert(inames, name)
+                table.insert(itypes, ty)
+                table.insert(idescriptions, desc or '')
+            end
+        else
+            table.insert(inames, name)
+            table.insert(itypes, ty)
+            table.insert(idescriptions, desc or '')
+        end
+    end
+
+    local function addOutput(name, ty, desc)
+        if type(name) == 'table' then
+            for _, name in ipairs(name) do
+                table.insert(onames, name)
+                table.insert(otypes, ty)
+                table.insert(odescriptions, desc or '')
+            end
+        else
+            table.insert(onames, name)
+            table.insert(otypes, ty)
+            table.insert(odescriptions, desc or '')
+        end
+    end
+
+    fn(addInput, addOutput)
+
+    wire.createInputs(inames, itypes, idescriptions)
+    wire.createOutputs(onames, otypes, odescriptions)
+end
+
+function aiSay(player,...) --Function by The17thDoctor
+    if player == ents.self():owner() then
+        printColor(ColTeam,"[AI]",ColPink," [Vethian] ",ColOng,...)
+    else
+        chat.tell(player, ColTeam,"[AI]",ColPink," [Vethian] ",ColOng,...)
+    end
+end
+
+function notVar(var)
+    if var ~= 0 then return 0 end
+    return 1
+end
+
+function table:concatKeys(sep) --Function by Princess Nova
+    local keys = {}
+    for k in pairs(self) do table.insert(keys, k) end
+    return table.concat(keys, sep)
+end
+
+--Returns the current environent/galaxy
+function getCurrentEnvironment(entity)
+    local currentEnvironment = entity:getEnvironmentData()
+
+    --If we are on a planet, then return the planet.
+    if IsValid(currentEnvironment.Entity) and not IsValid(currentEnvironment.Entity:owner()) then
+        return currentEnvironment.name
+    else --Else return the galaxy
+        local currentPos = entity:pos()
+
+        if currentPos.z < 0 then
+            return "Universe"
+        elseif currentPos.y < 0 then
+            return "Pegasus"
+        else
+            return "Milkyway"
+        end
+    end
+end
+
+--Get Closest Environment function made by The17thDoctor
+function getClosestEnvironment(entity, water)
+    local distances = {}
+    local list
+
+    if water then
+        list = waterLocations
+    else
+        list = PlanetCenter
+    end
+
+    for k, v in pairs(list) do
+        distances[#distances+1] = {k, v:Distance(entity:pos())}
+    end
+
+    --We sort the distances to get the shortest distance
+    table.sort(distances, function(a, b)
+        return a[2] < b[2]
+    end)
+
+    return list[distances[1][1]], distances[1][1]
+end
+
+function ONeill()
+    --I need to make a url sound function (that only plays sound for people inside the ship)
+    --for this
+
+    printColor(ColPink,"[Nova Lib]"," The O'Neill Function is not complete.")
+end
