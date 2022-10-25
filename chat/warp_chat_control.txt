@@ -1,0 +1,339 @@
+--@name Warp Chat Control
+--@author Nova Astral
+--@updater STEAM_0:0:53930685
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt
+--@class processor
+
+require("Novas-SFs/library/nova_lib.txt")
+
+--[[
+Made by Nova Astral
+Discord: Nova Astral#2079
+Steam: http://steamcommunity.com/profiles/76561198068127098
+Github: https://github.com/NovaAstral/Novas-Public-SFs
+
+Command Usage can be found in this command doc for my mainframe,
+as this is it's warp controls but standalone
+
+https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk/
+]]--
+
+wire.ports.WarpFactor = 10 --This is the starting warp factor
+WarpPrefix = "/warp" --This is the prefix for using the warp drive
+
+function functionSetup()
+    function warp(WarpVec,Ang)
+        if(WarpVec == Vector(0,0,0)) then
+            printColor(ColPink,"[Warp] ","Cannot warp to ",ColGrn,"[0,0,0]")
+        else
+            if(stargate.locationJammed(WarpVec)) then
+                printColor(ColPink,"[Warp] ","Destination Jammed! Cannot warp.")
+            else
+                PrevPos = wire.ports.Drive:entity():pos()
+                PrevAng = wire.ports.Drive:entity():ang()
+
+                wire.ports.Drive[DestInput] = WarpVec
+                wire.ports.Drive[AngInput] = Ang
+                wire.ports.Destination = WarpVec
+                wire.ports.AngleOffset = Ang
+
+                --Warp
+                timer.simple(0.2,function()
+                    wire.ports.Warp = 1
+                    wire.ports.Drive[WarpInput] = 1
+                end)
+
+                --Reset Warp
+                timer.simple(2,function()
+                    wire.ports.Warp = 0
+                    wire.ports.Destination = Vector(0,0,0)
+                    wire.ports.Drive[WarpInput] = 0
+                    wire.ports.Drive[DestInput] = Vector(0,0,0)
+                    wire.ports.AngOffset = Angle(0,0,0)
+
+                    WarpF = 0
+                end)
+            end
+        end
+    end
+
+    hook.add("input","DriveChange", function(input,value)
+        if(input == "Drive" and DCWait == 0) then
+            if(IsValid(wire.ports.Drive)) then
+                DriveType = wire.ports.Drive:entity():class()
+                DriveOffset = wire.ports.Drive:entity():ang()
+
+                if(DriveType == "ship_drive" or DriveType == "bsg_drive" or DriveType == "st_warp_drive" or DriveType == "sg_hyperdrive" or DriveType == "spore_drive" or DriveType == "quantum_slipstream_drive") then
+                    DestInput = "Destination"
+                    WarpInput = "Activate"
+                    AngInput = "Angle Offset"
+
+                    printColor(ColPink,"[Warp] ","TSCM Drive Linked.")
+
+                elseif(DriveType == "gmod_wire_hoverdrivecontroler" or DriveType == "gmod_wire_teleporter") then
+                    DestInput = "TargetPos"
+                    WarpInput = "Jump"
+
+                    printColor(ColPink,"[Warp] ","Wire Drive Linked")
+
+                elseif(DriveType == "warpdrive") then --SBEP Warp Drive
+                    DestInput = "Destination"
+                    WarpInput = "Warp"
+                    AngInput = ""
+
+                    printColor(ColPink,"[Warp] ","SBEPDrive Linked")
+
+                elseif(DriveType == "st_shuttle_type11") then
+                    DestInput = "Transwarp Destination"
+                    WarpInput = "Transwarp"
+
+                    printColor(ColPink,"[Warp] ",ColOng,"Type 11 Shuttle Linked")
+
+                elseif(DriveType == "st_shuttle_type9" or DriveType == "st_shuttle_type6") then
+                    DestInput = "Warp Destination"
+                    WarpInput = "Engage Warp"
+
+                    printColor(ColPink,"[Warp] ",ColOng,"Shuttle Linked")
+
+                elseif(DriveType == "sci_fi_shuttle") then
+                    DestInput = "FTL Co-ordinates"
+                    WarpInput = "FTL Jump"
+
+                    printColor(ColPink,"[Warp] ",ColOng,"Sci-fi Shuttle Linked")
+
+                elseif(DriveType == "sent_tardis_interior" or DriveType == "sent_tardis") then
+                    DestInput = "XYZ"
+                    WarpInput = "Demat"
+
+                    printColor(ColPink,"[Warp] ",ColOng,"TARDIS Linked")
+
+                elseif(DriveType == "gmod_wire_expression2") then
+                    DestInput = "Destination"
+                    WarpInput = "Warp"
+                    AngInput = "Angle Offset"
+
+                    printColor(ColPink,"[Warp] ","Manual Drive Linked")
+                else
+                    printColor(ColPink,"[Warp] ","Unable to link to: ",ColRed,DriveType)
+                end
+            else
+                printColor(ColPink,"[Warp] ","Drive Unlinked")
+            end
+        end
+    end)
+end
+
+if starfall.isSpawnedFromDuplicator() then
+    hook.add('postentitypaste', 'dupefinished', functionSetup())
+else
+    functionSetup()
+end
+
+wire.adjust(function(input, output)
+    --Inputs
+    input({"Drive"},"WIRELINK")
+
+    --Outputs
+    output({"WarpFactor","Warp"},"NUMBER")
+    output({"Destination"},"VECTOR")
+    output({"AngleOffset"},"ANGLE")
+end)
+
+chat.listen(function(message, player)
+    local OLS = message:lower():explode(" ", true)
+
+    if(OLS[1] == WarpPrefix) then
+        if(IsValid(wire.ports.Drive) ~= true) then
+            printColor(ColPink,"[Warp] ",ColRed,"Warp Drive not linked!")
+        else
+            WarpF = 0
+
+            if(OLS[2] == "help" or OLS[2] == "loc" or OLS[2] == "locations") then
+                WarpF = 1
+
+                printColor(ColPink,"[Warp] ","Warp Locations:")
+                --printColor(ColPink,"[Warp] ","Milk, Earth, Moon, Pegasus, Shakur, Shakbase, Universe, Unicorner, Hiigara, Hiibase, Desert, Lava, Members, Build, Build2, Build3, Build4")
+                printColor(ColPink,"[Warp] ",table.concatKeys(WarpLoc,", "))
+            end
+
+            if(OLS[2] == "vec") then
+                if(OLS[3] == nil) then
+                    printColor(ColPink,"[Warp] ","Cannot warp the ship nowhere.")
+                else
+                    local V = OLS[3]:explode(",")
+
+                    if(tonumber(V[1]) ~= nil and tonumber(V[2]) ~= nil and tonumber(V[3]) ~= nil) then
+                        local X = math.round(tonumber(V[1]))
+                        local Y = math.round(tonumber(V[2]))
+                        local Z = math.round(tonumber(V[3]))
+
+                        local Dest = Vector(X,Y,Z)
+                        local AngleOffset = Angle(0,0,0)
+
+                        warp(Dest,AngleOffset)
+
+                        printColor(ColPink,"[Warp] ","Warping to vector: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
+                    end
+                end
+            end
+
+            if(OLS[2] == "ang" or OLS[2] == "angle") then
+                if(OLS[3] == nil) then
+                    printColor(ColPink,"[Warp] ","Cannot rotate the ship to nothing")
+                else
+                    if(OLS[3] == "reset") then
+                        WarpF = 1
+
+                        local AngOffset = wire.ports.Drive:entity():toLocal(ang(0,0,0)) + DriveOffset
+                        local Dest = wire.ports.Drive:entity():pos()
+
+                        printColor(ColPink,"[Warp] ","Resetting ship angles")
+
+                        warp(Dest,AngOffset)
+                    else
+                        WarpF = 1
+
+                        local V = OLS[3]:explode(",")
+
+                        if(tonumber(V[1]) ~= nil and tonumber(V[2]) ~= nil and tonumber(V[3]) ~= nil) then
+                            local X = math.round(tonumber(V[1]))
+                            local Y = math.round(tonumber(V[2]))
+                            local Z = math.round(tonumber(V[3]))
+
+                            local AngOffset = Angle(X,Y,Z)
+                            local Dest = wire.ports.Drive:entity():pos()
+
+                            warp(Dest,AngOffset)
+
+                            printColor(ColPink,"[Warp] ","Rotating to Angle Offset: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
+                        end
+                    end
+                end
+            end
+
+            if(OLS[2] == "forward" or OLS[2] == "back" or OLS[2] == "left" or OLS[2] == "right" or OLS[2] == "up" or OLS[2] == "down") then
+                if(OLS[3] == nil and OLS[2] ~= "back") then
+                    LWarp = 1
+
+                    printColor(ColPink,"[Warp] ","Cannot warp nowhere")
+
+                    timer.simple(1,function()
+                        LWarp = 0
+                    end)
+                else
+                    LWarp = 0
+
+                    if(OLS[2] == "forward" and LWarp == 0) then
+                        WarpF = 1
+
+                        printColor(ColPink,"[Warp] ","Warping Forward by ",ColGrn,tonumber(OLS[3]))
+
+                        Dest = wire.ports.Drive:entity():pos() + Vector(tonumber(OLS[3]),0,0)
+                    end
+
+                    if(OLS[2] == "back") then
+                        WarpF = 1
+
+                        if(OLS[3] == nil) then
+                            printColor(ColPink,"[Warp] ","Warping to previous position: [",ColGrn,string.format("%d,%d,%d",PrevPos.x,PrevPos.y,PrevPos.z),ColOng,"]")
+
+                            Dest = PrevPos
+                        elseif(tonumber(OLS[3]) ~= nil) then
+                            printColor(ColPink,"[Warp] ","Warping Back by ",ColGrn,tonumber(OLS[3]))
+
+                            Dest = wire.ports.Drive:entity():pos() - Vector(tonumber(OLS[3]),0,0)
+                        end
+                    end
+
+                    if(OLS[2] == "left" and LWarp == 0) then
+                        WarpF = 1
+
+                        printColor(ColPink,"[Warp] ","Warping Left by ",ColGrn,tonumber(OLS[3]))
+
+                        Dest = wire.ports.Drive:entity():pos() + Vector(0,tonumber(OLS[3]),0)
+                    end
+
+                    if(OLS[2] == "right" and LWarp == 0) then
+                        WarpF = 1
+
+                        printColor(ColPink,"[Warp] ","Warping Right by ",ColGrn,tonumber(OLS[3]))
+
+                        Dest = wire.ports.Drive:entity():pos() - Vector(0,tonumber(OLS[3]),0)
+                    end
+
+                    if(OLS[2] == "up" and LWarp == 0) then
+                        WarpF = 1
+
+                        printColor(ColPink,"[Warp] ","Warping Up by ",ColGrn,tonumber(OLS[3]))
+
+                        Dest = wire.ports.Drive:entity():pos() + Vector(0,0,tonumber(OLS[3]))
+                    end
+
+                    if(OLS[2] == "down" and LWarp == 0) then
+                        WarpF = 1
+
+                        printColor(ColPink,"[Warp] ","Warping Down by ",ColGrn,tonumber(OLS[3]))
+
+                        Dest = wire.ports.Drive:entity():pos() - Vector(0,0,tonumber(OLS[3]))
+                    end
+
+                    timer.simple(0.2,function()
+                        if(LWarp == 0 and WarpF == 1) then
+                            local AngleOffset = Angle(0,0,0)
+                            warp(Dest,AngleOffset)
+                        end
+                    end)
+                end
+            end
+
+            if(OLS[2] == "speed") then
+                if(IsValid(wire.ports.Drive) ~= true) then
+                    printColor(ColPink,"[Warp] ",ColRed,"Warp Drive not linked!")
+                else
+                    if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
+                        printColor(ColPink,"[Warp] ","Invalid number specified. Current Warp Factor is: ",ColGrn,wire.self().WarpFactor)
+                    elseif(tonumber(OLS[3]) > 10) then
+                        wire.ports.WarpFactor = 10
+                        printColor(ColPink,"[Warp] ","Warp Factor cannot go above ",ColGrn,"9.975",ColOng," Setting Warp Factor to max")
+                    else
+                        wire.ports.WarpFactor = tonumber(OLS[3])
+                        printColor(ColPink,"[Warp] ","Warp Factor set to: ",ColGrn,OLS[3])
+                    end
+                end
+            end
+
+            if(WarpF == 0) then
+                if(OLS[2] == nil) then
+                    printColor(ColPink,"[Warp] ","Cannot warp to noone or nowhere")
+                else
+                    if(OLS[2] ~= "speed") then
+                        local Ply = find.playerByName(OLS[2])
+
+                        if(IsValid(Ply) and Ply:isPlayer()) then
+                            WarpF = 1
+                            PlyCol = Ply:getTeamColor()
+
+                            local Dest = Ply:pos()
+                            local AngleOffset = Angle(0,0,0)
+
+                            warp(Dest,AngleOffset)
+
+                            printColor(ColPink,"[Warp] ","Warping to Player: ",PlyCol,Ply:name())
+                        elseif(WarpLoc[OLS[2]] ~= nil) then
+                            WarpF = 1
+
+                            local Dest = WarpLoc[OLS[2]]
+                            local AngleOffset = Angle(0,0,0)
+
+                            warp(Dest,AngleOffset)
+
+                            printColor(ColPink,"[Warp] ","Warping to location: ",ColGrn,OLS[2])
+                        else
+                            printColor(ColPink,"[Warp] ","Cannot warp to: ",ColRed,OLS[2])
+                        end
+                    end
+                end
+            end
+        end
+    end
+end, ents.self():owner())

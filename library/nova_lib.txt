@@ -21,8 +21,8 @@ ZeiaBlk = Color(99,99,99)
 
 --Version checking for Vethian because of non-file based config.
 if(starfall.getName(ents.self()) == "Vethian" or starfall.getName(ents.self()) == "Si'ka zal'el") then
-    if(AIVersion ~= "2.0") then
-        printColor(ColPink,"[NovaLib] ",ColOng,"Your version of ",ColPink,"Vethian ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,"2.0")
+    if(AIVersion ~= "2.0.2") then
+        printColor(ColPink,"[NovaLib] ",ColOng,"Your version of ",ColPink,"Vethian ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,"2.0.2")
     end
 end
 

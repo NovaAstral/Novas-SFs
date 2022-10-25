@@ -4,7 +4,6 @@
 --@autoupdate
 
 --[[
-
 Update 1.3
 - Possibly fixed the weapons not always aiming when you target
 

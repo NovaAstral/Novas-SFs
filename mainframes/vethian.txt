@@ -1,12 +1,12 @@
 --@name Vethian AI
 --@author Nova Astral
 --@updater STEAM_0:0:53930685
---@dependency STEAM_0:0:53930685 novas-sfs/library/nova_lib.txt
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt
 --@model models/beer/wiremod/gate_e2.mdl
 --@class processor
 
-AIVersion = "2.0" -- Don't touch this
-require("novas-sfs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
+AIVersion = "2.0.2" -- Don't touch this
+require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
 Made by Nova Astral
@@ -1823,7 +1823,7 @@ chat.listen(function(message, player)
                     aiSay(ents.self():owner(),"Invalid number specified. Current Warp Factor is: ",ColGrn,wire.self().WarpFactor)
                 elseif(tonumber(OLS[3]) > 10) then
                     wire.ports.WarpFactor = 10
-                    aiSay(ents.self():owner(),"Warp Factor cannot go above ",ColGrn,"9.975",ColOng," Setting Weapon Fire Rate to max")
+                    aiSay(ents.self():owner(),"Warp Factor cannot go above ",ColGrn,"9.975",ColOng," Setting Warp Factor to max")
                 else
                     wire.ports.WarpFactor = tonumber(OLS[3])
                     aiSay(ents.self():owner(),"Warp Factor set to: ",ColGrn,OLS[3])
