@@ -20,9 +20,24 @@ ZeiaWht = Color(230,230,230)
 ZeiaBlk = Color(99,99,99)
 
 --Version checking for Vethian because of non-file based config.
-if(starfall.getName(ents.self()) == "Vethian" or starfall.getName(ents.self()) == "Si'ka zal'el") then
-    if(AIVersion ~= "2.0.2") then
-        printColor(ColPink,"[NovaLib] ",ColOng,"Your version of ",ColPink,"Vethian ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,"2.0.2")
+function AIVersCheck()
+    local AIVers = "2.1.1"
+    if(AIVersion ~= AIVers) then
+        printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
+    end
+end
+
+function SetAIName()
+    if(ents.self():owner():steamID() == "STEAM_0:0:59006359") then
+        AIName = "LSAU"
+        starfall.setName("LSAU AI")
+    else
+        if(ents.self():owner():steamID() == "STEAM_0:1:111241767") then
+            AIName = "Veggian"
+            starfall.setName("Veggian AI")
+        else
+            AIName = "Vethian"
+        end
     end
 end
 
@@ -267,9 +282,9 @@ end
 
 function aiSay(player,...) --Function by The17thDoctor
     if player == ents.self():owner() then
-        printColor(ColTeam,"[AI]",ColPink," [Vethian] ",ColOng,...)
+        printColor(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
     else
-        chat.tell(player, ColTeam,"[AI]",ColPink," [Vethian] ",ColOng,...)
+        chat.tell(player, ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
     end
 end
 
@@ -331,5 +346,5 @@ function ONeill()
     --I need to make a url sound function (that only plays sound for people inside the ship)
     --for this
 
-    printColor(ColPink,"[Nova Lib]"," The O'Neill Function is not complete.")
+    printColor(ColPink,"[Nova Lib] ",ColOng,"The O'Neill Function is not complete.")
 end
