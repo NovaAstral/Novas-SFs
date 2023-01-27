@@ -3,9 +3,10 @@
 --@updater STEAM_0:0:53930685
 --@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt
 --@model models/beer/wiremod/gate_e2.mdl
+---@model models/beer/wiremod/gate_e2_mini.mdl
 --@class processor
 
-AIVersion = "2.1.1" -- Don't touch this
+AIVersion = "2.1.2" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -362,7 +363,7 @@ function dupefinished()
 end
 
 if starfall.isSpawnedFromDuplicator() then
-    hook.add('postduplicationpaste', 'dupefinished', dupefinished())
+    hook.add('postduplicationpaste', 'dupefinished', dupefinished)
 else
     dupefinished()
 end

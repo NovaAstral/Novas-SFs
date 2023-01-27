@@ -21,7 +21,7 @@ ZeiaBlk = Color(99,99,99)
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.1.1"
+    local AIVers = "2.1.2"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -63,7 +63,7 @@ WarpLoc = {
     ["shakur"] = Vector(-7576,-7152,9060),
     ["desert"] = Vector(10813,-9631,-8541),
     ["hiigara"] = Vector(6144,9267,-4660),
-    ["lava"] = Vector(-9891,167,-4283),
+    ["lava"] = Vector(-9744,61,-3954),
     ["milk"] = Vector(-7659,8215,8300),
     ["pegasus"] = Vector(1703,-8593,9143),
     ["universe"] = Vector(111,-2874,-3954),
