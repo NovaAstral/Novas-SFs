@@ -6,7 +6,7 @@
 ---@model models/beer/wiremod/gate_e2_mini.mdl
 --@class processor
 
-AIVersion = "2.1.2" -- Don't touch this
+AIVersion = "2.1.3" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -1428,23 +1428,20 @@ chat.listen(function(message, player)
                     if(#OLS[3] > 1) then
                         aiSay(ents.self():owner(),"Dial mode cannot be a string")
                     else
-
-                        if(OLS[3] == 0) then
+                        if(OLS[3] == "0") then
                             DialModeS = "Slow"
                             DialMode = 0
-                        end
-
-                        if(OLS[3] == 1) then
+                        elseif(OLS[3] == "1") then
                             DialModeS = "Fast"
                             DialMode = 1
-                        end
-
-                        if(OLS[3] == 2) then
+                        elseif(OLS[3] == "2") then
                             DialModeS = "Nox"
                             DialMode = 2
-                        end
-
-                        if(DialMode == nil) then
+                        elseif(DialMode == nil) then
+                            DialModeS = "Fast"
+                            DialMode = 1
+                            aiSay(ents.self():owner(),"Invalid Dialmode. Setting dialmode to Fast Dial")
+                        else
                             DialModeS = "Fast"
                             DialMode = 1
                             aiSay(ents.self():owner(),"Invalid Dialmode. Setting dialmode to Fast Dial")
