@@ -2095,7 +2095,7 @@ chat.listen(function(message, player)
                         if(jamCheck(Ply,Ply:pos(),1) == 0) then
                             transport(Ply,Vector(0,0,0),"beamup")
 
-                            aiSay(ents.self():owner(),"Beaming ",Ply:getTeamColor(),Ply:name()," to the pad")
+                            aiSay(ents.self():owner(),"Beaming ",Ply:getTeamColor(),Ply:name(),ColOng," to the pad")
                         end
                     else
                         aiSay(ents.self():owner(),"There is no player with the name: ",ColRed,OLS[3])
@@ -2313,7 +2313,7 @@ chat.listen(function(message, player)
                                 aiSay(ents.self():owner(),"There is no player with the name: ",ColRed,OLS[3])
                             else
                                 if(jamCheck(BeamFrom,BeamFrom:pos(),0) == 0 and jamCheck(ents.NULL_ENTITY,TransportLoc[4],0) == 0) then
-                                    aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName," to ",ColGrn,OLS[4])
+                                    aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",ColGrn,OLS[4])
 
                                     transport(BeamFrom,TransportLoc[OLS[4]],"vector")
                                 end
