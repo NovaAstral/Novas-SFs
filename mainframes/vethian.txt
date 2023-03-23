@@ -6,7 +6,7 @@
 ---@model models/beer/wiremod/gate_e2_mini.mdl
 --@class processor
 
-AIVersion = "2.1.3" -- Don't touch this
+AIVersion = "2.1.4" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -744,7 +744,11 @@ chat.listen(function(message, player)
                         wire.ports.SDTimeLeft = tonumber(OLS[3])
                         wire.ports.SDActive = 1
 
-                        aiSay(ents.self():owner(),"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds.")
+                        if(tonumber(OLS[3]) == 69) then
+                            aiSay(ents.self():owner(),"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds. Nice.")
+                        else
+                            aiSay(ents.self():owner(),"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds.")
+                        end
 
                         wire.ports.ShipCore:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
 
