@@ -45,7 +45,7 @@ if SERVER then
         elseif(name == "Target") then
             TPos = wire.ports.Target
 
-            timer.simple(0.1,function()
+            timer.simple(0.1,function() --this doesnt work properly because it only targets every time the target moves
                 if(AimActive == true) then
                     if(Wep1 ~= nil) then
                         Wep1:setAng((TPos - Wep1:pos()):Angle()+Angle(AimAng1,0,0))
@@ -60,8 +60,8 @@ if SERVER then
         elseif(name == "Weapon1") then
             Wep1 = wire.ports.Weapon1
 
-            if(Wep1 ~= nil) then
-                if(Wep1:class() == "keeper_emitter") then
+            if(IsValid(Wep1)) then
+                if(Wep1:model() == "models/veegi/emitter/emitter2.mdl") then
                     AimAng1 = 90
                 elseif(Wep1:class() == "torpedo_launcher"  or Wep1:class() == "ship_cannon") then
                     AimAng1 = 0
@@ -70,8 +70,8 @@ if SERVER then
         elseif(name == "Weapon2") then
             Wep2 = wire.ports.Weapon2
 
-            if(Wep2 ~= nil) then
-                if(Wep2:class() == "keeper_emitter") then
+            if(IsValid(Wep2)) then
+                if(Wep2:model() == "models/veegi/emitter/emitter2.mdl") then
                     AimAng2 = 90
                 elseif(Wep2:class() == "torpedo_launcher" or Wep2:class() == "ship_cannon") then
                     AimAng2 = 0

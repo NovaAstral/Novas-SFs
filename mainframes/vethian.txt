@@ -6,7 +6,7 @@
 ---@model models/beer/wiremod/gate_e2_mini.mdl
 --@class processor
 
-AIVersion = "2.1.4" -- Don't touch this
+AIVersion = "2.2.0" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -19,7 +19,6 @@ Thank you to Princess Nova and The17thDoctor for help figuring out some function
 
 This is the docs on command usage:
 https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk/
-
 
 If you want to make a suggestion/bug report,
 either use The Spartan Alliance discord channel for Vethian, or the github issues section
@@ -36,12 +35,16 @@ function config()
 
     Shipname = "Shipname" --Change this to the name of your ship
 
+    AutoTarget =  1 --If Target destroyed, try to target another of the same entity owned by the same person
+    AutoTargetPrint = 1 --Print in chat when AutoTarget targets a new entity
+
     --AutoDistress = 1 --Disable this if you don't want your ship to send a distress call at 30% hull
     --This isn't implemented yet
 
     Prefix = "/v" --Set this to the prefix you need to enter first in chat for any commands
     WarpPrefix = "/warp" --This is the prefix for using the warp drive
     TPPrefix = "/pad" --This is the prefix for using the transporter
+    TargetPrefix = "/t"
     --These must be 1 word, you cannot do for example: "/v warp"
 
     wire.ports.WepStrength = 10 --I would set these lower if you dont have alot of resources
@@ -343,6 +346,30 @@ function functionSetup()
             end
         end
     end)
+
+    function Target(Ent,Print)
+        wire.ports.TargetEnt = Ent
+        wire.ports.TargetPos = Ent:obbCenterW()
+        wire.ports.TargetLocked = 1
+
+        --timer target for autotargetting
+
+        if(Ent:owner():name() == "") then
+            wire.ports.TargetOwner = ents.NULL_ENTITY
+            TarColor = Color(255,255,255):ToVector() * 255
+        else
+            wire.ports.TargetOwner = Ent:owner()
+            TarColor = Vector(Ent:owner():getTeamColor())
+        end
+
+        if(Print == 1) then
+            if(Ent:isPlayer()) then
+                aiSay(ents.self():owner(),"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
+            else
+                aiSay(ents.self():owner(),"Targetting ",Ent:class(),ColOng," Owned by ",TarColor,Ent:owner())
+            end
+        end
+    end
 end
 
 function dupefinished()
@@ -389,6 +416,9 @@ wire.adjust(function(input, output)
     output({"Warp"},"NUMBER")
     output({"Destination"},"VECTOR")
     output({"AngleOffset"},"ANGLE")
+    output({"TargetPos"},"VECTOR")
+    output({"TargetEnt","TargetOwner"},"ENTITY")
+    output({"TargetLocked"},"NUMBER")
 end)
 
 
@@ -2327,5 +2357,13 @@ chat.listen(function(message, player)
                 end
             end
         end
+    end
+end, ents.self():owner())
+
+chat.listen(function(message, player)
+    local OLS = message:lower():explode(" ", true)
+
+    if(OLS[1] == TargetPrefix) then
+
     end
 end, ents.self():owner())
