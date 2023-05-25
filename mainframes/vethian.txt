@@ -59,20 +59,20 @@ end
 function nameCheck()
     if(PrintOnSpawn == 1) then
         if(Shipname == "Shipname") then
-            aiSay(ents.self():owner(),"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
+            aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
         else
             chat.say(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,AIName,ColGrn," v",AIVersion,ColOng," active",ColOng," on: ",ZeiaMBlu,Shipname)
         end
     else
         if(Shipname == "Shipname") then
-            aiSay(ents.self():owner(),"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
+            aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
         else
-            aiSay(ents.self():owner()," [",AIName,"] ",ColGrn," v",AIVersion,ColOng," active on: ",ZeiaMBlu,Shipname)
+            aiSay(sfowner," [",AIName,"] ",ColGrn," v",AIVersion,ColOng," active on: ",ZeiaMBlu,Shipname)
         end
     end
 
     if(IsValid(wire.ports.LSCore) ~= true) then
-        aiSay(ents.self():owner(),ColRed,"Life Support Core not linked, cannot set ship name!")
+        aiSay(sfowner,ColRed,"Life Support Core not linked, cannot set ship name!")
     else
         wire.ports.LSCore["Name"] = Shipname
     end
@@ -147,9 +147,9 @@ function functionSetup()
             AimEW["Activate"] = Active
 
             if(Active == 1) then
-                aiSay(ents.self():owner(),"Re-enabling the ",ColGrn,AimName)
+                aiSay(sfowner,"Re-enabling the ",ColGrn,AimName)
             else
-                aiSay(ents.self():owner(),"Re-disabling the ",ColGrn,AimName)
+                aiSay(sfowner,"Re-disabling the ",ColGrn,AimName)
             end
         end)
     end
@@ -157,10 +157,10 @@ function functionSetup()
     PrevPos = Vector(0,0,0) --This is supposed to be here
     function warp(WarpVec,Ang)
         if(WarpVec == Vector(0,0,0)) then
-            aiSay(ents.self():owner(),"Cannot warp to ",ColGrn,"[0,0,0]")
+            aiSay(sfowner,"Cannot warp to ",ColGrn,"[0,0,0]")
         else
             if(stargate.locationJammed(WarpVec)) then
-                aiSay(ents.self():owner(),"Destination Jammed! Cannot warp.")
+                aiSay(sfowner,"Destination Jammed! Cannot warp.")
             else
                 PrevPos = wire.ports.Drive:entity():pos()
                 PrevAng = wire.ports.Drive:entity():ang()
@@ -253,16 +253,16 @@ function functionSetup()
 
         if(stargate.locationJammed(Pos, PlyJam)) then
             if(Ent:isPlayer()) then
-                if(Ent == ents.self():owner()) then
-                    aiSay(ents.self():owner(),Ent:getTeamColor(),"You",ColOng," are ",ColRed,"Jammed!")
+                if(Ent == sfowner) then
+                    aiSay(sfowner,Ent:getTeamColor(),"You",ColOng," are ",ColRed,"Jammed!")
                 else
-                    aiSay(ents.self():owner(),Ent:getTeamColor(),Ent:name(),ColOng," is ",ColRed,"Jammed!")
+                    aiSay(sfowner,Ent:getTeamColor(),Ent:name(),ColOng," is ",ColRed,"Jammed!")
                 end
             else
                 if(Ent == BrigEnt) then
-                    aiSay(ents.self():owner(),"The ",ColGrn,"Brig",ColOng," is ",ColRed,"Jammed!")
+                    aiSay(sfowner,"The ",ColGrn,"Brig",ColOng," is ",ColRed,"Jammed!")
                 else
-                    aiSay(ents.self():owner(),"That ",ColGrn,Ent:getName(),ColOng," is ",ColRed,"Jammed!")
+                    aiSay(sfowner,"That ",ColGrn,Ent:getName(),ColOng," is ",ColRed,"Jammed!")
                 end
             end
 
@@ -273,7 +273,7 @@ function functionSetup()
 
         if(PadCheck == 1) then
             if(stargate.locationJammed(wire.ports.Transporter:entity():pos(),false)) then
-                aiSay(ents.self():owner(),"The ",ColGrn,"Transporter",ColOng," is ",ColRed,"Jammed!")
+                aiSay(sfowner,"The ",ColGrn,"Transporter",ColOng," is ",ColRed,"Jammed!")
                 return JamYes
             else
                 return JamNo
@@ -293,56 +293,56 @@ function functionSetup()
                     WarpInput = "Activate"
                     AngInput = "Angle Offset"
 
-                    aiSay(ents.self():owner(),"TSCM Drive Linked.")
+                    aiSay(sfowner,"TSCM Drive Linked.")
 
                 elseif(DriveType == "gmod_wire_hoverdrivecontroler" or DriveType == "gmod_wire_teleporter") then
                     DestInput = "TargetPos"
                     WarpInput = "Jump"
 
-                    aiSay(ents.self():owner(),"Wire Drive Linked")
+                    aiSay(sfowner,"Wire Drive Linked")
 
                 elseif(DriveType == "warpdrive") then --SBEP Warp Drive
                     DestInput = "Destination"
                     WarpInput = "Warp"
                     AngInput = ""
 
-                    aiSay(ents.self():owner(),"SBEPDrive Linked")
+                    aiSay(sfowner,"SBEPDrive Linked")
 
                 elseif(DriveType == "st_shuttle_type11") then
                     DestInput = "Transwarp Destination"
                     WarpInput = "Transwarp"
 
-                    aiSay(ents.self():owner(),ColOng,"Type 11 Shuttle Linked")
+                    aiSay(sfowner,ColOng,"Type 11 Shuttle Linked")
 
                 elseif(DriveType == "st_shuttle_type9" or DriveType == "st_shuttle_type6") then
                     DestInput = "Warp Destination"
                     WarpInput = "Engage Warp"
 
-                    aiSay(ents.self():owner(),ColOng,"Shuttle Linked")
+                    aiSay(sfowner,ColOng,"Shuttle Linked")
 
                 elseif(DriveType == "sci_fi_shuttle") then
                     DestInput = "FTL Co-ordinates"
                     WarpInput = "FTL Jump"
 
-                    aiSay(ents.self():owner(),ColOng,"Sci-fi Shuttle Linked")
+                    aiSay(sfowner,ColOng,"Sci-fi Shuttle Linked")
 
                 elseif(DriveType == "sent_tardis_interior" or DriveType == "sent_tardis") then
                     DestInput = "XYZ"
                     WarpInput = "Demat"
 
-                    aiSay(ents.self():owner(),ColOng,"TARDIS Linked")
+                    aiSay(sfowner,ColOng,"TARDIS Linked")
 
                 elseif(DriveType == "gmod_wire_expression2") then
                     DestInput = "Destination"
                     WarpInput = "Warp"
                     AngInput = "Angle Offset"
 
-                    aiSay(ents.self():owner(),"Manual Drive Linked")
+                    aiSay(sfowner,"Manual Drive Linked")
                 else
-                    aiSay(ents.self():owner(),"Unable to link to: ",ColRed,DriveType)
+                    aiSay(sfowner,"Unable to link to: ",ColRed,DriveType)
                 end
             else
-                aiSay(ents.self():owner(),"Drive Unlinked")
+                aiSay(sfowner,"Drive Unlinked")
             end
         end
     end)
@@ -364,11 +364,13 @@ function functionSetup()
 
         if(Print == 1) then
             if(Ent:isPlayer()) then
-                aiSay(ents.self():owner(),"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
+                aiSay(sfowner,"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
             else
-                aiSay(ents.self():owner(),"Targetting ",Ent:class(),ColOng," Owned by ",TarColor,Ent:owner())
+                aiSay(sfowner,"Targetting ",Ent:class(),ColOng," Owned by ",TarColor,Ent:owner())
             end
         end
+
+        -- timer.create("tarcheck",0.1,0,function() end) --this shouldn't be here
     end
 end
 
@@ -433,14 +435,14 @@ chat.listen(function(message, player)
         --Power
         if(OLS[2] == "power") then
             if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Energy Core not linked!")
+                aiSay(sfowner,ColRed,"Energy Core not linked!")
             else
                 if(wire.ports.EnergyCore["Active"] == 0) then
                     wire.ports.EnergyCore["Activate"] = 1
-                    aiSay(ents.self():owner(),"Energy Generation ",ColGrn,"Online")
+                    aiSay(sfowner,"Energy Generation ",ColGrn,"Online")
                 else
                     wire.ports.EnergyCore["Activate"] = 0
-                    aiSay(ents.self():owner(),"Energy Generation ",ColRed,"Offline")
+                    aiSay(sfowner,"Energy Generation ",ColRed,"Offline")
                 end
             end
         end
@@ -448,14 +450,14 @@ chat.listen(function(message, player)
         --Refinery
         if(OLS[2] == "refine") then
             if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Refinery not linked!")
+                aiSay(sfowner,ColRed,"Refinery not linked!")
             else
                 if(wire.ports.Refinery["Active"] == 0) then
                     wire.ports.Refinery["Activate"] = 1
-                    aiSay(ents.self():owner(),"Refinery ",ColGrn,"Online")
+                    aiSay(sfowner,"Refinery ",ColGrn,"Online")
                 else
                     wire.ports.Refinery["Activate"] = 0
-                    aiSay(ents.self():owner(),"Refinery ",ColRed,"Offline")
+                    aiSay(sfowner,"Refinery ",ColRed,"Offline")
                 end
             end
         end
@@ -463,14 +465,14 @@ chat.listen(function(message, player)
         --Life Support
         if(OLS[2] == "ls") then
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not linked!")
             else
                 if(wire.ports.LSCore["Active"] == 0) then
                     wire.ports.LSCore["Activate"] = 1
-                    aiSay(ents.self():owner(),"Life Support ",ColGrn,"Online")
+                    aiSay(sfowner,"Life Support ",ColGrn,"Online")
                 else
                     wire.ports.LSCore["Activate"] = 0
-                    aiSay(ents.self():owner(),"Life Support ",ColRed,"Offline")
+                    aiSay(sfowner,"Life Support ",ColRed,"Offline")
                 end
             end
         end
@@ -478,26 +480,26 @@ chat.listen(function(message, player)
         --Noclip
         if(OLS[2] == "noclip") then
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Lifesupport Core not linked!")
+                aiSay(sfowner,ColRed,"Lifesupport Core not linked!")
             else
                 if(OLS[3] == "on") then
                     wire.ports.LSCore["Disable Noclip"] = 0
-                    aiSay(ents.self():owner(),"Anti-noclip ",ColGrn,"Disabled")
+                    aiSay(sfowner,"Anti-noclip ",ColGrn,"Disabled")
                 end
 
                 if(OLS[3] == "off") then
                     wire.ports.LSCore["Disable Noclip"] = 1
-                    aiSay(ents.self():owner(),"Anti-noclip ",ColGrn,"Enabled")
+                    aiSay(sfowner,"Anti-noclip ",ColGrn,"Enabled")
                 end
 
                 if(OLS[3] == "fac") then
                     wire.ports.LSCore["Disable Noclip"] = 2
-                    aiSay(ents.self():owner(),"Faction only noclip ",ColGrn,"Enabled")
+                    aiSay(sfowner,"Faction only noclip ",ColGrn,"Enabled")
                 end
 
                 if(OLS[3] == "ally") then
                     wire.ports.LSCore["Disable Noclip"] = 3
-                    aiSay(ents.self():owner(),"Alliance only noclip ",ColGrn,"Enabled")
+                    aiSay(sfowner,"Alliance only noclip ",ColGrn,"Enabled")
                 end
             end
         end
@@ -505,67 +507,67 @@ chat.listen(function(message, player)
         --Mute
         if(OLS[2] == "mute") then
             if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Energy Core not linked!")
+                aiSay(sfowner,ColRed,"Energy Core not linked!")
             else
                 wire.ports.EnergyCore["Mute"] = 1
             end
 
             if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Refinery not linked!")
+                aiSay(sfowner,ColRed,"Refinery not linked!")
             else
                 wire.ports.Refinery["Mute"] = 1
             end
 
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not linked!")
             else
                 wire.ports.LSCore["Mute"] = 1
             end
 
-            aiSay(ents.self():owner(),"Cores Muted")
+            aiSay(sfowner,"Cores Muted")
         end
 
         --Unmute
         if(OLS[2] == "unmute") then
             if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Energy Core not linked!")
+                aiSay(sfowner,ColRed,"Energy Core not linked!")
             else
                 wire.ports.EnergyCore["Mute"] = 0
             end
 
             if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Refinery not linked!")
+                aiSay(sfowner,ColRed,"Refinery not linked!")
             else
                 wire.ports.Refinery["Mute"] = 0
             end
 
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not linked!")
             else
                 wire.ports.LSCore["Mute"] = 0
             end
 
-            aiSay(ents.self():owner(),"Cores Unmuted")
+            aiSay(sfowner,"Cores Unmuted")
         end
 
         --Water
         if(OLS[2] == "water") then
             if(IsValid(wire.ports.WaterCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Water Core not linked!")
+                aiSay(sfowner,ColRed,"Water Core not linked!")
             else
                 if(IsValid(wire.ports.WaterCore["Collector"]) ~= true) then
-                    aiSay(ents.self():owner(),ColRed,"Water Collector not placed. Cannot collect water.")
+                    aiSay(sfowner,ColRed,"Water Collector not placed. Cannot collect water.")
                 else
                     WaterCW = wire.ports.WaterCore["Collector"]:getWirelink()
 
                     if(WaterCW["Active"] == 0) then
                         WaterCW["Activate"] = 1
 
-                        aiSay(ents.self():owner(),"Water Collector ",ColGrn,"Online")
+                        aiSay(sfowner,"Water Collector ",ColGrn,"Online")
                     else
                         WaterCW["Activate"] = 0
 
-                        aiSay(ents.self():owner(),"Water Collector ",ColRed,"Offline")
+                        aiSay(sfowner,"Water Collector ",ColRed,"Offline")
                     end
                 end
             end
@@ -573,7 +575,7 @@ chat.listen(function(message, player)
 
         if(OLS[2] == "wplace") then
             if(IsValid(wire.ports.WaterCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Water Core not linked!")
+                aiSay(sfowner,ColRed,"Water Core not linked!")
             else
                 wire.ports.WaterCore["Spawn Collector"] = 1
 
@@ -583,7 +585,7 @@ chat.listen(function(message, player)
                     WaterCE = wire.ports.WaterCore["Collector"]
                     WaterCE:getPhysicsObject():enableMotion(false)
 
-                    aiSay(ents.self():owner(),"Water Collector placed on: ",ColGrn,WaterLoc)
+                    aiSay(sfowner,"Water Collector placed on: ",ColGrn,WaterLoc)
 
                     if(WaterLoc == "Shakuras") then
                         WaterCE:setPos(Vector(-6818,-7200,6730))
@@ -606,7 +608,7 @@ chat.listen(function(message, player)
                     end
 
                     if(WPlaced == 0) then
-                        aiSay(ents.self():owner(),"Cannot place a Water Collector here")
+                        aiSay(sfowner,"Cannot place a Water Collector here")
                     end
                 end)
             end
@@ -617,31 +619,31 @@ chat.listen(function(message, player)
         ------------------
         if(OLS[2] == "plating") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(wire.ports.ShipCore["Plating Enabled"] == 0) then
                     wire.ports.ShipCore["Enable Plating"] = 1
-                    aiSay(ents.self():owner(),"Plating Generation ",ColGrn,"Enabled")
+                    aiSay(sfowner,"Plating Generation ",ColGrn,"Enabled")
                 end
 
                 if(wire.ports.ShipCore["Plating Enabled"] == 1) then
                     wire.ports.ShipCore["Enable Plating"] = 0
-                    aiSay(ents.self():owner(),"Plating Generation ",ColRed,"Disabled")
+                    aiSay(sfowner,"Plating Generation ",ColRed,"Disabled")
                 end
             end
         end
 
         if(OLS[2] == "repair") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 RepairFire = notVar(RepairFire)
                 wire.ports.ShipCore["Fire Repair Beam"] = RepairFire
 
                 if(RepairFire == 1) then
-                    aiSay(ents.self():owner(),"Repair Beam ",ColGrn,"Online")
+                    aiSay(sfowner,"Repair Beam ",ColGrn,"Online")
                 else
-                    aiSay(ents.self():owner(),"Repair Beam ",ColRed,"Offline")
+                    aiSay(sfowner,"Repair Beam ",ColRed,"Offline")
                 end
             end
         end
@@ -650,82 +652,82 @@ chat.listen(function(message, player)
             wire.ports.Tractor = wire.self().Tractor == 0 and 1 or 0
 
             if(wire.self().Tractor == 0) then
-                aiSay(ents.self():owner(),"Tractor Beam ",ColGrn,"Online")
+                aiSay(sfowner,"Tractor Beam ",ColGrn,"Online")
             else
-                aiSay(ents.self():owner(),"Tractor Beam ",ColRed,"Offline")
+                aiSay(sfowner,"Tractor Beam ",ColRed,"Offline")
             end
         end
 
         if(OLS[2] == "shield") then
             if(IsValid(wire.ports.Shield) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Shield Emitter not linked!")
+                aiSay(sfowner,ColRed,"Shield Emitter not linked!")
             else
                 if(wire.ports.Shield["Active"] == 0) then
                     wire.ports.Shield["Activate"] = 1
-                    aiSay(ents.self():owner(),"Shield ",ColGrn,"Activated")
+                    aiSay(sfowner,"Shield ",ColGrn,"Activated")
                 else
                     wire.ports.Shield["Activate"] = 0
-                    aiSay(ents.self():owner(),"Shield ",ColRed,"Deactivated")
+                    aiSay(sfowner,"Shield ",ColRed,"Deactivated")
                 end
             end
         end
 
         if(OLS[2] == "cloak") then
             if(IsValid(wire.ports.Cloak) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Cloaking Device not linked!")
+                aiSay(sfowner,ColRed,"Cloaking Device not linked!")
             else
                 if(wire.ports.Cloak["Active"] == 0) then
                     wire.ports.Cloak["Activate"] = 1
-                    aiSay(ents.self():owner(),"Cloak ",ColGrn,"Activated")
+                    aiSay(sfowner,"Cloak ",ColGrn,"Activated")
                 else
                     wire.ports.Cloak["Activate"] = 0
-                    aiSay(ents.self():owner(),"Cloak ",ColRed,"Deactivated")
+                    aiSay(sfowner,"Cloak ",ColRed,"Deactivated")
                 end
             end
         end
 
         if(OLS[2] == "startup") then
             if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Energy Core not linked!")
+                aiSay(sfowner,ColRed,"Energy Core not linked!")
             else
                 wire.ports.EnergyCore["Activate"] = 1
             end
 
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Refinery not linked!")
+                aiSay(sfowner,ColRed,"Refinery not linked!")
             else
                 wire.ports.ShipCore["Enable Plating"] = 1
             end
 
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not linked!")
             else
                 wire.ports.LSCore["Activate"] = 1
             end
 
-            aiSay(ents.self():owner(),"Activating ship systems. Turning on the Power, Life Support, and Plating Generation")
+            aiSay(sfowner,"Activating ship systems. Turning on the Power, Life Support, and Plating Generation")
         end
 
         if(OLS[2] == "sd") then
             if(OLS[3] == "this" or OLS[3] == "that") then
-                local AimE = ents.self():owner():aimEntity()
+                local AimE = sfowner:aimEntity()
                 local AimEW = AimE:getWirelink()
 
                 if(IsValid(AimE) == true) then
                     if(AimE:class() == "ship_core" or AimE:class() == "st_shuttle_type9" or AimE:class() == "st_shuttle_type11" or AimE:class() == "st_shuttle_type6" or AimE:class() == "atlantis_puddle_jumper" or AimE:class() == "sci_fi_shuttle") then
                         AimEW["Self Destruct"] = 1
 
-                        aiSay(ents.self():owner(),"Self Destructing that ",ColGrn,AimE:getPrintName(),ColOng," Owned by: ",AimE:owner():getTeamColor(),AimE:owner():name())
+                        aiSay(sfowner,"Self Destructing that ",ColGrn,AimE:getPrintName(),ColOng," Owned by: ",AimE:owner():getTeamColor(),AimE:owner():name())
                     else
-                        aiSay(ents.self():owner(),"That ",ColRed,AimE:getPrintName(),ColOng," cannot be self destructed.")
+                        aiSay(sfowner,"That ",ColRed,AimE:getPrintName(),ColOng," cannot be self destructed.")
                     end
                 else
-                    aiSay(ents.self():owner(),"You're not aiming at anything.")
+                    aiSay(sfowner,"You're not aiming at anything.")
                 end
             end
 
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship core not linked!")
+                aiSay(sfowner,ColRed,"Ship core not linked!")
             else
                 if(OLS[3] == "stop") then
                     if(timer.exists("sd")) then
@@ -735,9 +737,9 @@ chat.listen(function(message, player)
                         wire.ports.SDActive = 0
                         wire.ports.ShipCore:entity():stopEnvironmentSound()
 
-                        aiSay(ents.self():owner(),"Self Destruct ",ColGrn,"Stopped")
+                        aiSay(sfowner,"Self Destruct ",ColGrn,"Stopped")
                     else
-                        aiSay(ents.self():owner(),ColRed,"Self Destruct isn't Active")
+                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
                     end
                 end
 
@@ -747,9 +749,9 @@ chat.listen(function(message, player)
 
                         wire.ports.ShipCore:entity():stopEnvironmentSound()
 
-                        aiSay(ents.self():owner(),"Self Destruct ",ColGrn,"Paused")
+                        aiSay(sfowner,"Self Destruct ",ColGrn,"Paused")
                     else
-                        aiSay(ents.self():owner(),ColRed,"Self Destruct isn't Active")
+                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
                     end
                 end
 
@@ -759,9 +761,9 @@ chat.listen(function(message, player)
 
                         wire.ports.ShipCore:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
 
-                        aiSay(ents.self():owner(),"Self Destruct ",ColGrn,"Unpaused")
+                        aiSay(sfowner,"Self Destruct ",ColGrn,"Unpaused")
                     else
-                        aiSay(ents.self():owner(),ColRed,"Self Destruct isn't Active")
+                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
                     end
                 end
 
@@ -769,15 +771,15 @@ chat.listen(function(message, player)
                     if(OLS[3] == nil) then
                         wire.ports.ShipCore["Self Destruct"] = 1
 
-                        aiSay(ents.self():owner(),"No time specified. Activating Self Destruct")
+                        aiSay(sfowner,"No time specified. Activating Self Destruct")
                     else
                         wire.ports.SDTimeLeft = tonumber(OLS[3])
                         wire.ports.SDActive = 1
 
                         if(tonumber(OLS[3]) == 69) then
-                            aiSay(ents.self():owner(),"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds. Nice.")
+                            aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds. Nice.")
                         else
-                            aiSay(ents.self():owner(),"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds.")
+                            aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds.")
                         end
 
                         wire.ports.ShipCore:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
@@ -791,23 +793,23 @@ chat.listen(function(message, player)
                             end
 
                             if(wire.self().SDTimeLeft == 0) then
-                                aiSay(ents.self():owner(),"Ship Destruct")
+                                aiSay(sfowner,"Ship Destruct")
                             end
 
                             if(wire.self().SDTimeLeft == 5) then
-                                aiSay(ents.self():owner(),"Self Destruct in",ColGrn," 5 ",ColOng,"seconds.")
+                                aiSay(sfowner,"Self Destruct in",ColGrn," 5 ",ColOng,"seconds.")
                             end
 
                             if(wire.self().SDTimeLeft == 10) then
-                                aiSay(ents.self():owner(),"Self Destruct in",ColGrn," 10 ",ColOng,"seconds.")
+                                aiSay(sfowner,"Self Destruct in",ColGrn," 10 ",ColOng,"seconds.")
                             end
 
                             if(wire.self().SDTimeLeft == 30) then
-                                aiSay(ents.self():owner(),"Self Destruct in",ColGrn," 30 ",ColOng,"seconds.")
+                                aiSay(sfowner,"Self Destruct in",ColGrn," 30 ",ColOng,"seconds.")
                             end
 
                             if(wire.self().SDTimeLeft == 60) then
-                                aiSay(ents.self():owner(),"Self Destruct in",ColGrn," 60 ",ColOng,"seconds.")
+                                aiSay(sfowner,"Self Destruct in",ColGrn," 60 ",ColOng,"seconds.")
                             end
                         end)
                     end
@@ -820,7 +822,7 @@ chat.listen(function(message, player)
         ------------
         if(OLS[2] == "alert") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(OLS[3] == "green") then
                     wire.ports.ShipCore:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
@@ -832,7 +834,7 @@ chat.listen(function(message, player)
                     timer.stop("alighton")
                     timer.stop("alightoff")
 
-                    aiSay(ents.self():owner(),"Condition",ColGrn," Green ",ColOng,"Stand down.")
+                    aiSay(sfowner,"Condition",ColGrn," Green ",ColOng,"Stand down.")
 
                     if(GateCol == 1) then
                         if(IsValid(wire.ports.Stargate) == true) then
@@ -850,7 +852,7 @@ chat.listen(function(message, player)
 
                     timer.start("alighton")
 
-                    aiSay(ents.self():owner(),"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
+                    aiSay(sfowner,"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
 
                     if(GateCol == 1) then
                         if(IsValid(wire.ports.Stargate) == true) then
@@ -867,7 +869,7 @@ chat.listen(function(message, player)
 
                     timer.start("alighton")
 
-                    aiSay(ents.self():owner(),"Condition",ColRed," Red ",ColOng,"Battle Stations!")
+                    aiSay(sfowner,"Condition",ColRed," Red ",ColOng,"Battle Stations!")
 
                     if(GateCol == 1) then
                         if(IsValid(wire.ports.Stargate) == true) then
@@ -884,7 +886,7 @@ chat.listen(function(message, player)
 
                     timer.start("alighton")
 
-                    aiSay(ents.self():owner(),"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
+                    aiSay(sfowner,"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
 
                     if(GateCol == 1) then
                         if(IsValid(wire.ports.Stargate) == true) then
@@ -901,7 +903,7 @@ chat.listen(function(message, player)
 
                     timer.start("alighton")
 
-                    aiSay(ents.self():owner(),ColRed,"Abandon Ship!")
+                    aiSay(sfowner,ColRed,"Abandon Ship!")
 
                     if(GateCol == 1) then
                         if(IsValid(wire.ports.Stargate) == true) then
@@ -921,7 +923,7 @@ chat.listen(function(message, player)
             wire.ports.Lockdown = 1
 
             if(IsValid(wire.ports.Shield) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Shield Emitter not linked!")
+                aiSay(sfowner,ColRed,"Shield Emitter not linked!")
             else
                 wire.ports.Shield["Activate"] = 1
             end
@@ -931,12 +933,12 @@ chat.listen(function(message, player)
             end
 
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not Linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not Linked!")
             else
                 wire.ports.LSCore["Disable Noclip"] = 1
             end
 
-            aiSay(ents.self():owner(),"Lockdown",ColGrn," Activated")
+            aiSay(sfowner,"Lockdown",ColGrn," Activated")
         end
 
         if(OLS[2] == "ldoff") then
@@ -952,12 +954,12 @@ chat.listen(function(message, player)
             end
 
             if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Life Support Core not Linked!")
+                aiSay(sfowner,ColRed,"Life Support Core not Linked!")
             else
                 wire.ports.LSCore["Disable Noclip"] = 0
             end
 
-            aiSay(ents.self():owner(),"Lockdown",ColGrn," Deactivated")
+            aiSay(sfowner,"Lockdown",ColGrn," Deactivated")
         end
 
         -----------------------
@@ -967,18 +969,18 @@ chat.listen(function(message, player)
             wire.ports.BridgeDoor = wire.self().BridgeDoor == 0 and 1 or 0
 
             if(wire.self().BridgeDoor == 0) then
-                aiSay(ents.self():owner(),"Bridge Door",ColGrn," Opened")
+                aiSay(sfowner,"Bridge Door",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Bridge Door",ColRed," Closed")
+                aiSay(sfowner,"Bridge Door",ColRed," Closed")
             end
         end
         if(OLS[2] == "bridgeff" or OLS[2] == "brff") then
             wire.ports.BridgeFF = wire.self().BridgeFF == 0 and 1 or 0
 
             if(wire.self().BridgeFF == 0) then
-                aiSay(ents.self():owner(),"Bridge Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Bridge Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Bridge Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Bridge Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -986,27 +988,27 @@ chat.listen(function(message, player)
             wire.ports.GateRDoor = wire.self().GateRDoor == 0 and 1 or 0
 
             if(wire.self().GateRDoor == 0) then
-                aiSay(ents.self():owner(),"Gateroom Door",ColGrn," Opened")
+                aiSay(sfowner,"Gateroom Door",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Gateroom Door",ColRed," Closed")
+                aiSay(sfowner,"Gateroom Door",ColRed," Closed")
             end
         end
         if(OLS[2] == "gateroomff" or OLS[2] == "grff") then
             wire.ports.GateRFF = wire.self().GateRFF == 0 and 1 or 0
 
             if(wire.self().GateRFF == 0) then
-                aiSay(ents.self():owner(),"Gateroom Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Gateroom Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Gateroom Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Gateroom Forcefield",ColRed," Deactivated")
             end
         end
         if(OLS[2] == "gateff" or OLS[2] == "gff") then
             wire.ports.GateFF = wire.self().GateFF == 0 and 1 or 0
 
             if(wire.self().GateFF == 0) then
-                aiSay(ents.self():owner(),"Gate Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Gate Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Gate Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Gate Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1014,18 +1016,18 @@ chat.listen(function(message, player)
             wire.ports.TransDoor = wire.self().TransDoor == 0 and 1 or 0
 
             if(wire.self().TransDoor == 0) then
-                aiSay(ents.self():owner(),"Transporter Door",ColGrn," Opened")
+                aiSay(sfowner,"Transporter Door",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Transporter Door",ColRed," Closed")
+                aiSay(sfowner,"Transporter Door",ColRed," Closed")
             end
         end
         if(OLS[2] == "transff") then
             wire.ports.TransFF = wire.self().TransFF == 0 and 1 or 0
 
             if(wire.self().TransFF == 0) then
-                aiSay(ents.self():owner(),"Transporter Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Transporter Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Transporter Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Transporter Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1033,18 +1035,18 @@ chat.listen(function(message, player)
             wire.ports.EngDoor = wire.self().EngDoor == 0 and 1 or 0
 
             if(wire.self().EngDoor == 0) then
-                aiSay(ents.self():owner(),"Engineering Door",ColGrn," Opened")
+                aiSay(sfowner,"Engineering Door",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Engineering Door",ColRed," Closed")
+                aiSay(sfowner,"Engineering Door",ColRed," Closed")
             end
         end
         if(OLS[2] == "engff" or OLS[2] == "engineeringff") then
             wire.ports.EngFF = wire.self().EngFF == 0 and 1 or 0
 
             if(wire.ports.EngFF == 0) then
-                aiSay(ents.self():owner(),"Engineering Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Engineering Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Engineering Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Engineering Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1052,9 +1054,9 @@ chat.listen(function(message, player)
             wire.ports.CoreFF = wire.self().CoreFF == 0 and 1 or 0
 
             if(wire.self().CoreFF == 0) then
-                aiSay(ents.self():owner(),"Core Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Core Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Core Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Core Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1062,9 +1064,9 @@ chat.listen(function(message, player)
             wire.ports.HangarDoorLeft = wire.self().HangarDoorLeft == 0 and 1 or 0
 
             if(wire.self().HangarDoorLeft == 0) then
-                aiSay(ents.self():owner(),"Left Hangar",ColGrn," Opened")
+                aiSay(sfowner,"Left Hangar",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Left Hangar",ColRed," Closed")
+                aiSay(sfowner,"Left Hangar",ColRed," Closed")
             end
         end
 
@@ -1072,9 +1074,9 @@ chat.listen(function(message, player)
             wire.ports.HangarDoorRight = wire.self().HangarDoorRight == 0 and 1 or 0
 
             if(wire.self().HangarDoorRight == 0) then
-                aiSay(ents.self():owner(),"Right Hangar",ColGrn," Opened")
+                aiSay(sfowner,"Right Hangar",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Right Hangar",ColRed," Closed")
+                aiSay(sfowner,"Right Hangar",ColRed," Closed")
             end
         end
 
@@ -1082,9 +1084,9 @@ chat.listen(function(message, player)
             wire.ports.HangarDoor = wire.self().HangarDoor == 0 and 1 or 0
 
             if(wire.self().HangarDoor == 0) then
-                aiSay(ents.self():owner(),"Hangar",ColGrn," Opened")
+                aiSay(sfowner,"Hangar",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Hangar",ColRed," Closed")
+                aiSay(sfowner,"Hangar",ColRed," Closed")
             end
         end
 
@@ -1092,9 +1094,9 @@ chat.listen(function(message, player)
             wire.ports.HangarAccessDoor = wire.self().HangarAccessDoor == 0 and 1 or 0
 
             if(wire.self().HangarAccessDoor == 0) then
-                aiSay(ents.self():owner(),"Hangar Access",ColGrn," Opened")
+                aiSay(sfowner,"Hangar Access",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Hangar Access",ColRed," Closed")
+                aiSay(sfowner,"Hangar Access",ColRed," Closed")
             end
         end
 
@@ -1102,9 +1104,9 @@ chat.listen(function(message, player)
             wire.ports.HangarFF = wire.self().HangarFF == 0 and 1 or 0
 
             if(wire.self().HangarFF == 0) then
-                aiSay(ents.self():owner(),"Hangar Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Hangar Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Hangar Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Hangar Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1112,9 +1114,9 @@ chat.listen(function(message, player)
             wire.ports.LeftHangarFF = wire.self().LeftHangarFF == 0 and 1 or 0
 
             if(wire.self().LeftHangarFF == 0) then
-                aiSay(ents.self():owner(),"Left Hangar Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Left Hangar Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Left Hangar Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Left Hangar Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1122,9 +1124,9 @@ chat.listen(function(message, player)
             wire.ports.RightHangarFF = wire.self().RightHangarFF == 0 and 1 or 0
 
             if(wire.self().RightHangarFF == 0) then
-                aiSay(ents.self():owner(),"Right Hangar Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Right Hangar Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Right Hangar Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Right Hangar Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1132,9 +1134,9 @@ chat.listen(function(message, player)
             wire.ports.HangarAFF = wire.self().HangarAFF == 0 and 1 or 0
 
             if(wire.self().HangarAFF == 0) then
-                aiSay(ents.self():owner(),"Hangar Access Forcefield",ColGrn," Activated")
+                aiSay(sfowner,"Hangar Access Forcefield",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Hangar Access Forcefield",ColRed," Deactivated")
+                aiSay(sfowner,"Hangar Access Forcefield",ColRed," Deactivated")
             end
         end
 
@@ -1142,9 +1144,9 @@ chat.listen(function(message, player)
             wire.ports.Shutters = wire.self().Shutters == 0 and 1 or 0
 
             if(wire.self().Shutters == 0) then
-                aiSay(ents.self():owner(),"Shutters",ColGrn," Opened")
+                aiSay(sfowner,"Shutters",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Shutters",ColRed," Closed")
+                aiSay(sfowner,"Shutters",ColRed," Closed")
             end
         end
 
@@ -1152,9 +1154,9 @@ chat.listen(function(message, player)
             wire.ports.BlastDoors = wire.self().BlastDoors == 0 and 1 or 0
 
             if(wire.self().BlastDoors == 0) then
-                aiSay(ents.self():owner(),"Blast Doors",ColGrn," Opened")
+                aiSay(sfowner,"Blast Doors",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Blast Doors",ColRed," Closed")
+                aiSay(sfowner,"Blast Doors",ColRed," Closed")
             end
         end
 
@@ -1162,9 +1164,9 @@ chat.listen(function(message, player)
             wire.ports.OtherDoors = wire.self().OtherDoors == 0 and 1 or 0
 
             if(wire.self().OtherDoors == 0) then
-                aiSay(ents.self():owner(),"Other Doors",ColGrn," Opened")
+                aiSay(sfowner,"Other Doors",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"Other Doors",ColRed," Closed")
+                aiSay(sfowner,"Other Doors",ColRed," Closed")
             end
         end
 
@@ -1172,9 +1174,9 @@ chat.listen(function(message, player)
             wire.ports.OtherFFs = wire.self().OtherFFs == 0 and 1 or 0
 
             if(wire.self().OtherFFs == 0) then
-                aiSay(ents.self():owner(),"Other Forcefields",ColGrn," Activated")
+                aiSay(sfowner,"Other Forcefields",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"Other Forcefields",ColRed," Deactivated")
+                aiSay(sfowner,"Other Forcefields",ColRed," Deactivated")
             end
         end
 
@@ -1184,9 +1186,9 @@ chat.listen(function(message, player)
             allDoors(ADoors)
 
             if(ADoors == 1) then
-                aiSay(ents.self():owner(),"All Doors",ColGrn," Opened")
+                aiSay(sfowner,"All Doors",ColGrn," Opened")
             else
-                aiSay(ents.self():owner(),"All Doors",ColRed," Closed")
+                aiSay(sfowner,"All Doors",ColRed," Closed")
             end
         end
 
@@ -1196,9 +1198,9 @@ chat.listen(function(message, player)
             allForceFields(AllFFs)
 
             if(AllFFs == 1) then
-                aiSay(ents.self():owner(),"All Forcefields",ColGrn," Activated")
+                aiSay(sfowner,"All Forcefields",ColGrn," Activated")
             else
-                aiSay(ents.self():owner(),"All Forcefields",ColRed," Deactivated")
+                aiSay(sfowner,"All Forcefields",ColRed," Deactivated")
             end
         end
 
@@ -1218,26 +1220,26 @@ chat.listen(function(message, player)
         end
 
         if(OLS[2] == "o'neill") then
-            --aiSay(ents.self():owner(),"The O'Neill function has not been created yet.")
+            --aiSay(sfowner,"The O'Neill function has not been created yet.")
             ONeill()
         end
 
         if(OLS[2] == "reset") then
-            aiSay(ents.self():owner(),"Starfall does not have or require a Reset function.")
+            aiSay(sfowner,"Starfall does not have or require a Reset function.")
         end
 
         if(OLS[2] == "help") then
-            aiSay(ents.self():owner(),AIName," Help can be found at:")
+            aiSay(sfowner,AIName," Help can be found at:")
             printColor(ColOng,"https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk")
         end
 
         if(OLS[2] == "activate" or OLS[2] == "deactivate" or OLS[2] == "enable" or OLS[2] == "disable" or OLS[2] == "work" or OLS[2] == "workn't") then
-            local AimE = ents.self():owner():aimEntity()
+            local AimE = sfowner:aimEntity()
 
             if(IsValid(AimE)) then
                 if(AimE:class() == "st_forcefield") then
-                    if(AimE:owner() ~= ents.self():owner()) then
-                        aiSay(ents.self():owner(),"You do not own that forcefield!")
+                    if(AimE:owner() ~= sfowner) then
+                        aiSay(sfowner,"You do not own that forcefield!")
                         -- Because getParent() on a forcefield you dont own returns nil, even with toolgun access >:(
                     else
                         AimEW = AimE:getParent():getWirelink()
@@ -1251,59 +1253,59 @@ chat.listen(function(message, player)
                         if(AimEW:inputType("Activate") ~= false) then
                             if(OLS[2] == "activate" or OLS[2] == "work") then
                                 if(AimEW["Activate"] == 1) then
-                                    aiSay(ents.self():owner(),"That ",ColGrn,AimName,ColOng," is already activated!")
+                                    aiSay(sfowner,"That ",ColGrn,AimName,ColOng," is already activated!")
                                 else
                                     AimEW["Activate"] = 1
 
-                                    aiSay(ents.self():owner(),ColGrn,"Activating",ColOng," that ",ColGrn,AimName)
+                                    aiSay(sfowner,ColGrn,"Activating",ColOng," that ",ColGrn,AimName)
                                 end
                             end
 
                             if(OLS[2] == "deactivate" or OLS[2] == "workn't") then
                                 if(AimEW["Activate"] == 0) then
-                                    aiSay(ents.self():owner(),"That ",ColGrn,AimName,ColOng," is already deactivated!")
+                                    aiSay(sfowner,"That ",ColGrn,AimName,ColOng," is already deactivated!")
                                 else
                                     AimEW["Activate"] = 0
 
-                                    aiSay(ents.self():owner(),ColGrn,"Deactivating",ColOng," that ",ColGrn,AimName)
+                                    aiSay(sfowner,ColGrn,"Deactivating",ColOng," that ",ColGrn,AimName)
                                 end
                             end
 
                             if(OLS[2] == "enable") then
                                 if(AimEW["Activate"] == 1) then
-                                    aiSay(ents.self():owner(),"That ",ColGrn,AimName,ColOng," is already activated!")
+                                    aiSay(sfowner,"That ",ColGrn,AimName,ColOng," is already activated!")
                                 else
                                     AimEW["Activate"] = 1
 
-                                    aiSay(ents.self():owner(),ColRed,"Deactivating",ColOng," that ",ColGrn,AimName,ColOng," for 5 seconds.")
+                                    aiSay(sfowner,ColRed,"Deactivating",ColOng," that ",ColGrn,AimName,ColOng," for 5 seconds.")
                                     disableEnt(0)
                                 end
                             end
 
                             if(OLS[2] == "disable") then
                                 if(AimEW["Activate"] == 0) then
-                                    aiSay(ents.self():owner(),"That ",ColGrn,AimName,ColOng," is already deactivated!")
+                                    aiSay(sfowner,"That ",ColGrn,AimName,ColOng," is already deactivated!")
                                 else
                                     AimEW["Activate"] = 0
 
-                                    aiSay(ents.self():owner(),ColRed,"Deactivating",ColOng," that ",ColGrn,AimName,ColOng," for 5 seconds.")
+                                    aiSay(sfowner,ColRed,"Deactivating",ColOng," that ",ColGrn,AimName,ColOng," for 5 seconds.")
                                     disableEnt(1)
                                 end
                             end
                         else
-                            aiSay(ents.self():owner(),"That ",ColRed,AimName,ColOng," does not have a ",ColGrn,"Activate",ColOng," input.")
+                            aiSay(sfowner,"That ",ColRed,AimName,ColOng," does not have a ",ColGrn,"Activate",ColOng," input.")
                         end
                     else
-                        aiSay(ents.self():owner(),"You do not have Toolgun Permissions for that ",ColRed,AimE:class())
+                        aiSay(sfowner,"You do not have Toolgun Permissions for that ",ColRed,AimE:class())
                     end
                 end
             else
-                aiSay(ents.self():owner(),"You're not aiming at anything, or you don't have toolgun permission for that.")
+                aiSay(sfowner,"You're not aiming at anything, or you don't have toolgun permission for that.")
             end
         end
 
         if(OLS[2] == "open" or OLS[2] == "close" or OLS[2] == "lock" or OLS[2] == "unlock") then
-            local AimE = ents.self():owner():aimEntity()
+            local AimE = sfowner:aimEntity()
 
             if(IsValid(AimE)) then
                 if(propprotection.isAllowedForEntity(AimE,propprotection.ACCESS_TOOLGUN) == true) then
@@ -1359,23 +1361,23 @@ chat.listen(function(message, player)
                     end
 
                     if(DoorFound == 0) then
-                        aiSay(ents.self():owner(),"That ",ColRed,AimE:getPrintName(),ColOng," is not a Door or is not supported.")
+                        aiSay(sfowner,"That ",ColRed,AimE:getPrintName(),ColOng," is not a Door or is not supported.")
                     end
                 else
-                    aiSay(ents.self():owner(),"You do not have Toolgun Permissions for that ",ColRed,AimE:class())
+                    aiSay(sfowner,"You do not have Toolgun Permissions for that ",ColRed,AimE:class())
                 end
             else
-                aiSay(ents.self():owner(),"You're not looking at anything")
+                aiSay(sfowner,"You're not looking at anything")
             end
 
             if(OLS[2] == "open") then
                 if(DoorFound == 1) then
                     if(OLS[3] ~= nil) then
                         if(AimE:class() == "sbep_base_door" or AimE:class() == "sbep_base_door_controller") then
-                            aiSay(ents.self():owner(),"Opening door ",ColGrn,OLS[3],ColOng," on that SBEP door")
+                            aiSay(sfowner,"Opening door ",ColGrn,OLS[3],ColOng," on that SBEP door")
                         end
                     else
-                        aiSay(ents.self():owner(),"Opening that ",ColGrn,AimName)
+                        aiSay(sfowner,"Opening that ",ColGrn,AimName)
                     end
 
                     DoorFound = 0
@@ -1388,10 +1390,10 @@ chat.listen(function(message, player)
                 if(DoorFound == 1) then
                     if(OLS[3] ~= nil) then
                         if(AimE:class() == "sbep_base_door" or AimE:class() == "sbep_base_door_controller") then
-                            aiSay(ents.self():owner(),"Closing door ",ColGrn,OLS[3],ColOng," on that SBEP door")
+                            aiSay(sfowner,"Closing door ",ColGrn,OLS[3],ColOng," on that SBEP door")
                         end
                     else
-                        aiSay(ents.self():owner(),"Closing that ",ColGrn,AimName)
+                        aiSay(sfowner,"Closing that ",ColGrn,AimName)
                     end
 
                     DoorFound = 0
@@ -1404,10 +1406,10 @@ chat.listen(function(message, player)
                 if(DoorFound == 1) then
                     if(OLS[3] ~= nil) then
                         if(AimE:class() == "sbep_base_door" or AimE:class() == "sbep_base_door_controller") then
-                            aiSay(ents.self():owner(),"Locking door ",ColGrn,OLS[3],ColOng," on that SBEP door")
+                            aiSay(sfowner,"Locking door ",ColGrn,OLS[3],ColOng," on that SBEP door")
                         end
                     else
-                        aiSay(ents.self():owner(),"Locking that ",ColGrn,AimName)
+                        aiSay(sfowner,"Locking that ",ColGrn,AimName)
                     end
 
                     DoorFound = 0
@@ -1419,10 +1421,10 @@ chat.listen(function(message, player)
                 if(DoorFound == 1) then
                     if(OLS[3] ~= nil) then
                         if(OLS[3] ~= nil and AimE:class() == "sbep_base_door" or AimE:class() == "sbep_base_door_controller") then
-                            aiSay(ents.self():owner(),"Unlocking door ",ColGrn,OLS[3],ColOng," on that SBEP door")
+                            aiSay(sfowner,"Unlocking door ",ColGrn,OLS[3],ColOng," on that SBEP door")
                         end
                     else
-                        aiSay(ents.self():owner(),"Unlocking that ",ColGrn,AimName)
+                        aiSay(sfowner,"Unlocking that ",ColGrn,AimName)
                     end
 
                     DoorFound = 0
@@ -1436,31 +1438,31 @@ chat.listen(function(message, player)
         --------------------
         if(OLS[2] == "closeg" or OLS[2] == "closegate") then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Stargate not linked!")
+                aiSay(sfowner,ColRed,"Stargate not linked!")
             else
                 stargate.close(wire.ports.Stargate:entity())
 
-                aiSay(ents.self():owner(),"Closing Stargate")
+                aiSay(sfowner,"Closing Stargate")
             end
         end
 
         if(OLS[2] == "dial") then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Stargate not linked!")
+                aiSay(sfowner,ColRed,"Stargate not linked!")
             else
                 if(OLS[4] == nil) then
-                    aiSay(ents.self():owner(),"You need to put in an address to dial!")
+                    aiSay(sfowner,"You need to put in an address to dial!")
                 elseif(#OLS[4] > 7 and stargate.localgate(wire.ports.Stargate:entity())) then
-                    aiSay(ents.self():owner(),"Cannot dial outside of the local group")
+                    aiSay(sfowner,"Cannot dial outside of the local group")
                 else
                     if(OLS[3] == nil) then
-                        aiSay(ents.self():owner(),"Dial mode unset, defaulting to Fast Dial")
+                        aiSay(sfowner,"Dial mode unset, defaulting to Fast Dial")
                         DialModeS = "fast"
                         DialMode = 0
                     end
 
                     if(#OLS[3] > 1) then
-                        aiSay(ents.self():owner(),"Dial mode cannot be a string")
+                        aiSay(sfowner,"Dial mode cannot be a string")
                     else
                         if(OLS[3] == "0") then
                             DialModeS = "Slow"
@@ -1474,11 +1476,11 @@ chat.listen(function(message, player)
                         elseif(DialMode == nil) then
                             DialModeS = "Fast"
                             DialMode = 1
-                            aiSay(ents.self():owner(),"Invalid Dialmode. Setting dialmode to Fast Dial")
+                            aiSay(sfowner,"Invalid Dialmode. Setting dialmode to Fast Dial")
                         else
                             DialModeS = "Fast"
                             DialMode = 1
-                            aiSay(ents.self():owner(),"Invalid Dialmode. Setting dialmode to Fast Dial")
+                            aiSay(sfowner,"Invalid Dialmode. Setting dialmode to Fast Dial")
                         end
 
                         wire.ports.Stargate["Dial Mode"] = DialMode
@@ -1494,7 +1496,7 @@ chat.listen(function(message, player)
                             wire.ports.Stargate["Start String Dial"] = 0
                         end)
 
-                        aiSay(ents.self():owner(),"Dialing the gate to: ",ColGrn,OLS[4],ColOng," with dialmode ",ColGrn,DialModeS)
+                        aiSay(sfowner,"Dialing the gate to: ",ColGrn,OLS[4],ColOng," with dialmode ",ColGrn,DialModeS)
 
                     end
                 end
@@ -1503,13 +1505,13 @@ chat.listen(function(message, player)
 
         if(OLS[2] == "gsend") then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Stargate not linked!")
+                aiSay(sfowner,ColRed,"Stargate not linked!")
             else
                 if(stargate.open(wire.ports.Stargate:entity()) == 0) then
-                    aiSay(ents.self():owner(),"Gate isn't open. Cannot send a message.")
+                    aiSay(sfowner,"Gate isn't open. Cannot send a message.")
                 else
                     stargate.transmit(wire.ports.Stargate:entity(),message:sub(7+#Prefix))
-                    aiSay(ents.self():owner(),"Message sent through gate: ",ColGrn,message:sub(7+#Prefix))
+                    aiSay(sfowner,"Message sent through gate: ",ColGrn,message:sub(7+#Prefix))
                 end
             end
         end
@@ -1517,11 +1519,11 @@ chat.listen(function(message, player)
         ---Rings---
         if(OLS[2] == "rdial") then
             if(IsValid(wire.ports.Rings) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Rings not linked!")
+                aiSay(sfowner,ColRed,"Rings not linked!")
             else
                 if(OLS[3] == nil) then
                     if(wire.ports.Rings["Usable"] == 0) then
-                        aiSay(ents.self():owner(),"Rings ",ColRed,"Disabled",ColOng," cannot dial.")
+                        aiSay(sfowner,"Rings ",ColRed,"Disabled",ColOng," cannot dial.")
                     else
                         wire.ports.Rings["Dial Closest"] = 1
 
@@ -1529,7 +1531,7 @@ chat.listen(function(message, player)
                             wire.ports.Rings["Dial Closest"] = 0
                         end)
 
-                        aiSay(ents.self():owner(),"Dialing closest rings.")
+                        aiSay(sfowner,"Dialing closest rings.")
                     end
                 else
                     wire.ports.Rings["Dial Address"] = OLS[3]
@@ -1538,26 +1540,26 @@ chat.listen(function(message, player)
                         wire.ports.Rings["Dial Address"] = ""
                     end)
 
-                    aiSay(ents.self():owner(),"Dialing rings to: ",ColGrn,OLS[3])
+                    aiSay(sfowner,"Dialing rings to: ",ColGrn,OLS[3])
                 end
             end
         end
 
         if(OLS[2] == "ron") then
             if(IsValid(wire.ports.Rings) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Rings not linked!")
+                aiSay(sfowner,ColRed,"Rings not linked!")
             else
                 wire.ports.Rings["UnUsable"] = 0
-                aiSay(ents.self():owner(),"Rings Enabled")
+                aiSay(sfowner,"Rings Enabled")
             end
         end
 
         if(OLS[2] == "roff") then
             if(IsValid(wire.ports.Rings) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Rings not linked!")
+                aiSay(sfowner,ColRed,"Rings not linked!")
             else
                 wire.ports.Rings["UnUsable"] = 1
-                aiSay(ents.self():owner(),"Rings Disabled")
+                aiSay(sfowner,"Rings Disabled")
             end
         end
 
@@ -1566,9 +1568,9 @@ chat.listen(function(message, player)
             wire.ports.Jam = wire.self().Jam == 0 and 1 or 0
 
             if(wire.self().Jam == 0) then
-                aiSay(ents.self():owner(),"Jamming Device ",ColGrn,"Enabled")
+                aiSay(sfowner,"Jamming Device ",ColGrn,"Enabled")
             else
-                aiSay(ents.self():owner(),"Jamming Device ",ColRed,"Disabled")
+                aiSay(sfowner,"Jamming Device ",ColRed,"Disabled")
             end
         end
 
@@ -1578,63 +1580,63 @@ chat.listen(function(message, player)
         --------------------
         if(OLS[2] == "wstrength") then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
-                aiSay(ents.self():owner(),"Invalid number specified. Current weapon strength is: ",ColGrn,wire.self().WepStrength)
+                aiSay(sfowner,"Invalid number specified. Current weapon strength is: ",ColGrn,wire.self().WepStrength)
             elseif(tonumber(OLS[3]) > 10) then
                 wire.ports.WepStrength = 10
-                aiSay(ents.self():owner(),"Weapon Strength cannot go above ",ColGrn,"10",ColOng," Setting Weapon Strength to max")
+                aiSay(sfowner,"Weapon Strength cannot go above ",ColGrn,"10",ColOng," Setting Weapon Strength to max")
             else
                 wire.ports.WepStrength = tonumber(OLS[3])
-                aiSay(ents.self():owner(),"Weapon Strength set to: ",ColGrn,OLS[3])
+                aiSay(sfowner,"Weapon Strength set to: ",ColGrn,OLS[3])
             end
         end
 
         if(OLS[2] == "wrate") then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
-                aiSay(ents.self():owner(),"Invalid number specified. Current weapon fire rate is: ",ColGrn,wire.self().WepRate)
+                aiSay(sfowner,"Invalid number specified. Current weapon fire rate is: ",ColGrn,wire.self().WepRate)
             elseif(tonumber(OLS[3]) > 10) then
                 wire.ports.WepRate = 10
-                aiSay(ents.self():owner(),"Weapon Fire Rate cannot go above ",ColGrn,"10",ColOng," Setting Weapon Fire Rate to max")
+                aiSay(sfowner,"Weapon Fire Rate cannot go above ",ColGrn,"10",ColOng," Setting Weapon Fire Rate to max")
             else
                 wire.ports.WepRate = tonumber(OLS[3])
-                aiSay(ents.self():owner(),"Weapon Fire Rate set to: ",ColGrn,OLS[3])
+                aiSay(sfowner,"Weapon Fire Rate set to: ",ColGrn,OLS[3])
             end
         end
 
         if(OLS[2] == "btype") then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
-                aiSay(ents.self():owner(),"You must enter a Beam Weapon Type")
+                aiSay(sfowner,"You must enter a Beam Weapon Type")
             else
                 if(BeamType[OLS[3]] ~= nil) then
                     wire.ports.BeamWepType = BeamType[OLS[3]]
-                    aiSay(ents.self():owner(),"Beam Weapon Type changed to: ",ColGrn,OLS[3])
+                    aiSay(sfowner,"Beam Weapon Type changed to: ",ColGrn,OLS[3])
                 else
-                    aiSay(ents.self():owner(),"Unrecognized Beam Weapon Type: ",ColRed,OLS[3])
+                    aiSay(sfowner,"Unrecognized Beam Weapon Type: ",ColRed,OLS[3])
                 end
             end
         end
 
         if(OLS[2] == "ttype") then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
-                aiSay(ents.self():owner(),"You must enter a Torpedo Weapon Type")
+                aiSay(sfowner,"You must enter a Torpedo Weapon Type")
             else
                 if(TorpType[OLS[3]] ~= nil) then
                     wire.ports.TorpWepType = TorpType[OLS[3]]
-                    aiSay(ents.self():owner(),"Torpedo Weapon Type changed to: ",ColGrn,OLS[3])
+                    aiSay(sfowner,"Torpedo Weapon Type changed to: ",ColGrn,OLS[3])
                 else
-                    aiSay(ents.self():owner(),"Unrecognized Torpedo Weapon Type: ",ColRed,OLS[3])
+                    aiSay(sfowner,"Unrecognized Torpedo Weapon Type: ",ColRed,OLS[3])
                 end
             end
         end
 
         if(OLS[2] == "turtype") then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
-                aiSay(ents.self():owner(),"You must enter a Turret Weapon Type")
+                aiSay(sfowner,"You must enter a Turret Weapon Type")
             else
                 if(TurretType[OLS[3]] ~= nil) then
                     wire.ports.TurretWepType = TurretType[OLS[3]]
-                    aiSay(ents.self():owner(),"Turret Weapon Type changed to: ",ColGrn,OLS[3])
+                    aiSay(sfowner,"Turret Weapon Type changed to: ",ColGrn,OLS[3])
                 else
-                    aiSay(ents.self():owner(),"Unrecognized Turret Weapon Type: ",ColRed,OLS[3])
+                    aiSay(sfowner,"Unrecognized Turret Weapon Type: ",ColRed,OLS[3])
                 end
             end
         end
@@ -1643,49 +1645,49 @@ chat.listen(function(message, player)
             wire.ports.Fire = wire.self().Fire == 0 and 1 or 0
 
             if(wire.self().Fire == 0) then
-                aiSay(ents.self():owner(),"Weapons ",ColGrn,"Online")
+                aiSay(sfowner,"Weapons ",ColGrn,"Online")
             else
-                aiSay(ents.self():owner(),"Weapons ",ColRed,"Offline")
+                aiSay(sfowner,"Weapons ",ColRed,"Offline")
             end
         end
 
         if(OLS[2] == "emitters") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(wire.ports.ShipCore["Emitters Enabled"] == 0) then
                     wire.ports.ShipCore["Enable Emitters"] = 1
-                    aiSay(ents.self():owner(),"Pulsar Emitters ",ColGrn,"Online")
+                    aiSay(sfowner,"Pulsar Emitters ",ColGrn,"Online")
                 end
 
                 if(wire.ports.ShipCore["Emitters Enabled"] == 1) then
                     wire.ports.ShipCore["Enable Emitters"] = 0
-                    aiSay(ents.self():owner(),"Pulsar Emitters ",ColRed,"Offline")
+                    aiSay(sfowner,"Pulsar Emitters ",ColRed,"Offline")
                 end
             end
         end
 
         if(OLS[2] == "taim") then
-            AimEF = ents.self():owner():aimEntity()
+            AimEF = sfowner:aimEntity()
 
             if(IsValid(AimEF)) then
                 if(propprotection.isAllowedForEntity(AimEF,propprotection.ACCESS_TOOLGUN) == true) then
-                    AimEFW = ents.self():owner():aimEntity():getWirelink()
+                    AimEFW = sfowner:aimEntity():getWirelink()
 
                     if(IsValid(AimEFW)) then
                         if(AimEFW:inputType("Fire") ~= nil) then
-                            aiSay(ents.self():owner(),"Selecting that ",ColGrn,AimEF:getPrintName(),ColOng," as the testfire weapon")
+                            aiSay(sfowner,"Selecting that ",ColGrn,AimEF:getPrintName(),ColOng," as the testfire weapon")
                         else
-                            aiSay(ents.self():owner(),"That ",ColRed,AimEF:getPrintName(),ColOng," does not have a Fire input")
+                            aiSay(sfowner,"That ",ColRed,AimEF:getPrintName(),ColOng," does not have a Fire input")
                         end
                     else
-                        aiSay(ents.self():owner(),"That ",ColRed,AimEF:class(),ColOng," does not have a Fire input")
+                        aiSay(sfowner,"That ",ColRed,AimEF:class(),ColOng," does not have a Fire input")
                     end
                 else
-                    aiSay(ents.self():owner(),"You do not have Toolgun Permissions for that ",ColRed,AimEF:class())
+                    aiSay(sfowner,"You do not have Toolgun Permissions for that ",ColRed,AimEF:class())
                 end
             else
-                aiSay(ents.self():owner(),"You're not looking at anything")
+                aiSay(sfowner,"You're not looking at anything")
             end
         end
 
@@ -1694,25 +1696,25 @@ chat.listen(function(message, player)
                 if(propprotection.isAllowedForEntity(AimEF,propprotection.ACCESS_TOOLGUN) == true) then
                     AimEFW["Fire"] = 1
 
-                    aiSay(ents.self():owner(),"Testfiring the ",ColGrn,AimEF:getPrintName())
+                    aiSay(sfowner,"Testfiring the ",ColGrn,AimEF:getPrintName())
 
                     timer.simple(2.5,function()
                         AimEFW["Fire"] = 0
                     end)
                 else
-                    aiSay(ents.self():owner(),"You do not have Toolgun Permissions for that ",ColRed,AimEF:class())
+                    aiSay(sfowner,"You do not have Toolgun Permissions for that ",ColRed,AimEF:class())
                 end
             else
-                aiSay(ents.self():owner(),"You have not selected anything to fire")
+                aiSay(sfowner,"You have not selected anything to fire")
             end
         end
 
         if(OLS[2] == "ctarget") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(OLS[3] == nil) then
-                    aiSay(ents.self():owner(),ColRed,"You must enter a player's name!")
+                    aiSay(sfowner,ColRed,"You must enter a player's name!")
                 else
                     local Ply = find.playerByName(OLS[3])
 
@@ -1721,9 +1723,9 @@ chat.listen(function(message, player)
 
                         wire.ports.ShipCore:entity():addTarget(Ply:steamID())
 
-                        aiSay(ents.self():owner(),"Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
+                        aiSay(sfowner,"Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
                     else
-                        aiSay(ents.self():owner(),ColRed,OLS[3]," Is not a player.")
+                        aiSay(sfowner,ColRed,OLS[3]," Is not a player.")
                     end
                 end
             end
@@ -1731,10 +1733,10 @@ chat.listen(function(message, player)
 
         if(OLS[2] == "cuntarget") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(OLS[3] == nil) then
-                    aiSay(ents.self():owner(),ColRed,"You must enter a player's name!")
+                    aiSay(sfowner,ColRed,"You must enter a player's name!")
                 else
                     local Ply = find.playerByName(OLS[3])
 
@@ -1743,9 +1745,9 @@ chat.listen(function(message, player)
 
                         wire.ports.ShipCore:entity():removeTarget(Ply:steamID())
 
-                        aiSay(ents.self():owner(),"Un-Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
+                        aiSay(sfowner,"Un-Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
                     else
-                        aiSay(ents.self():owner(),ColRed,OLS[3]," Is not a player.")
+                        aiSay(sfowner,ColRed,OLS[3]," Is not a player.")
                     end
                 end
             end
@@ -1757,21 +1759,21 @@ chat.listen(function(message, player)
     ----------
     if(OLS[1] == WarpPrefix) then
         if(IsValid(wire.ports.Drive) ~= true) then
-            aiSay(ents.self():owner(),ColRed,"Warp Drive not linked!")
+            aiSay(sfowner,ColRed,"Warp Drive not linked!")
         else
             WarpF = 0
 
             if(OLS[2] == "help" or OLS[2] == "loc" or OLS[2] == "locations") then
                 WarpF = 1
 
-                aiSay(ents.self():owner(),"Warp Locations:")
-                --aiSay(ents.self():owner(),"Milk, Earth, Moon, Pegasus, Shakur, Shakbase, Universe, Unicorner, Hiigara, Hiibase, Desert, Lava, Members, Build, Build2, Build3, Build4")
-                aiSay(ents.self():owner(),table.concatKeys(WarpLoc,", "))
+                aiSay(sfowner,"Warp Locations:")
+                --aiSay(sfowner,"Milk, Earth, Moon, Pegasus, Shakur, Shakbase, Universe, Unicorner, Hiigara, Hiibase, Desert, Lava, Members, Build, Build2, Build3, Build4")
+                aiSay(sfowner,table.concatKeys(WarpLoc,", "))
             end
 
             if(OLS[2] == "vec" or OLS[2] == "vector") then
                 if(OLS[3] == nil) then
-                    aiSay(ents.self():owner(),"Cannot warp the ship nowhere.")
+                    aiSay(sfowner,"Cannot warp the ship nowhere.")
                 else
                     WarpF = 1
 
@@ -1787,14 +1789,14 @@ chat.listen(function(message, player)
 
                         warp(Dest,AngleOffset)
 
-                        aiSay(ents.self():owner(),"Warping to vector: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
+                        aiSay(sfowner,"Warping to vector: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
                     end
                 end
             end
 
             if(OLS[2] == "ang" or OLS[2] == "angle") then
                 if(OLS[3] == nil) then
-                    aiSay(ents.self():owner(),"Cannot rotate the ship to nothing")
+                    aiSay(sfowner,"Cannot rotate the ship to nothing")
                 else
                     if(OLS[3] == "reset") then
                         WarpF = 1
@@ -1802,7 +1804,7 @@ chat.listen(function(message, player)
                         local AngOffset = wire.ports.Drive:entity():toLocal(Angle(0,0,0)) + DriveOffset
                         local Dest = wire.ports.Drive:entity():pos()
 
-                        aiSay(ents.self():owner(),"Resetting ship angles")
+                        aiSay(sfowner,"Resetting ship angles")
 
                         warp(Dest,AngOffset)
                     else
@@ -1820,7 +1822,7 @@ chat.listen(function(message, player)
 
                             warp(Dest,AngOffset)
 
-                            aiSay(ents.self():owner(),"Rotating to Angle Offset: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
+                            aiSay(sfowner,"Rotating to Angle Offset: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
                         end
                     end
                 end
@@ -1830,7 +1832,7 @@ chat.listen(function(message, player)
                 if(OLS[3] == nil  and OLS[2] ~= "back") then
                     LWarp = 1
 
-                    aiSay(ents.self():owner(),"Cannot warp nowhere")
+                    aiSay(sfowner,"Cannot warp nowhere")
 
                     timer.simple(1,function()
                         LWarp = 0
@@ -1841,7 +1843,7 @@ chat.listen(function(message, player)
                     if(OLS[2] == "forward" and LWarp == 0) then
                         WarpF = 1
 
-                        aiSay(ents.self():owner(),"Warping Forward by ",ColGrn,tonumber(OLS[3]))
+                        aiSay(sfowner,"Warping Forward by ",ColGrn,tonumber(OLS[3]))
 
                         Dest = wire.ports.Drive:entity():pos() + Vector(tonumber(OLS[3]),0,0)
                     end
@@ -1850,11 +1852,11 @@ chat.listen(function(message, player)
                         WarpF = 1
 
                         if(OLS[3] == nil) then
-                            aiSay(ents.self():owner(),"Warping to previous position: [",ColGrn,string.format("%d,%d,%d",PrevPos.x,PrevPos.y,PrevPos.z),ColOng,"]")
+                            aiSay(sfowner,"Warping to previous position: [",ColGrn,string.format("%d,%d,%d",PrevPos.x,PrevPos.y,PrevPos.z),ColOng,"]")
 
                             Dest = PrevPos
                         elseif(tonumber(OLS[3]) ~= nil) then
-                            aiSay(ents.self():owner(),"Warping Back by ",ColGrn,tonumber(OLS[3]))
+                            aiSay(sfowner,"Warping Back by ",ColGrn,tonumber(OLS[3]))
 
                             Dest = wire.ports.Drive:entity():pos() - Vector(tonumber(OLS[3]),0,0)
                         end
@@ -1863,7 +1865,7 @@ chat.listen(function(message, player)
                     if(OLS[2] == "left" and LWarp == 0) then
                         WarpF = 1
 
-                        aiSay(ents.self():owner(),"Warping Left by ",ColGrn,tonumber(OLS[3]))
+                        aiSay(sfowner,"Warping Left by ",ColGrn,tonumber(OLS[3]))
 
                         Dest = wire.ports.Drive:entity():pos() + Vector(0,tonumber(OLS[3]),0)
                     end
@@ -1871,7 +1873,7 @@ chat.listen(function(message, player)
                     if(OLS[2] == "right" and LWarp == 0) then
                         WarpF = 1
 
-                        aiSay(ents.self():owner(),"Warping Right by ",ColGrn,tonumber(OLS[3]))
+                        aiSay(sfowner,"Warping Right by ",ColGrn,tonumber(OLS[3]))
 
                         Dest = wire.ports.Drive:entity():pos() - Vector(0,tonumber(OLS[3]),0)
                     end
@@ -1879,7 +1881,7 @@ chat.listen(function(message, player)
                     if(OLS[2] == "up" and LWarp == 0) then
                         WarpF = 1
 
-                        aiSay(ents.self():owner(),"Warping Up by ",ColGrn,tonumber(OLS[3]))
+                        aiSay(sfowner,"Warping Up by ",ColGrn,tonumber(OLS[3]))
 
                         Dest = wire.ports.Drive:entity():pos() + Vector(0,0,tonumber(OLS[3]))
                     end
@@ -1887,7 +1889,7 @@ chat.listen(function(message, player)
                     if(OLS[2] == "down" and LWarp == 0) then
                         WarpF = 1
 
-                        aiSay(ents.self():owner(),"Warping Down by ",ColGrn,tonumber(OLS[3]))
+                        aiSay(sfowner,"Warping Down by ",ColGrn,tonumber(OLS[3]))
 
                         Dest = wire.ports.Drive:entity():pos() - Vector(0,0,tonumber(OLS[3]))
                     end
@@ -1903,7 +1905,7 @@ chat.listen(function(message, player)
 
             if(WarpF == 0) then
                 if(OLS[2] == nil) then
-                    aiSay(ents.self():owner(),"Cannot warp to noone or nowhere")
+                    aiSay(sfowner,"Cannot warp to noone or nowhere")
                 else
 
                     local Ply = find.playerByName(OLS[2])
@@ -1917,7 +1919,7 @@ chat.listen(function(message, player)
 
                         warp(Dest,AngleOffset)
 
-                        aiSay(ents.self():owner(),"Warping to Player: ",PlyCol,Ply:name())
+                        aiSay(sfowner,"Warping to Player: ",PlyCol,Ply:name())
                     elseif(WarpLoc[OLS[2]] ~= nil) then
                         WarpF = 1
 
@@ -1926,9 +1928,9 @@ chat.listen(function(message, player)
 
                         warp(Dest,AngleOffset)
 
-                        aiSay(ents.self():owner(),"Warping to location: ",ColGrn,OLS[2])
+                        aiSay(sfowner,"Warping to location: ",ColGrn,OLS[2])
                     else
-                        aiSay(ents.self():owner(),"Cannot warp to: ",ColRed,OLS[2])
+                        aiSay(sfowner,"Cannot warp to: ",ColRed,OLS[2])
                     end
                 end
             end
@@ -1938,16 +1940,16 @@ chat.listen(function(message, player)
     if(OLS[1] == Prefix) then
         if(OLS[2] == "wspeed") then
             if(IsValid(wire.ports.Drive) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Warp Drive not linked!")
+                aiSay(sfowner,ColRed,"Warp Drive not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
-                    aiSay(ents.self():owner(),"Invalid number specified. Current Warp Factor is: ",ColGrn,wire.self().WarpFactor)
+                    aiSay(sfowner,"Invalid number specified. Current Warp Factor is: ",ColGrn,wire.self().WarpFactor)
                 elseif(tonumber(OLS[3]) > 10) then
                     wire.ports.WarpFactor = 10
-                    aiSay(ents.self():owner(),"Warp Factor cannot go above ",ColGrn,"9.975",ColOng," Setting Warp Factor to max")
+                    aiSay(sfowner,"Warp Factor cannot go above ",ColGrn,"9.975",ColOng," Setting Warp Factor to max")
                 else
                     wire.ports.WarpFactor = tonumber(OLS[3])
-                    aiSay(ents.self():owner(),"Warp Factor set to: ",ColGrn,OLS[3])
+                    aiSay(sfowner,"Warp Factor set to: ",ColGrn,OLS[3])
                 end
             end
         end
@@ -1957,40 +1959,40 @@ chat.listen(function(message, player)
         ----------------
         if(OLS[2] == "cspeed") then
             if(IsValid(wire.ports.DriveCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Drive Core not linked!")
+                aiSay(sfowner,ColRed,"Drive Core not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
-                    aiSay(ents.self():owner(),"Invalid number specified. Current Drive Core Speed is: ",ColGrn,DCoreSpeed)
+                    aiSay(sfowner,"Invalid number specified. Current Drive Core Speed is: ",ColGrn,DCoreSpeed)
                 elseif(tonumber(OLS[3]) > 2) then
                     DCoreSpeed = 2
                     wire.ports.DriveCore["Speed Multiplier"] = DCoreSpeed
 
-                    aiSay(ents.self():owner(),"Drive Core Speed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Speed to max")
+                    aiSay(sfowner,"Drive Core Speed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Speed to max")
                 else
                     DCoreSpeed = tonumber(OLS[3])
                     wire.ports.DriveCore["Speed Multiplier"] = DCoreSpeed
 
-                    aiSay(ents.self():owner(),"Drive Core Speed set to: ",ColGrn,DCoreSpeed)
+                    aiSay(sfowner,"Drive Core Speed set to: ",ColGrn,DCoreSpeed)
                 end
             end
         end
 
         if(OLS[2] == "ctspeed") then
             if(IsValid(wire.ports.DriveCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Drive Core not linked!")
+                aiSay(sfowner,ColRed,"Drive Core not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
-                    aiSay(ents.self():owner(),"Invalid number specified. Current Drive Core Turnspeed is: ",ColGrn,DCoreTSpeed)
+                    aiSay(sfowner,"Invalid number specified. Current Drive Core Turnspeed is: ",ColGrn,DCoreTSpeed)
                 elseif(tonumber(OLS[3]) > 2) then
                     DCoreTSpeed = 2
                     wire.ports.DriveCore["Turn Rate Multiplier"] = DCoreTSpeed
 
-                    aiSay(ents.self():owner(),"Drive Core Turnspeed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Turnspeed to max")
+                    aiSay(sfowner,"Drive Core Turnspeed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Turnspeed to max")
                 else
                     DCoreTSpeed = tonumber(OLS[3])
                     wire.ports.DriveCore["Turn Rate Multiplier"] = DCoreTSpeed
 
-                    aiSay(ents.self():owner(),"Drive Core Turnspeed set to: ",ColGrn,DCoreTSpeed)
+                    aiSay(sfowner,"Drive Core Turnspeed set to: ",ColGrn,DCoreTSpeed)
                 end
             end
         end
@@ -2000,17 +2002,17 @@ chat.listen(function(message, player)
         ----------------
         if(OLS[2] == "calc") then
             if(tonumber(OLS[3]) == nil or tonumber(OLS[5]) == nil or OLS[3] == nil or OLS[5] == nil) then
-                aiSay(ents.self():owner(),ColRed,"NaN",ColOng," used as input, cannot calculate")
+                aiSay(sfowner,ColRed,"NaN",ColOng," used as input, cannot calculate")
             elseif(OLS[4] == "+") then
-                aiSay(ents.self():owner(),"Calc: ",ColGrn,tonumber(OLS[3]) + tonumber(OLS[5]))
+                aiSay(sfowner,"Calc: ",ColGrn,tonumber(OLS[3]) + tonumber(OLS[5]))
             elseif(OLS[4] == "-") then
-                aiSay(ents.self():owner(),"Calc: ",ColGrn,tonumber(OLS[3]) - tonumber(OLS[5]))
+                aiSay(sfowner,"Calc: ",ColGrn,tonumber(OLS[3]) - tonumber(OLS[5]))
             elseif(OLS[4] == "*" or OLS[4] == "x") then
-                aiSay(ents.self():owner(),"Calc: ",ColGrn,tonumber(OLS[3]) * tonumber(OLS[5]))
+                aiSay(sfowner,"Calc: ",ColGrn,tonumber(OLS[3]) * tonumber(OLS[5]))
             elseif(OLS[4] == "/") then
-                aiSay(ents.self():owner(),"Calc: ",ColGrn,tonumber(OLS[3]) / tonumber(OLS[5]))
+                aiSay(sfowner,"Calc: ",ColGrn,tonumber(OLS[3]) / tonumber(OLS[5]))
             elseif(OLS[4] == "^") then
-                aiSay(ents.self():owner(),"Calc: ",ColGrn,tonumber(OLS[3]) ^ tonumber(OLS[5]))
+                aiSay(sfowner,"Calc: ",ColGrn,tonumber(OLS[3]) ^ tonumber(OLS[5]))
             end
         end
 
@@ -2019,9 +2021,9 @@ chat.listen(function(message, player)
         -------------------
         if(OLS[2] == "distress") then
             if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Ship Core not linked!")
+                aiSay(sfowner,ColRed,"Ship Core not linked!")
             elseif(IsValid(wire.ports.Shield) ~= true) then
-                aiSay(ents.self():owner(),ColRed,"Shield Emitter not linked!")
+                aiSay(sfowner,ColRed,"Shield Emitter not linked!")
             else
                 DistressLoc = getCurrentEnvironment(wire.ports.ShipCore:entity())
 
@@ -2046,7 +2048,7 @@ chat.listen(function(message, player)
             end
         end
     end
-end, ents.self():owner())
+end, sfowner)
 
         -----------------
         ---Transporter---
@@ -2057,28 +2059,28 @@ chat.listen(function(message, player)
 
     if(OLS[1] == TPPrefix) then
         if(IsValid(wire.ports.Transporter) ~= true) then
-            aiSay(ents.self():owner(),ColRed,"Transporter not linked!")
+            aiSay(sfowner,ColRed,"Transporter not linked!")
         else
             if(OLS[2] == "help" or OLS[2] == "loc" or OLS[2] == "locations") then
-                aiSay(ents.self():owner(),"Transport Locations:")
-                --aiSay(ents.self():owner(),"Earth, SGC, Moon, Shakur, Shakbase, Station, Hiigara, Hiibase, Desert, Pyramid, Pyramidbase, Lava, Lavabase, Hell, Space")
-                aiSay(ents.self():owner(),table.concatKeys(TransportLoc,", "))
+                aiSay(sfowner,"Transport Locations:")
+                --aiSay(sfowner,"Earth, SGC, Moon, Shakur, Shakbase, Station, Hiigara, Hiibase, Desert, Pyramid, Pyramidbase, Lava, Lavabase, Hell, Space")
+                aiSay(sfowner,table.concatKeys(TransportLoc,", "))
             end
 
             if(OLS[2] == "beamup") then
                 if(OLS[3] == nil or OLS[3] == "me") then
-                    if(jamCheck(ents.self():owner(),ents.self():owner():pos(),1) == 0) then
-                        aiSay(ents.self():owner(),"Beaming",ColTeam," You ",ColOng,"to the pad")
+                    if(jamCheck(sfowner,sfowner:pos(),1) == 0) then
+                        aiSay(sfowner,"Beaming",ColTeam," You ",ColOng,"to the pad")
 
-                        transport(ents.self():owner(),Vector(0,0,0),"beamup")
+                        transport(sfowner,Vector(0,0,0),"beamup")
                     end
                 end
 
                 if(OLS[3] == "this" or OLS[3] == "that") then
-                    AimET = ents.self():owner():aimEntity()
+                    AimET = sfowner:aimEntity()
 
                     if(IsValid(AimET) ~= true) then
-                        aiSay(ents.self():owner(),ColRed,"You're not aiming at anything!")
+                        aiSay(sfowner,ColRed,"You're not aiming at anything!")
                     else
                         if(AimET:isPlayer()) then
                             BeamName = AimET:name()
@@ -2096,24 +2098,24 @@ chat.listen(function(message, player)
                             timer.simple(0.1,function()
                                 if(wire.ports.Transporter:entity():class() == "transporter_pad") then
                                     if(wire.ports.Transporter["Energising"] == 0) then
-                                        aiSay(ents.self():owner(),"Cannot beam that ",ColRed,BeamName,ColOng," to the pad. It is likely too large.")
+                                        aiSay(sfowner,"Cannot beam that ",ColRed,BeamName,ColOng," to the pad. It is likely too large.")
                                     else
                                         if(AimET:isPlayer()) then
-                                            aiSay(ents.self():owner(),"Beaming ",AimET:getTeamColor(),BeamName,ColOng," to the pad.")
+                                            aiSay(sfowner,"Beaming ",AimET:getTeamColor(),BeamName,ColOng," to the pad.")
                                         else
-                                            aiSay(ents.self():owner(),"Beaming that ",ColGrn,BeamName,ColOng," to the pad.")
+                                            aiSay(sfowner,"Beaming that ",ColGrn,BeamName,ColOng," to the pad.")
                                         end
                                     end
                                 end
 
                                 if(wire.ports.Transporter:entity():class() == "asgard_transporter") then
                                     if(wire.ports.Transporter["Transporting"] == 0) then
-                                        aiSay(ents.self():owner(),"Cannot beam that ",ColRed,BeamName,ColOng," to the transporter. It is likely too large.")
+                                        aiSay(sfowner,"Cannot beam that ",ColRed,BeamName,ColOng," to the transporter. It is likely too large.")
                                     else
                                         if(AimET:isPlayer()) then
-                                            aiSay(ents.self():owner(),"Beaming ",AimET:getTeamColor(),BeamName,ColOng," to the transporter.")
+                                            aiSay(sfowner,"Beaming ",AimET:getTeamColor(),BeamName,ColOng," to the transporter.")
                                         else
-                                            aiSay(ents.self():owner(),"Beaming that ",ColGrn,BeamName,ColOng," to the transporter.")
+                                            aiSay(sfowner,"Beaming that ",ColGrn,BeamName,ColOng," to the transporter.")
                                         end
                                     end
                                 end
@@ -2129,26 +2131,26 @@ chat.listen(function(message, player)
                         if(jamCheck(Ply,Ply:pos(),1) == 0) then
                             transport(Ply,Vector(0,0,0),"beamup")
 
-                            aiSay(ents.self():owner(),"Beaming ",Ply:getTeamColor(),Ply:name(),ColOng," to the pad")
+                            aiSay(sfowner,"Beaming ",Ply:getTeamColor(),Ply:name(),ColOng," to the pad")
                         end
                     else
-                        aiSay(ents.self():owner(),"There is no player with the name: ",ColRed,OLS[3])
+                        aiSay(sfowner,"There is no player with the name: ",ColRed,OLS[3])
                     end
                 end
             end
 
             if(OLS[2] == "beamdown") then
                 if(OLS[3] == nil or OLS[3] == "me") then
-                    if(jamCheck(ents.self():owner(),ents.self():owner():pos(),1) == 0) then
-                        aiSay(ents.self():owner(),"Beaming down to",ColTeam," You")
+                    if(jamCheck(sfowner,sfowner:pos(),1) == 0) then
+                        aiSay(sfowner,"Beaming down to",ColTeam," You")
 
-                        transport(ents.NULL_ENTITY,ents.self():owner():pos(),"beamdown")
+                        transport(ents.NULL_ENTITY,sfowner:pos(),"beamdown")
                     end
                 end
 
                 if(OLS[3] == "core") then
                     if(OLS[4] == nil) then
-                        aiSay(ents.self():owner(),ColRed,"You must put a player's core to target")
+                        aiSay(sfowner,ColRed,"You must put a player's core to target")
                     else
                         local Ply = find.playerByName(OLS[4])
 
@@ -2162,22 +2164,22 @@ chat.listen(function(message, player)
                             if(#Cores > 0) then
                                 local Core = Cores[1]
                                 if(jamCheck(Core,Core:pos(),1) == 0) then
-                                    aiSay(ents.self():owner(),"Beaming down to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Ship Core")
+                                    aiSay(sfowner,"Beaming down to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Ship Core")
 
                                     transport(ents.NULL_ENTITY,Core:pos()+Vector(100,0,0),"beamdown")
                                 end
                             else
-                                aiSay(ents.self():owner(),Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Ship Core!")
+                                aiSay(sfowner,Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Ship Core!")
                             end
                         else
-                            aiSay(ents.self():owner(),"There is no player with the name ",ColRed,OLS[4])
+                            aiSay(sfowner,"There is no player with the name ",ColRed,OLS[4])
                         end
                     end
                 end
 
                 if(OLS[3] == "pad") then
                     if(OLS[4] == nil) then
-                        aiSay(ents.self():owner(),ColRed,"You must put a player's pad to target")
+                        aiSay(sfowner,ColRed,"You must put a player's pad to target")
                     else
                         local Ply = find.playerByName(OLS[4])
 
@@ -2191,15 +2193,15 @@ chat.listen(function(message, player)
                             if(#Pads > 0) then
                                 local Pad = Pads[1]
                                 if(jamCheck(Pad,Pad:pos(),1) == 0) then
-                                    aiSay(ents.self():owner(),"Beaming down to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Transporter Pad")
+                                    aiSay(sfowner,"Beaming down to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Transporter Pad")
 
                                     transport(ents.NULL_ENTITY,Pad:pos()+Vector(0,0,10),"beamdown")
                                 end
                             else
-                                aiSay(ents.self():owner(),Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Transporter Pad!")
+                                aiSay(sfowner,Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Transporter Pad!")
                             end
                         else
-                            aiSay(ents.self():owner(),"There is no player with the name ",ColRed,OLS[4])
+                            aiSay(sfowner,"There is no player with the name ",ColRed,OLS[4])
                         end
                     end
                 end
@@ -2209,33 +2211,33 @@ chat.listen(function(message, player)
 
                     if(IsValid(Ply)) then
                         if(jamCheck(Ply,Ply:pos(),1) == 0) then
-                            aiSay(ents.self():owner(),"Beaming down to ",Ply:getTeamColor(),Ply:name())
+                            aiSay(sfowner,"Beaming down to ",Ply:getTeamColor(),Ply:name())
 
                             transport(ents.NULL_ENTITY,Ply:pos(),"beamdown")
                         end
                     elseif(TransportLoc[OLS[3]] ~= nil) then
                         if(jamCheck(ents.NULL_ENTITY,TransportLoc[OLS[3]],1) == 0) then
-                            aiSay(ents.self():owner(),"Beaming down to ",ColGrn,OLS[3])
+                            aiSay(sfowner,"Beaming down to ",ColGrn,OLS[3])
 
                             transport(ents.NULL_ENTITY,TransportLoc[OLS[3]],"beamdown")
                         end
                     else
-                        aiSay(ents.self():owner(),"There is no player or location with the name: ",ColRed,OLS[3])
+                        aiSay(sfowner,"There is no player or location with the name: ",ColRed,OLS[3])
                     end
                 end
             end
 
             if(OLS[2] == "beam") then
                 if(OLS[3] == "me") then
-                    BeamFrom = ents.self():owner()
+                    BeamFrom = sfowner
                     BeamName = "You"
                 end
 
                 if(OLS[3] == nil) then
-                    aiSay(ents.self():owner(),"You must put in someone or something to beam.")
+                    aiSay(sfowner,"You must put in someone or something to beam.")
                 else
                     if(OLS[4] == nil) then
-                        aiSay(ents.self():owner(),"You must put in someone or somewhere to beam to.")
+                        aiSay(sfowner,"You must put in someone or somewhere to beam to.")
                     else
                         if(IsValid(find.playerByName(OLS[3])) and find.playerByName(OLS[3]):isPlayer() and OLS[3] ~= "me") then
                             BeamFrom = find.playerByName(OLS[3])
@@ -2246,7 +2248,7 @@ chat.listen(function(message, player)
                             BeamTo = find.playerByName(OLS[4])
 
                             if(jamCheck(BeamFrom,BeamFrom:pos(),0) == 0 and jamCheck(BeamTo,BeamTo:pos(),0) == 0) then
-                                aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName," to ",BeamTo:getTeamColor(),BeamTo:name())
+                                aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName," to ",BeamTo:getTeamColor(),BeamTo:name())
 
                                 transport(BeamFrom,BeamTo:pos()+Vector(100,0,0),"vector")
                             end
@@ -2254,7 +2256,7 @@ chat.listen(function(message, player)
 
                         if(OLS[4] == "core") then
                             if(OLS[5] == nil) then
-                                aiSay(ents.self():owner(),ColRed,"You must put a player's core to target")
+                                aiSay(sfowner,ColRed,"You must put a player's core to target")
                             else
                                 local Ply = find.playerByName(OLS[5])
 
@@ -2268,22 +2270,22 @@ chat.listen(function(message, player)
                                     if(#Cores > 0) then
                                         local Core = Cores[1]
                                         if(jamCheck(Core,Core:pos(),1) == 0) then
-                                            aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Ship Core")
+                                            aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Ship Core")
 
                                             transport(BeamFrom,Core:pos()+Vector(100,0,0),"vector")
                                         end
                                     else
-                                        aiSay(ents.self():owner(),Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Ship Core!")
+                                        aiSay(sfowner,Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Ship Core!")
                                     end
                                 else
-                                    aiSay(ents.self():owner(),"There is no player with the name ",ColRed,OLS[5])
+                                    aiSay(sfowner,"There is no player with the name ",ColRed,OLS[5])
                                 end
                             end
                         end
 
                         if(OLS[4] == "pad") then
                             if(OLS[5] == nil) then
-                                aiSay(ents.self():owner(),ColRed,"You must put a player's pad to target")
+                                aiSay(sfowner,ColRed,"You must put a player's pad to target")
                             else
                                 local Ply = find.playerByName(OLS[5])
 
@@ -2298,45 +2300,45 @@ chat.listen(function(message, player)
                                         local Pad = Pads[1]
 
                                         if(jamCheck(Pad,Pad:pos(),1) == 0) then
-                                            aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Transporter Pad")
+                                            aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",Ply:getTeamColor(),Ply:name(),"'s ",ColGrn,"Transporter Pad")
 
                                             transport(BeamFrom,Pad:pos()+Vector(0,0,10),"vector")
                                         end
                                     else
-                                        aiSay(ents.self():owner(),Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Transporter Pad!")
+                                        aiSay(sfowner,Ply:getTeamColor(),Ply:name(),ColOng," does not have a ",ColRed,"Transporter Pad!")
                                     end
                                 else
-                                    aiSay(ents.self():owner(),"There is no player with the name ",ColRed,OLS[5])
+                                    aiSay(sfowner,"There is no player with the name ",ColRed,OLS[5])
                                 end
                             end
                         end
 
                         if(OLS[4] == "brig" or OLS[4] == "jail" or OLS[4] == "babyjail") then
                             if(OLS[3] == nil) then
-                                aiSay(ents.self():owner(),"Cannot beam noone to the brig")
+                                aiSay(sfowner,"Cannot beam noone to the brig")
                             else
                                 local Ply = find.playerByName(OLS[3])
 
                                 if(IsValid(wire.ports.Transporter) ~= true) then
-                                    aiSay(ents.self():owner(),"Transporter not linked, cannot send ",Ply:getTeamColor(),Ply:name()," to the brig.")
+                                    aiSay(sfowner,"Transporter not linked, cannot send ",Ply:getTeamColor(),Ply:name()," to the brig.")
                                 else
                                     if(Ply:isPlayer()) then
                                         transport(Ply,wire.ports.BrigEnt:pos()+Vector(0,0,-50),"vector")
 
                                         if(OLS[4] == "brig") then
-                                            aiSay(ents.self():owner(),"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the brig")
+                                            aiSay(sfowner,"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the brig")
                                         end
 
                                         if(OLS[4] == "jail") then
-                                            aiSay(ents.self():owner(),"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the jail")
+                                            aiSay(sfowner,"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the jail")
                                         end
 
                                         if(OLS[4] == "babyjail") then
-                                            aiSay(ents.self():owner(),"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the ",Color(255,0,0),"g",Color(255,139,0),"a",Color(232,255,0),"y ",Color(93,255,0),"b",Color(0,255,46),"a",Color(0,255,185),"b",Color(0,185,255),"y ",Color(0,46,255),"j",Color(93,0,255),"a",Color(232,0,255),"i",Color(255,0,139),"l")
+                                            aiSay(sfowner,"Beaming Player: <",Ply:getTeamColor(),Ply:name(),ColOng,"> to the ",Color(255,0,0),"g",Color(255,139,0),"a",Color(232,255,0),"y ",Color(93,255,0),"b",Color(0,255,46),"a",Color(0,255,185),"b",Color(0,185,255),"y ",Color(0,46,255),"j",Color(93,0,255),"a",Color(232,0,255),"i",Color(255,0,139),"l")
                                             aiSay(Ply,Ply:getTeamColor(),"You",ColOng," have been sent to the ",Color(255,0,0),"g",Color(255,139,0),"a",Color(232,255,0),"y ",Color(93,255,0),"b",Color(0,255,46),"a",Color(0,255,185),"b",Color(0,185,255),"y ",Color(0,46,255),"j",Color(93,0,255),"a",Color(232,0,255),"i",Color(255,0,139),"l")
                                         end
                                     else
-                                        aiSay(ents.self():owner(),"There is no player with the name: ",ColRed,OLS[3])
+                                        aiSay(sfowner,"There is no player with the name: ",ColRed,OLS[3])
                                     end
                                 end
                             end
@@ -2344,10 +2346,10 @@ chat.listen(function(message, player)
 
                         if(TransportLoc[OLS[4]] ~= nil) then
                             if(BeamFrom == nil) then
-                                aiSay(ents.self():owner(),"There is no player with the name: ",ColRed,OLS[3])
+                                aiSay(sfowner,"There is no player with the name: ",ColRed,OLS[3])
                             else
                                 if(jamCheck(BeamFrom,BeamFrom:pos(),0) == 0 and jamCheck(ents.NULL_ENTITY,TransportLoc[4],0) == 0) then
-                                    aiSay(ents.self():owner(),"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",ColGrn,OLS[4])
+                                    aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",ColGrn,OLS[4])
 
                                     transport(BeamFrom,TransportLoc[OLS[4]],"vector")
                                 end
@@ -2358,7 +2360,7 @@ chat.listen(function(message, player)
             end
         end
     end
-end, ents.self():owner())
+end, sfowner)
 
 chat.listen(function(message, player)
     local OLS = message:lower():explode(" ", true)
@@ -2366,4 +2368,4 @@ chat.listen(function(message, player)
     if(OLS[1] == TargetPrefix) then
 
     end
-end, ents.self():owner())
+end, sfowner)

@@ -4,9 +4,8 @@
 --@autoupdate
 
 --[[
-Update 1.3
-- Possibly fixed the weapons not always aiming when you target
-
+Update 1.4
+- almost definitely fixed the weapons not always aiming when you target
 
 This is used to aim weapons at the target, and resets the angle when you stop targetting
 
@@ -20,10 +19,24 @@ and E2 can't setAng children of parented props
 wire.createInputs({"Weapon1","Weapon2","ForwardEnt1","ForwardEnt2","Target","Activate"},{"entity","entity","entity","entity","vector","normal",})
 
 if SERVER then
+    function targetchanged()
+        if(AimActive == true) then
+            if(Wep1 ~= nil) then
+                Wep1:setAng((TPos - Wep1:pos()):Angle()+Angle(AimAng1,0,0))
+            end
+
+            if(Wep2 ~= nil) then
+                Wep2:setAng((TPos - Wep2:pos()):Angle()+Angle(AimAng2,0,0))
+            end
+        end
+    end
+
     function WireDetect(name,value)
         if(name == "Activate") then
             FEnt1 = wire.ports.ForwardEnt1
             FEnt2 = wire.ports.ForwardEnt2
+
+            targetchanged()
 
             if(value > 0) then
                 AimActive = true
@@ -45,17 +58,7 @@ if SERVER then
         elseif(name == "Target") then
             TPos = wire.ports.Target
 
-            timer.simple(0.1,function() --this doesnt work properly because it only targets every time the target moves
-                if(AimActive == true) then
-                    if(Wep1 ~= nil) then
-                        Wep1:setAng((TPos - Wep1:pos()):Angle()+Angle(AimAng1,0,0))
-                    end
-
-                    if(Wep2 ~= nil) then
-                        Wep2:setAng((TPos - Wep2:pos()):Angle()+Angle(AimAng2,0,0))
-                    end
-                end
-            end)
+            targetchanged()
 
         elseif(name == "Weapon1") then
             Wep1 = wire.ports.Weapon1
@@ -63,7 +66,7 @@ if SERVER then
             if(IsValid(Wep1)) then
                 if(Wep1:model() == "models/veegi/emitter/emitter2.mdl") then
                     AimAng1 = 90
-                elseif(Wep1:class() == "torpedo_launcher"  or Wep1:class() == "ship_cannon") then
+                elseif(Wep1:model() == "models/cerus/weapons/plas_cannon.mdl"  or Wep1:model() == "models/iziraider/ioncannon/ioncannon_cann.mdl") then
                     AimAng1 = 0
                 end
             end
@@ -73,7 +76,7 @@ if SERVER then
             if(IsValid(Wep2)) then
                 if(Wep2:model() == "models/veegi/emitter/emitter2.mdl") then
                     AimAng2 = 90
-                elseif(Wep2:class() == "torpedo_launcher" or Wep2:class() == "ship_cannon") then
+                elseif(Wep2:model() == "models/cerus/weapons/plas_cannon.mdl" or Wep2:model() == "models/iziraider/ioncannon/ioncannon_cann.mdl") then
                     AimAng2 = 0
                 end
             end
