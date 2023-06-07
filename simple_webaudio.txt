@@ -1,0 +1,91 @@
+--@name Simple WebAudio
+--@author Nova Astral
+--@shared
+--@updater STEAM_0:0:53930685
+--@class emitter
+
+if CLIENT then
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    function playSound()
+        if(Pos == Vector(0,0,0)) then
+            printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"You did not enter a valid Position ",ColRed,_G.tostring(math.round(net.getDTVar("Vector",1))))
+            return
+        elseif(URL == "") then
+            printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"You did not enter a valid URL ",ColRed,net.getDTVar("String",1))
+            return
+        else
+            snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,a,callback)
+                if(not channel) then
+                    if(callback == "BASS_ERROR_NO3D") then
+                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                    else
+                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                    end
+                else
+                    audio = channel
+
+                    audio:setVolume(net.getDTVar("Float",1))
+                    audio:setPos(net.getDTVar("Vector",1))
+                    audio:set3DFadeDistance(net.getDTVar("Int",1),net.getDTVar("Int",2))
+
+                end
+            end)
+        end
+    end
+    print("cl")
+    hook("net", "net", function()
+        if(net.readBool() == true) then
+            playSound()
+        elseif(net.readBool() == false) then
+            if(IsValid(audio)) then
+                audio:stop()
+            end
+        end
+    end)
+else -- Server
+    net.setDTVar("String",1,"") --url
+    net.setDTVar("String",2,"3d") --audio flag
+    net.setDTVar("Vector",1,Vector(0,0,0)) --url
+    net.setDTVar("Int",1,1000) --fadestart
+    net.setDTVar("Int",2,2000) --fadeend
+    net.setDTVar("Float",1,1) --volume
+
+    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal"})
+
+    function WireDetect(name,value)
+        if(name == "Play") then
+            if(value >= 1) then
+                timer.simple(0.01,function() --if the user is trying to play at the same time as setting everything else
+                    net.start()
+                    net.writeBool(true)
+                    net.broadcast()
+                end)
+            end
+        elseif(name == "Stop") then
+            if(value >= 1) then
+                net.start()
+                net.writeBool(false)
+                net.broadcast()
+            end
+        elseif(name == "URL") then
+            net.setDTVar("String",1,value)
+        elseif(name == "Pos") then
+            net.setDTVar("Vector",1,value)
+        elseif(name == "Volume") then
+            net.setDTVar("Float",1,value)
+        elseif(name == "FadeStart") then
+            net.setDTVar("Int",1,math.clamp(value,0,32000))
+        elseif(name == "FadeEnd") then
+            net.setDTVar("Int",2,math.clamp(value,0,32000))
+        elseif(name == "Mono") then
+            if(value >= 1) then
+                net.setDTVar("String",2,"mono")
+            else
+                net.setDTVar("String",2,"3d")
+            end
+        end
+    end
+
+    hook.add("input","wiredetect",WireDetect)
+end
