@@ -35,11 +35,17 @@ if CLIENT then
     end
     print("cl")
     hook("net", "net", function()
-        if(net.readBool() == true) then
+        local Str = net.readString()
+        if(Str == "play") then
             playSound()
-        elseif(net.readBool() == false) then
+        elseif(Str == "stop") then
             if(IsValid(audio)) then
+                --print(audio:getState()) --debug
                 audio:stop()
+            end
+        elseif(Str == "volume") then
+            if(IsValid(audio)) then
+                audio:setVolume(net.getDTVar("Float",1))
             end
         end
     end)
@@ -58,14 +64,14 @@ else -- Server
             if(value >= 1) then
                 timer.simple(0.01,function() --if the user is trying to play at the same time as setting everything else
                     net.start()
-                    net.writeBool(true)
+                    net.writeString("play")
                     net.broadcast()
                 end)
             end
         elseif(name == "Stop") then
             if(value >= 1) then
                 net.start()
-                net.writeBool(false)
+                net.writeString("stop")
                 net.broadcast()
             end
         elseif(name == "URL") then
@@ -74,6 +80,9 @@ else -- Server
             net.setDTVar("Vector",1,value)
         elseif(name == "Volume") then
             net.setDTVar("Float",1,value)
+            net.start()
+            net.writeString("volume")
+            net.broadcast()
         elseif(name == "FadeStart") then
             net.setDTVar("Int",1,math.clamp(value,0,32000))
         elseif(name == "FadeEnd") then
