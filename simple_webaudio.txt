@@ -33,7 +33,7 @@ if CLIENT then
             end)
         end
     end
-    print("cl")
+
     hook("net", "net", function()
         local Str = net.readString()
         if(Str == "play") then
@@ -56,8 +56,9 @@ else -- Server
     net.setDTVar("Int",1,1000) --fadestart
     net.setDTVar("Int",2,2000) --fadeend
     net.setDTVar("Float",1,1) --volume
+    net.setDTVar("Int",3,100) --pitch
 
-    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal"})
+    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono","Pitch","Loop"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal","Normal","Normal"})
 
     function WireDetect(name,value)
         if(name == "Play") then
@@ -93,6 +94,8 @@ else -- Server
             else
                 net.setDTVar("String",2,"3d")
             end
+        elseif(name == "Pitch") then
+            net.setDTVar("Int",3,math.clamp(value,0,255))
         end
     end
 
