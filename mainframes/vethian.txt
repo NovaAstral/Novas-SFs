@@ -6,7 +6,7 @@
 ---@model models/beer/wiremod/gate_e2_mini.mdl
 --@class processor
 
-AIVersion = "2.2.0" -- Don't touch this
+AIVersion = "2.1.0" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -2248,7 +2248,7 @@ chat.listen(function(message, player)
                             BeamTo = find.playerByName(OLS[4])
 
                             if(jamCheck(BeamFrom,BeamFrom:pos(),0) == 0 and jamCheck(BeamTo,BeamTo:pos(),0) == 0) then
-                                aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName," to ",BeamTo:getTeamColor(),BeamTo:name())
+                                aiSay(sfowner,"Beaming ",BeamFrom:getTeamColor(),BeamName,ColOng," to ",BeamTo:getTeamColor(),BeamTo:name())
 
                                 transport(BeamFrom,BeamTo:pos()+Vector(100,0,0),"vector")
                             end

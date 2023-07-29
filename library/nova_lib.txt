@@ -210,7 +210,7 @@ PlanetCenter = {
     ["Earth"] = Vector(0, 8032, 8064),
     ["Somewhere..."] = Vector(0, 0, -15168),
     ["Desert Planet"] = Vector(10624, -10668, -9384),
-    ["Lava Planet"] = Vector(-9792, -79.999496459961, -4688),
+    ["Lava Planet"] = Vector(-9792, -79, -4688),
     ["Spawn"] = Vector(0, -7, 16101),
     ["Moon"] = Vector(-4480, 13792, 9920)
 }
