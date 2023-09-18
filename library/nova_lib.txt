@@ -3,8 +3,8 @@
 --@class none
 --@updater STEAM_0:0:53930685
 --@autoupdate
-
-ColTeam = ents.self():owner():getTeamColor()
+--@shared
+ColTeam = ents.owner():getTeamColor()
 ColPink = Color(255,95,215,255)
 ColOng = Color(230,110,0,255)
 ColRed = Color(255,0,0,255)
@@ -19,29 +19,18 @@ ZeiaMBlu = Color(0,255,255)
 ZeiaWht = Color(230,230,230)
 ZeiaBlk = Color(99,99,99)
 
+sfowner = ents.owner()
+
+if SERVER then
+
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.1.0"
+    local AIVers = "2.2.0"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
 end
 
-function SetAIName()
-    if(ents.self():owner():steamID() == "STEAM_0:0:59006359") then
-        AIName = "LSAU"
-        starfall.setName("LSAU AI")
-    else
-        if(ents.self():owner():steamID() == "STEAM_0:1:111241767") then
-            AIName = "Veggian"
-            starfall.setName("Veggian AI")
-        else
-            AIName = "Vethian"
-        end
-    end
-end
-
-sfowner = ents.self():owner()
 
 --Drive Selector types
 DriveName = {
@@ -282,25 +271,6 @@ function wire.adjust(fn)
     wire.createOutputs(onames, otypes, odescriptions)
 end
 
-function aiSay(player,...) --Function by The17thDoctor
-    if player == ents.self():owner() then
-        printColor(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
-    else
-        chat.tell(player, ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
-    end
-end
-
-function notVar(var)
-    if var ~= 0 then return 0 end
-    return 1
-end
-
-function table:concatKeys(sep) --Function by Princess Nova
-    local keys = {}
-    for k in pairs(self) do table.insert(keys, k) end
-    return table.concat(keys, sep)
-end
-
 --Returns the current environent/galaxy
 function getCurrentEnvironment(entity)
     local currentEnvironment = entity:getEnvironmentData()
@@ -344,9 +314,88 @@ function getClosestEnvironment(entity, water)
     return list[distances[1][1]], distances[1][1]
 end
 
+function iSIT(str,t)
+    for _,v in pairs(t) do
+        if(v == str) then
+         return true
+        end
+    end
+
+    return false
+end
+
 function ONeill()
     --I need to make a url sound function (that only plays sound for people inside the ship)
     --for this
 
     printColor(ColPink,"[Nova Lib] ",ColOng,"The O'Neill Function is not complete.")
+end
+
+channels.listen("VethianHello",1,function(sender,str)
+    if(str == "Vethian Hello" and sender ~= ents.self() and AITalked == false) then
+        chat.say(ColPink,"[",AIName,"]",ColOng," Hello LSAU!")
+        AITalky("Vethian")
+        AITalked = true
+    end
+
+    if(str == "LSAU Hello" and sender ~= ents.self() and AITalked == false) then
+        chat.say(ColPink,"[",AIName,"]",ColOng," Hello Vethian!")
+        AITalky("LSAU")
+        AITalked = true
+    end
+end)
+
+function AITalky(name) -- if LSAU and Vethian are both spawned, they will say henlo to eachother
+    if(name == "Vethian") then
+        for k,v in pairs(find.byClass("starfall_emitter")) do
+            if(starfall.getName(v) == "LSAU AI") then
+                timer.simple(1,function() channels.send("VethianHello","Vethian Hello") end)
+            end
+        end
+    end
+
+    if(name == "LSAU") then
+        for k,v in pairs(find.byClass("starfall_emitter")) do
+            if(starfall.getName(v) == "Vethian AI") then
+                timer.simple(1,function() channels.send("VethianHello","LSAU Hello") end)
+            end
+        end
+    end
+end
+
+
+function SetAIName()
+    AITalked = false
+
+    if(ents.owner():steamID() == "STEAM_0:0:59006359") then --STEAM_0:0:59006359-obi STEAM_0:0:53930685-nova
+        AIName = "LSAU"
+        starfall.setName("LSAU AI")
+        AITalky("LSAU")
+    elseif(ents.owner():steamID() == "STEAM_0:1:111241767") then
+        AIName = "Veggian"
+        starfall.setName("Veggian AI")
+    else
+        AIName = "Vethian"
+        AITalky("Vethian")
+    end
+end
+end --end server
+
+function aiSay(player,...) --Function by The17thDoctor
+    if player == ents.owner() then
+        printColor(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
+    else
+        chat.tell(player, ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
+    end
+end
+
+function notVar(var)
+    if var ~= 0 then return 0 end
+    return 1
+end
+
+function table:concatKeys(sep) --Function by Princess Nova
+    local keys = {}
+    for k in pairs(self) do table.insert(keys, k) end
+    return table.concat(keys, sep)
 end

@@ -4,9 +4,12 @@
 --@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt
 --@model models/beer/wiremod/gate_e2.mdl
 ---@model models/beer/wiremod/gate_e2_mini.mdl
---@class processor
+--@class emitter
+--@shared
 
-AIVersion = "2.1.0" -- Don't touch this
+if SERVER then --really, don't toucht this
+
+AIVersion = "2.2.0" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -38,13 +41,17 @@ function config()
     AutoTarget =  1 --If Target destroyed, try to target another of the same entity owned by the same person
     AutoTargetPrint = 1 --Print in chat when AutoTarget targets a new entity
 
+    CmdSound = 0 --If you want Vethian to audibly say the outputs of commands (WIP!)
+
+    ALinkWarn = 1 --If you want to be warned when an autolink fails because of a missing entity
+
     --AutoDistress = 1 --Disable this if you don't want your ship to send a distress call at 30% hull
     --This isn't implemented yet
 
     Prefix = "/v" --Set this to the prefix you need to enter first in chat for any commands
     WarpPrefix = "/warp" --This is the prefix for using the warp drive
     TPPrefix = "/pad" --This is the prefix for using the transporter
-    TargetPrefix = "/t"
+    TargetPrefix = "/t" --Targetting is WIP!
     --These must be 1 word, you cannot do for example: "/v warp"
 
     wire.ports.WepStrength = 10 --I would set these lower if you dont have alot of resources
@@ -71,10 +78,10 @@ function nameCheck()
         end
     end
 
-    if(IsValid(wire.ports.LSCore) ~= true) then
+    if(IsValid(LSCore) ~= true) then
         aiSay(sfowner,ColRed,"Life Support Core not linked, cannot set ship name!")
     else
-        wire.ports.LSCore["Name"] = Shipname
+        LSCoreW["Name"] = Shipname
     end
 end
 
@@ -83,49 +90,49 @@ function functionSetup()
 
     function allDoors(DoorOpen)
         if(DoorOpen == 1) then
-            wire.ports.BridgeDoor = 1
-            wire.ports.GateRDoor = 1
-            wire.ports.TransDoor = 1
-            wire.ports.EngDoor = 1
+            BridgeDoor["Open_1"] = 1
+            GateRDoor["Open_1"] = 1
+            TransDoor["Open_1"] = 1
+            EngDoor["Open_1"] = 1
             wire.ports.Shutters = 1
             wire.ports.BlastDoors = 1
             wire.ports.OtherDoors = 1
-            wire.ports.HangarAccessDoor = 1
+            HangarAccessDoor["Open_1"] = 1
         end
 
         if(DoorOpen == 0) then
-            wire.ports.BridgeDoor = 0
-            wire.ports.GateRDoor = 0
-            wire.ports.TransDoor = 0
-            wire.ports.EngDoor = 0
+            BridgeDoor["Open_1"] = 0
+            GateRDoor["Open_1"] = 0
+            TransDoor["Open_1"] = 0
+            EngDoor["Open_1"] = 0
             wire.ports.Shutters = 0
             wire.ports.BlastDoors = 0
             wire.ports.OtherDoors = 0
-            wire.ports.HangarAccessDoor = 0
+            HangarAccessDoor = 0
         end
     end
 
     function allForceFields(FFActive)
         if(FFActive == 1) then
-            wire.ports.BridgeFF = 1
-            wire.ports.GateRFF = 1
-            wire.ports.GateFF = 1
-            wire.ports.TransFF = 1
-            wire.ports.EngFF = 1
-            wire.ports.CoreFF = 1
+            BridgeFF["Activate"] = 1
+            GateRFF["Activate"] = 1
+            GateFF["Activate"] = 1
+            TransFF["Activate"] = 1
+            EngFF["Activate"] = 1
+            CoreFF["Activate"] = 1
             wire.ports.OtherFFs = 1
-            wire.ports.HangarAFF = 1
+            HangarAFF["Activate"] = 1
         end
 
         if(FFActive == 0) then
-            wire.ports.BridgeFF = 0
-            wire.ports.GateRFF = 0
-            wire.ports.GateFF = 0
-            wire.ports.TransFF = 0
-            wire.ports.EngFF = 0
-            wire.ports.CoreFF = 0
+            BridgeFF["Activate"] = 0
+            GateRFF["Activate"] = 0
+            GateFF["Activate"] = 0
+            TransFF["Activate"] = 0
+            EngFF["Activate"] = 0
+            CoreFF["Activate"] = 0
             wire.ports.OtherFFs = 0
-            wire.ports.HangarAFF = 0
+            HangarAFF["Activate"] = 0
         end
     end
 
@@ -374,20 +381,223 @@ function functionSetup()
     end
 end
 
+function AutoLink()
+    if(ents.self():getCore() == nil) then
+        aiSay(sfowner,"There is no core on this ship! Cannot use autolink system!")
+
+        return
+    else
+        ShipCore = ents.self():getCore()
+        ShipCoreW = ents.self():getCore():getWirelink()
+    end
+
+    if(IsValid(ShipCore:getShield())) then
+        Shield = ShipCore:getShield()
+        ShieldW = ShipCore:getShield():getWirelink()
+    else
+        aiSay(sfowner,"There is no Shield on this ship!")
+    end
+
+    for k,v in pairs(constraint.getAllConstrainedEntities(ents.self())) do
+        if(v:class() == "stargazer_energy_core") then
+            EnergyCore = v
+            EnergyCoreW = v:getWirelink()
+        else
+            if(ALinkWarn == 1) then
+                aiSay(sfowner,"There is no Energy Core on this ship!")
+            end
+        end
+
+        if(v:class() == "stargazer_refinement_core") then
+            Refinery = v
+            RefineryW = v:getWirelink()
+        else
+            if(ALinkWarn == 1) then
+                aiSay(sfowner,"There is no Refinery on this ship!")
+            end
+        end
+
+        if(v:class() == "stargazer_water_core") then
+            WaterCore = v
+            WaterCoreW = v:getWirelink()
+        else
+            if(ALinkWarn == 1) then
+                aiSay(sfowner,"There is no Water Core on this ship!")
+            end
+        end
+
+        if(v:class() == "stargazer_ls_core") then
+            LSCore = v
+            LSCoreW = v:getWirelink()
+        else
+            if(ALinkWarn == 1) then
+                aiSay(sfowner,"There is no Life Support Core on this ship!")
+            end
+        end
+
+        if(v:class() == "st_cloaking_device") then
+            CloakDevice = v
+            CloakDeviceW = v:getWirelink()
+        else
+            if(ALinkWarn == 1) then
+                aiSay(sfowner,"There is no Cloaking Device on this ship!")
+            end
+        end
+
+        if(v:class() == "drive_core") then
+            DriveCore = v
+            DriveCoreW = v:getWirelink()
+        end
+
+        --Door Linking
+        if(v:class() == "gmod_wire_value") then
+            vw = v:getWirelink()
+
+            for k,ve in pairs(constraint.getConstrainedEntities(v)) do
+                if(ve:class() == "sbep_base_door_controller") then
+                    if(vw["1"] == "VDoors") then
+                        if(vw["2"] == "Bridge") then
+                            BridgeDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                BridgeDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "Gateroom") then
+                            GateRDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                GateRDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "Transporter") then
+                            TransDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                TransDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "Engineering") then
+                            EngDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                EngDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "LeftHangar") then
+                            LeftHangarDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                LeftHangarDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "RightHangar") then
+                            RightHangarDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                RightHangarDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "Hangar") then
+                            HangarDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                HangarDoor["Open_1"] = 1
+                            end
+                        elseif(vw["2"] == "HangarAccess") then
+                            HangarAccessDoor = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                HangarAccessDoor["Open_1"] = 1
+                            end
+                        end
+                    end
+                end
+            end
+
+            for k,ve in pairs(constraint.getConstrainedEntities(v)) do
+                if(ve:class() == "st_forcefield_emitter") then
+                    if(vw["1"] == "VForceFields") then
+                        if(vw["2"] == "BridgeFF") then
+                            BridgeFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                BridgeFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Gateroom") then
+                            GateRFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                GateRFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Gate") then
+                            GateFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                GateFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Transporter") then
+                            TransFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                TransFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Engineering") then
+                            EngFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                EngFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Core") then
+                            CoreFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                CoreFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "Hangar") then
+                            HangarFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                HangarFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "LeftHangar") then
+                            LeftHangarFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                LeftHangarFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "RightHangar") then
+                            RightHangarFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                RightHangarFF["Activate"] = 1
+                            end
+                        elseif(vw["2"] == "HangarAccess") then
+                            HangarAccessFF = ve:getWirelink()
+
+                            if(vw["3"] == 1) then
+                                HangarAccessFF["Activate"] = 1
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function dupefinished()
-    SetAIName()
+    AutoLink()
 
-    config()
-    nameCheck()
-    functionSetup()
-
-    AIVersCheck()
-
-    DCWait = 1
     timer.simple(1,function()
-        DCWait = 0
 
-        hook.run("input", "Drive")
+        SetAIName()
+        config()
+        nameCheck()
+        functionSetup()
+
+        AIVersCheck()
+
+        DCWait = 1
+        timer.simple(1,function()
+            DCWait = 0
+
+            hook.run("input", "Drive")
+        end)
     end)
 end
 
@@ -399,7 +609,7 @@ end
 
 wire.adjust(function(input, output)
     --Inputs
-    input({"EnergyCore","Refinery","LSCore","WaterCore","ShipCore","Shield","Cloak","Stargate","Rings","DriveCore","Drive","Transporter"},"WIRELINK")
+    input({"Stargate","Rings","Drive","Transporter"},"WIRELINK")
     input({"BrigEnt"},"ENTITY")
 
     --Outputs
@@ -409,9 +619,9 @@ wire.adjust(function(input, output)
     output({"AlertLightBrightness","SDTimeLeft","SDActive","DistressCall"},"NUMBER")
     output({"DistressLocation"},"STRING")
     --Jam & ForceFields
-    output({"Jam","GateFF","GateRFF","BridgeFF","TransFF","EngFF","CoreFF","HangarFF","LeftHangarFF","RightHangarFF","HangarAFF","OtherFFs"},"NUMBER")
+    output({"Jam","OtherFFs"},"NUMBER")
     --Doors
-    output({"HangarDoor","HangarDoorLeft","HangarDoorRight","HangarAccessDoor","Shutters","BlastDoors","BridgeDoor","GateRDoor","EngDoor","TransDoor","OtherDoors"},"NUMBER")
+    output({"Shutters","BlastDoors","OtherDoors"},"NUMBER")
     --Weapon Control
     output({"Fire","WepStrength","WepRate","BeamWepType","TorpWepType","TurretWepType"},"NUMBER")
     --Warp Control
@@ -422,725 +632,940 @@ wire.adjust(function(input, output)
     output({"TargetEnt","TargetOwner"},"ENTITY")
     output({"TargetLocked"},"NUMBER")
 end)
+end
 
+if CLIENT then -- PlaySound Function because nets dont work on include1
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    function playCLSound()
+        snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                audio = channel
+
+                audio:setVolume(net.getDTVar("Float",1))
+                audio:setPos(net.getDTVar("Vector",1))
+                audio:set3DFadeDistance(net.getDTVar("Int",1),net.getDTVar("Int",1)*1000)
+
+            end
+        end)
+    end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+        if(Str == "vplysnd") then
+            playCLSound()
+        end
+    end)
+else -- Server
+    function playSound(Pos,Flag,Dist,Volume,Pitch,URL)
+        net.setDTVar("Vector",1,Pos) --pos
+        net.setDTVar("String",2,Flag) --audio flag
+        net.setDTVar("Int",1,Dist) --fadestart
+        net.setDTVar("Float",1,Volume) --volume
+        net.setDTVar("Int",3,Pitch) --pitch
+        net.setDTVar("String",1,URL) --url
+
+        timer.simple(0.1,function()
+            net.start()
+            net.writeString("vplysnd")
+            net.broadcast()
+        end)
+    end
+end
+
+if SERVER then
+
+function Power() --Energy Core / Power Toggle
+    if(IsValid(EnergyCore) ~= true) then
+        aiSay(sfowner,ColRed,"Energy Core not linked!")
+    else
+        if(EnergyCoreW["Active"] == 0) then
+            EnergyCoreW["Activate"] = 1
+            aiSay(sfowner,"Energy Generation ",ColGrn,"Online")
+
+            if(CmdSound == 1) then
+                playSound(sfowner:pos(),"mono",1000,4,100,"https://cdn.discordapp.com/attachments/1152826706223177728/1152826848795959476/Energy_Generation_Online.wav")
+            end
+        else
+            EnergyCoreW["Activate"] = 0
+            aiSay(sfowner,"Energy Generation ",ColRed,"Offline")
+
+            if(CmdSound == 1) then
+                playSound(sfowner:pos(),"mono",1000,4,100,"https://cdn.discordapp.com/attachments/1152826706223177728/1152826861919928320/Energy_Generation_Offline.wav")
+            end
+        end
+    end
+end
+
+function Refine() -- Refinery Toggle
+    if(IsValid(Refinery) ~= true) then
+        aiSay(sfowner,ColRed,"Refinery not linked!")
+    else
+        if(RefineryW["Active"] == 0) then
+            RefineryW["Activate"] = 1
+            aiSay(sfowner,"Refinery ",ColGrn,"Online")
+        else
+            RefineryW["Activate"] = 0
+            aiSay(sfowner,"Refinery ",ColRed,"Offline")
+        end
+    end
+end
+
+function LifeSupport() -- LifeSupport Toggle
+    if(IsValid(LSCore) ~= true) then
+        aiSay(sfowner,ColRed,"Life Support Core not linked!")
+    else
+        if(LSCoreW["Active"] == 0) then
+            LSCoreW["Activate"] = 1
+            aiSay(sfowner,"Life Support ",ColGrn,"Online")
+        else
+            LSCoreW["Activate"] = 0
+            aiSay(sfowner,"Life Support ",ColRed,"Offline")
+        end
+    end
+end
+
+function Noclip(state)
+    if(IsValid(LSCore) ~= true) then
+        aiSay(sfowner,ColRed,"Lifesupport Core not linked!")
+    else
+        if(state == "on") then
+            LSCoreW["Disable Noclip"] = 0
+            aiSay(sfowner,"Anti-noclip ",ColGrn,"Disabled")
+        end
+
+        if(state == "off") then
+            LSCoreW["Disable Noclip"] = 1
+            aiSay(sfowner,"Anti-noclip ",ColGrn,"Enabled")
+        end
+
+        if(state == "fac") then
+            LSCoreW["Disable Noclip"] = 2
+            aiSay(sfowner,"Faction only noclip ",ColGrn,"Enabled")
+        end
+
+        if(state == "ally") then
+            LSCoreW["Disable Noclip"] = 3
+            aiSay(sfowner,"Alliance only noclip ",ColGrn,"Enabled")
+        end
+    end
+end
+
+function Mute()
+    if(IsValid(EnergyCore) ~= true) then
+        aiSay(sfowner,ColRed,"Energy Core not linked!")
+    else
+        EnergyCoreW["Mute"] = 1
+    end
+
+    if(IsValid(Refinery) ~= true) then
+        aiSay(sfowner,ColRed,"Refinery not linked!")
+    else
+        RefineryW["Mute"] = 1
+    end
+
+    if(IsValid(LSCore) ~= true) then
+        aiSay(sfowner,ColRed,"Life Support Core not linked!")
+    else
+        LSCoreW["Mute"] = 1
+    end
+
+    aiSay(sfowner,"Cores Muted")
+end
+
+function UnMute()
+    if(IsValid(EnergyCore) ~= true) then
+        aiSay(sfowner,ColRed,"Energy Core not linked!")
+    else
+        EnergyCoreW["Mute"] = 0
+    end
+
+    if(IsValid(Refinery) ~= true) then
+        aiSay(sfowner,ColRed,"Refinery not linked!")
+    else
+        RefineryW["Mute"] = 0
+    end
+
+    if(IsValid(LSCore) ~= true) then
+        aiSay(sfowner,ColRed,"Life Support Core not linked!")
+    else
+        LSCoreW["Mute"] = 0
+    end
+
+    aiSay(sfowner,"Cores Unmuted")
+end
+
+function WaterCollect()
+    if(IsValid(WaterCore) ~= true) then
+        aiSay(sfowner,ColRed,"Water Core not linked!")
+    else
+        if(IsValid(WaterCoreW["Collector"]) ~= true) then
+            aiSay(sfowner,ColRed,"Water Collector not placed. Cannot collect water.")
+        else
+            WaterCW = WaterCoreW["Collector"]:getWirelink()
+
+            if(WaterCW["Active"] == 0) then
+                WaterCW["Activate"] = 1
+
+                aiSay(sfowner,"Water Collector ",ColGrn,"Online")
+            else
+                WaterCW["Activate"] = 0
+
+                aiSay(sfowner,"Water Collector ",ColRed,"Offline")
+            end
+        end
+    end
+end
+
+function WaterCollectPlace()
+    if(IsValid(WaterCore) ~= true) then
+        aiSay(sfowner,ColRed,"Water Core not linked!")
+    else
+        WaterCoreW["Spawn Collector"] = 1
+
+        _,WaterLoc = getClosestEnvironment(WaterCoreW:entity(),true)
+
+        timer.simple(0.2,function()
+            WaterCE = WaterCoreW["Collector"]
+            WaterCE:getPhysicsObject():enableMotion(false)
+
+            aiSay(sfowner,"Water Collector placed on: ",ColGrn,WaterLoc)
+
+            if(WaterLoc == "Shakuras") then
+                WaterCE:setPos(Vector(-6818,-7200,6730))
+                WPlaced = 1
+            end
+
+            if(WaterLoc == "Earth") then
+                WaterCE:setPos(Vector(-1260,7982,7942))
+                WPlaced = 1
+            end
+
+            if(WaterLoc == "Hiigara") then
+                WaterCE:setPos(Vector(5654,6201,-6194))
+                WPlaced = 1
+            end
+
+            if(WaterLoc == "Desert") then
+                WaterCE:setPos(Vector(11350,-9220,-9360))
+                WPlaced = 1
+            end
+
+            if(WPlaced == 0) then
+                aiSay(sfowner,"Cannot place a Water Collector here")
+            end
+        end)
+    end
+end
+
+function Plating()
+    if(IsValid(ShipCore) ~= true) then
+        aiSay(sfowner,ColRed,"Ship Core not linked!")
+    else
+        if(ShipCoreW["Plating Enabled"] == 0) then
+            ShipCoreW["Enable Plating"] = 1
+            aiSay(sfowner,"Plating Generation ",ColGrn,"Enabled")
+        end
+
+        if(ShipCoreW["Plating Enabled"] == 1) then
+            ShipCoreW["Enable Plating"] = 0
+            aiSay(sfowner,"Plating Generation ",ColRed,"Disabled")
+        end
+    end
+end
+
+function Repair()
+    if(IsValid(ShipCore) ~= true) then
+        aiSay(sfowner,ColRed,"Ship Core not linked!")
+    else
+        RepairFire = notVar(RepairFire)
+        ShipCoreW["Fire Repair Beam"] = RepairFire
+
+        if(RepairFire == 1) then
+            aiSay(sfowner,"Repair Beam ",ColGrn,"Online")
+        else
+            aiSay(sfowner,"Repair Beam ",ColRed,"Offline")
+        end
+    end
+end
+
+function TractorBeam()
+    wire.ports.Tractor = wire.self().Tractor == 0 and 1 or 0
+
+    if(wire.self().Tractor == 0) then
+        aiSay(sfowner,"Tractor Beam ",ColGrn,"Online")
+    else
+        aiSay(sfowner,"Tractor Beam ",ColRed,"Offline")
+    end
+end
+
+function Shield()
+    if(IsValid(Shield) ~= true) then
+        aiSay(sfowner,ColRed,"Shield Emitter not linked!")
+    else
+        if(ShieldW["Active"] == 0) then
+            ShieldW["Activate"] = 1
+            aiSay(sfowner,"Shield ",ColGrn,"Activated")
+        else
+            ShieldW["Activate"] = 0
+            aiSay(sfowner,"Shield ",ColRed,"Deactivated")
+        end
+    end
+end
+
+function Cloak()
+    if(IsValid(CloakDevice) ~= true) then
+        aiSay(sfowner,ColRed,"Cloaking Device not linked!")
+    else
+        if(CloakDeviceW["Active"] == 0) then
+            CloakDeviceW["Activate"] = 1
+            aiSay(sfowner,"Cloak ",ColGrn,"Activated")
+        else
+            CloakDeviceW["Activate"] = 0
+            aiSay(sfowner,"Cloak ",ColRed,"Deactivated")
+        end
+    end
+end
+
+function StartShip()
+    if(IsValid(EnergyCore) ~= true) then
+        aiSay(sfowner,ColRed,"Energy Core not linked!")
+    else
+        EnergyCoreW["Activate"] = 1
+    end
+
+    if(IsValid(ShipCore) ~= true) then
+        aiSay(sfowner,ColRed,"Refinery not linked!")
+    else
+        ShipCoreW["Enable Plating"] = 1
+    end
+
+    if(IsValid(LSCore) ~= true) then
+        aiSay(sfowner,ColRed,"Life Support Core not linked!")
+    else
+        LSCoreW["Activate"] = 1
+    end
+
+    aiSay(sfowner,"Activating ship systems. Turning on the Power, Life Support, and Plating Generation")
+
+    -- should do addstring stuff for not linked and print a single line
+    -- same with activating systems, add string or remove string if core isn't linked
+end
+
+function SelfDestruct(input)
+    if(input == "this" or input == "that") then
+        local AimE = sfowner:aimEntity()
+        local AimEW = AimE:getWirelink()
+
+        if(IsValid(AimE) == true) then
+            if(AimE:class() == "ship_core" or AimE:class() == "st_shuttle_type9" or AimE:class() == "st_shuttle_type11" or AimE:class() == "st_shuttle_type6" or AimE:class() == "atlantis_puddle_jumper" or AimE:class() == "sci_fi_shuttle") then
+                AimEW["Self Destruct"] = 1
+
+                aiSay(sfowner,"Self Destructing that ",ColGrn,AimE:getPrintName(),ColOng," Owned by: ",AimE:owner():getTeamColor(),AimE:owner():name())
+            else
+                aiSay(sfowner,"That ",ColRed,AimE:getPrintName(),ColOng," cannot be self destructed.")
+            end
+        else
+            aiSay(sfowner,"You're not aiming at anything.")
+        end
+    end
+
+    if(IsValid(ShipCore) ~= true) then
+        aiSay(sfowner,ColRed,"Ship core not linked!")
+    else
+        if(input == "stop") then
+            if(timer.exists("sd")) then
+                timer.stop("sd")
+
+                wire.ports.SDTimeLeft = 0
+                wire.ports.SDActive = 0
+                ShipCoreW:entity():stopEnvironmentSound()
+
+                aiSay(sfowner,"Self Destruct ",ColGrn,"Stopped")
+            else
+                aiSay(sfowner,ColRed,"Self Destruct isn't Active")
+            end
+        end
+
+        if(input == "pause") then
+            if(timer.exists("sd")) then
+                timer.pause("sd")
+
+                ShipCoreW:entity():stopEnvironmentSound()
+
+                aiSay(sfowner,"Self Destruct ",ColGrn,"Paused")
+            else
+                aiSay(sfowner,ColRed,"Self Destruct isn't Active")
+            end
+        end
+
+        if(input == "unpause") then
+            if(timer.exists("sd")) then
+                timer.unpause("sd")
+
+                ShipCoreW:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
+
+                aiSay(sfowner,"Self Destruct ",ColGrn,"Unpaused")
+            else
+                aiSay(sfowner,ColRed,"Self Destruct isn't Active")
+            end
+        end
+
+        if(input ~= "this" and input ~= "that" and input ~= "stop" and input ~= "pause" and input ~= "unpause") then
+            if(input == nil) then
+                ShipCoreW["Self Destruct"] = 1
+
+                aiSay(sfowner,"No time specified. Activating Self Destruct")
+            else
+                wire.ports.SDTimeLeft = tonumber(input)
+                wire.ports.SDActive = 1
+
+                if(tonumber(input) == 69) then
+                    aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(input),ColOng," seconds. Nice.")
+                else
+                    aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(input),ColOng," seconds.")
+                end
+
+                ShipCoreW:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
+
+                timer.create("sd",1,0,function()
+                    wire.ports.SDTimeLeft = wire.self().SDTimeLeft - 1
+
+                    if(wire.self().SDTimeLeft <= 0) then
+                        ShipCoreW["Self Destruct"] = 1
+                        timer.stop("sd")
+                    end
+
+                    if(wire.self().SDTimeLeft == 0) then
+                        aiSay(sfowner,"Ship Destruct")
+                    end
+
+                    if(wire.self().SDTimeLeft == 5) then
+                        aiSay(sfowner,"Self Destruct in",ColGrn," 5 ",ColOng,"seconds.")
+                    end
+
+                    if(wire.self().SDTimeLeft == 10) then
+                        aiSay(sfowner,"Self Destruct in",ColGrn," 10 ",ColOng,"seconds.")
+                    end
+
+                    if(wire.self().SDTimeLeft == 30) then
+                        aiSay(sfowner,"Self Destruct in",ColGrn," 30 ",ColOng,"seconds.")
+                    end
+
+                    if(wire.self().SDTimeLeft == 60) then
+                        aiSay(sfowner,"Self Destruct in",ColGrn," 60 ",ColOng,"seconds.")
+                    end
+                end)
+            end
+        end
+    end
+end
+
+function Alert(input)
+    if(IsValid(ShipCore) ~= true) then
+        aiSay(sfowner,ColRed,"Ship Core not linked!")
+    else
+        if(input == "green") then
+            ShipCoreW:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
+            ShipCoreW:entity():stopEnvironmentSound()
+
+            wire.ports.Alert = "Green"
+            wire.ports.AlertCol = AlertGreen
+
+            timer.stop("alighton")
+            timer.stop("alightoff")
+
+            aiSay(sfowner,"Condition",ColGrn," Green ",ColOng,"Stand down.")
+
+            if(GateCol == 1) then
+                if(IsValid(wire.ports.Stargate) == true) then
+                    wire.ports.Stargate["Event Horion Color"] = Color(255,255,255)
+                end
+            end
+        end
+
+
+        if(input == "blue") then
+            ShipCoreW:entity():setEnvironmentSound("st/misc/bluealert.wav",0.4)
+
+            wire.ports.Alert = "Blue"
+            wire.ports.AlertCol = AlertBlue
+
+            timer.start("alighton")
+
+            aiSay(sfowner,"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
+
+            if(GateCol == 1) then
+                if(IsValid(wire.ports.Stargate) == true) then
+                    wire.ports.Stargate["Event Horion Color"] = AlertBlue
+                end
+            end
+        end
+
+        if(input == "red") then
+            ShipCoreW:entity():setEnvironmentSound("st/misc/voy_redalert_loop.wav",0.4)
+
+            wire.ports.Alert = "Red"
+            wire.ports.AlertCol = AlertRed
+
+            timer.start("alighton")
+
+            aiSay(sfowner,"Condition",ColRed," Red ",ColOng,"Battle Stations!")
+
+            if(GateCol == 1) then
+                if(IsValid(wire.ports.Stargate) == true) then
+                    wire.ports.Stargate["Event Horion Color"] = AlertRed
+                end
+            end
+        end
+
+        if(input == "black") then
+            ShipCoreW:entity():setEnvironmentSound("st/misc/dsc_black_alert_short.wav",0.4)
+
+            wire.ports.Alert = "Black"
+            wire.ports.AlertCol = AlertBlack
+
+            timer.start("alighton")
+
+            aiSay(sfowner,"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
+
+            if(GateCol == 1) then
+                if(IsValid(wire.ports.Stargate) == true) then
+                    wire.ports.Stargate["Event Horion Color"] = AlertBlack
+                end
+            end
+        end
+
+        if(input == "abandon") then
+            ShipCoreW:entity():setEnvironmentSound("st/misc/abandon_ship.wav",0.4)
+
+            wire.ports.Alert = "Abandon Ship"
+            wire.ports.AlertCol = AlertRed
+
+            timer.start("alighton")
+
+            aiSay(sfowner,ColRed,"Abandon Ship!")
+
+            if(GateCol == 1) then
+                if(IsValid(wire.ports.Stargate) == true) then
+                    wire.ports.Stargate["Event Horion Color"] = Color(200,0,0)
+                end
+            end
+        end
+    end
+end
+
+function LockDown(input)
+    if(input == true) then
+        ShipCoreW:entity():setEnvironmentSound("st/misc/rom_redalert.wav",0.4)
+
+        allDoors(0)
+        allForceFields(1)
+
+        wire.ports.Lockdown = 1
+
+        if(IsValid(Shield) ~= true) then
+            aiSay(sfowner,ColRed,"Shield Emitter not linked!")
+        else
+            ShieldW["Activate"] = 1
+        end
+
+        if(IsValid(wire.ports.Rings) == true) then
+            wire.ports.Rings["UnUsable"] = 1
+        end
+
+        if(IsValid(LSCoreW) ~= true) then
+            aiSay(sfowner,ColRed,"Life Support Core not Linked!")
+        else
+            LSCoreW["Disable Noclip"] = 1
+        end
+
+        aiSay(sfowner,"Lockdown",ColGrn," Activated")
+    else
+        ShipCoreW:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
+        ShipCoreW:entity():stopEnvironmentSound()
+
+        allForceFields(0)
+
+        wire.ports.Lockdown = 0
+
+        if(IsValid(wire.ports.Rings) == true) then
+            wire.ports.Rings["UnUsable"] = 0
+        end
+
+        if(IsValid(LSCore) ~= true) then
+            aiSay(sfowner,ColRed,"Life Support Core not Linked!")
+        else
+            LSCoreW["Disable Noclip"] = 0
+        end
+
+        aiSay(sfowner,"Lockdown",ColGrn," Deactivated")
+    end
+end
+
+--I will do the rest at some other point
 
 chat.listen(function(message, player)
-    local OLS = message:lower():explode(" ", true)
+    local OLS = message:lower():explode(" ",true)
 
-    if(OLS[1] == Prefix) then
+    local function CMD(input)
+        if(iSIT(input,CLS)) then
+            return true
+        else
+            return false
+        end
+    end
+
+
+    if(OLS[1] == Prefix and OLS[2] ~= nil) then
+        CLS = OLS[2]:explode(";",true)
         ---------------
         ---Stargazer---
         ---------------
 
         --Power
-        if(OLS[2] == "power") then
-            if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(sfowner,ColRed,"Energy Core not linked!")
-            else
-                if(wire.ports.EnergyCore["Active"] == 0) then
-                    wire.ports.EnergyCore["Activate"] = 1
-                    aiSay(sfowner,"Energy Generation ",ColGrn,"Online")
-                else
-                    wire.ports.EnergyCore["Activate"] = 0
-                    aiSay(sfowner,"Energy Generation ",ColRed,"Offline")
-                end
-            end
+        if(CMD("power")) then
+            Power()
         end
 
         --Refinery
-        if(OLS[2] == "refine") then
-            if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(sfowner,ColRed,"Refinery not linked!")
-            else
-                if(wire.ports.Refinery["Active"] == 0) then
-                    wire.ports.Refinery["Activate"] = 1
-                    aiSay(sfowner,"Refinery ",ColGrn,"Online")
-                else
-                    wire.ports.Refinery["Activate"] = 0
-                    aiSay(sfowner,"Refinery ",ColRed,"Offline")
-                end
-            end
+        if(CMD("refine")) then
+            Refine()
         end
 
         --Life Support
-        if(OLS[2] == "ls") then
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not linked!")
-            else
-                if(wire.ports.LSCore["Active"] == 0) then
-                    wire.ports.LSCore["Activate"] = 1
-                    aiSay(sfowner,"Life Support ",ColGrn,"Online")
-                else
-                    wire.ports.LSCore["Activate"] = 0
-                    aiSay(sfowner,"Life Support ",ColRed,"Offline")
-                end
-            end
+        if(CMD("ls")) then
+            LifeSupport()
         end
 
         --Noclip
-        if(OLS[2] == "noclip") then
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Lifesupport Core not linked!")
-            else
-                if(OLS[3] == "on") then
-                    wire.ports.LSCore["Disable Noclip"] = 0
-                    aiSay(sfowner,"Anti-noclip ",ColGrn,"Disabled")
-                end
-
-                if(OLS[3] == "off") then
-                    wire.ports.LSCore["Disable Noclip"] = 1
-                    aiSay(sfowner,"Anti-noclip ",ColGrn,"Enabled")
-                end
-
-                if(OLS[3] == "fac") then
-                    wire.ports.LSCore["Disable Noclip"] = 2
-                    aiSay(sfowner,"Faction only noclip ",ColGrn,"Enabled")
-                end
-
-                if(OLS[3] == "ally") then
-                    wire.ports.LSCore["Disable Noclip"] = 3
-                    aiSay(sfowner,"Alliance only noclip ",ColGrn,"Enabled")
-                end
-            end
+        if(CMD("noclip")) then
+            Noclip(OLS[3])
         end
 
         --Mute
-        if(OLS[2] == "mute") then
-            if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(sfowner,ColRed,"Energy Core not linked!")
-            else
-                wire.ports.EnergyCore["Mute"] = 1
-            end
-
-            if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(sfowner,ColRed,"Refinery not linked!")
-            else
-                wire.ports.Refinery["Mute"] = 1
-            end
-
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not linked!")
-            else
-                wire.ports.LSCore["Mute"] = 1
-            end
-
-            aiSay(sfowner,"Cores Muted")
+        if(CMD("mute")) then
+            Mute()
         end
 
         --Unmute
-        if(OLS[2] == "unmute") then
-            if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(sfowner,ColRed,"Energy Core not linked!")
-            else
-                wire.ports.EnergyCore["Mute"] = 0
-            end
-
-            if(IsValid(wire.ports.Refinery) ~= true) then
-                aiSay(sfowner,ColRed,"Refinery not linked!")
-            else
-                wire.ports.Refinery["Mute"] = 0
-            end
-
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not linked!")
-            else
-                wire.ports.LSCore["Mute"] = 0
-            end
-
-            aiSay(sfowner,"Cores Unmuted")
+        if(CMD("unmute")) then
+            UnMute()
         end
 
         --Water
-        if(OLS[2] == "water") then
-            if(IsValid(wire.ports.WaterCore) ~= true) then
-                aiSay(sfowner,ColRed,"Water Core not linked!")
-            else
-                if(IsValid(wire.ports.WaterCore["Collector"]) ~= true) then
-                    aiSay(sfowner,ColRed,"Water Collector not placed. Cannot collect water.")
-                else
-                    WaterCW = wire.ports.WaterCore["Collector"]:getWirelink()
-
-                    if(WaterCW["Active"] == 0) then
-                        WaterCW["Activate"] = 1
-
-                        aiSay(sfowner,"Water Collector ",ColGrn,"Online")
-                    else
-                        WaterCW["Activate"] = 0
-
-                        aiSay(sfowner,"Water Collector ",ColRed,"Offline")
-                    end
-                end
-            end
+        if(CMD("water")) then
+            WaterCollect()
         end
 
-        if(OLS[2] == "wplace") then
-            if(IsValid(wire.ports.WaterCore) ~= true) then
-                aiSay(sfowner,ColRed,"Water Core not linked!")
-            else
-                wire.ports.WaterCore["Spawn Collector"] = 1
-
-                _,WaterLoc = getClosestEnvironment(wire.ports.WaterCore:entity(),true)
-
-                timer.simple(0.2,function()
-                    WaterCE = wire.ports.WaterCore["Collector"]
-                    WaterCE:getPhysicsObject():enableMotion(false)
-
-                    aiSay(sfowner,"Water Collector placed on: ",ColGrn,WaterLoc)
-
-                    if(WaterLoc == "Shakuras") then
-                        WaterCE:setPos(Vector(-6818,-7200,6730))
-                        WPlaced = 1
-                    end
-
-                    if(WaterLoc == "Earth") then
-                        WaterCE:setPos(Vector(-1260,7982,7942))
-                        WPlaced = 1
-                    end
-
-                    if(WaterLoc == "Hiigara") then
-                        WaterCE:setPos(Vector(5654,6201,-6194))
-                        WPlaced = 1
-                    end
-
-                    if(WaterLoc == "Desert") then
-                        WaterCE:setPos(Vector(11350,-9220,-9360))
-                        WPlaced = 1
-                    end
-
-                    if(WPlaced == 0) then
-                        aiSay(sfowner,"Cannot place a Water Collector here")
-                    end
-                end)
-            end
+        if(CMD("wplace")) then
+            WaterCollectPlace()
         end
 
         ------------------
         ---Core Systems---
         ------------------
-        if(OLS[2] == "plating") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(sfowner,ColRed,"Ship Core not linked!")
-            else
-                if(wire.ports.ShipCore["Plating Enabled"] == 0) then
-                    wire.ports.ShipCore["Enable Plating"] = 1
-                    aiSay(sfowner,"Plating Generation ",ColGrn,"Enabled")
-                end
-
-                if(wire.ports.ShipCore["Plating Enabled"] == 1) then
-                    wire.ports.ShipCore["Enable Plating"] = 0
-                    aiSay(sfowner,"Plating Generation ",ColRed,"Disabled")
-                end
-            end
+        if(CMD("plating")) then
+            Plating()
         end
 
-        if(OLS[2] == "repair") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(sfowner,ColRed,"Ship Core not linked!")
-            else
-                RepairFire = notVar(RepairFire)
-                wire.ports.ShipCore["Fire Repair Beam"] = RepairFire
-
-                if(RepairFire == 1) then
-                    aiSay(sfowner,"Repair Beam ",ColGrn,"Online")
-                else
-                    aiSay(sfowner,"Repair Beam ",ColRed,"Offline")
-                end
-            end
+        if(CMD("repair")) then
+            Repair()
         end
 
-        if(OLS[2] == "tr") then
-            wire.ports.Tractor = wire.self().Tractor == 0 and 1 or 0
-
-            if(wire.self().Tractor == 0) then
-                aiSay(sfowner,"Tractor Beam ",ColGrn,"Online")
-            else
-                aiSay(sfowner,"Tractor Beam ",ColRed,"Offline")
-            end
+        if(CMD("tractor") or CMD("tr")) then
+            TractorBeam()
         end
 
-        if(OLS[2] == "shield") then
-            if(IsValid(wire.ports.Shield) ~= true) then
-                aiSay(sfowner,ColRed,"Shield Emitter not linked!")
-            else
-                if(wire.ports.Shield["Active"] == 0) then
-                    wire.ports.Shield["Activate"] = 1
-                    aiSay(sfowner,"Shield ",ColGrn,"Activated")
-                else
-                    wire.ports.Shield["Activate"] = 0
-                    aiSay(sfowner,"Shield ",ColRed,"Deactivated")
-                end
-            end
+        if(CMD("shield")) then
+            Shield()
         end
 
-        if(OLS[2] == "cloak") then
-            if(IsValid(wire.ports.Cloak) ~= true) then
-                aiSay(sfowner,ColRed,"Cloaking Device not linked!")
-            else
-                if(wire.ports.Cloak["Active"] == 0) then
-                    wire.ports.Cloak["Activate"] = 1
-                    aiSay(sfowner,"Cloak ",ColGrn,"Activated")
-                else
-                    wire.ports.Cloak["Activate"] = 0
-                    aiSay(sfowner,"Cloak ",ColRed,"Deactivated")
-                end
-            end
+        if(CMD("cloak")) then
+            Cloak()
         end
 
-        if(OLS[2] == "startup") then
-            if(IsValid(wire.ports.EnergyCore) ~= true) then
-                aiSay(sfowner,ColRed,"Energy Core not linked!")
-            else
-                wire.ports.EnergyCore["Activate"] = 1
-            end
-
-            if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(sfowner,ColRed,"Refinery not linked!")
-            else
-                wire.ports.ShipCore["Enable Plating"] = 1
-            end
-
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not linked!")
-            else
-                wire.ports.LSCore["Activate"] = 1
-            end
-
-            aiSay(sfowner,"Activating ship systems. Turning on the Power, Life Support, and Plating Generation")
+        if(CMD("startup")) then
+            StartShip()
         end
 
-        if(OLS[2] == "sd") then
-            if(OLS[3] == "this" or OLS[3] == "that") then
-                local AimE = sfowner:aimEntity()
-                local AimEW = AimE:getWirelink()
-
-                if(IsValid(AimE) == true) then
-                    if(AimE:class() == "ship_core" or AimE:class() == "st_shuttle_type9" or AimE:class() == "st_shuttle_type11" or AimE:class() == "st_shuttle_type6" or AimE:class() == "atlantis_puddle_jumper" or AimE:class() == "sci_fi_shuttle") then
-                        AimEW["Self Destruct"] = 1
-
-                        aiSay(sfowner,"Self Destructing that ",ColGrn,AimE:getPrintName(),ColOng," Owned by: ",AimE:owner():getTeamColor(),AimE:owner():name())
-                    else
-                        aiSay(sfowner,"That ",ColRed,AimE:getPrintName(),ColOng," cannot be self destructed.")
-                    end
-                else
-                    aiSay(sfowner,"You're not aiming at anything.")
-                end
-            end
-
-            if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(sfowner,ColRed,"Ship core not linked!")
-            else
-                if(OLS[3] == "stop") then
-                    if(timer.exists("sd")) then
-                        timer.stop("sd")
-
-                        wire.ports.SDTimeLeft = 0
-                        wire.ports.SDActive = 0
-                        wire.ports.ShipCore:entity():stopEnvironmentSound()
-
-                        aiSay(sfowner,"Self Destruct ",ColGrn,"Stopped")
-                    else
-                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
-                    end
-                end
-
-                if(OLS[3] == "pause") then
-                    if(timer.exists("sd")) then
-                        timer.pause("sd")
-
-                        wire.ports.ShipCore:entity():stopEnvironmentSound()
-
-                        aiSay(sfowner,"Self Destruct ",ColGrn,"Paused")
-                    else
-                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
-                    end
-                end
-
-                if(OLS[3] == "unpause") then
-                    if(timer.exists("sd")) then
-                        timer.unpause("sd")
-
-                        wire.ports.ShipCore:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
-
-                        aiSay(sfowner,"Self Destruct ",ColGrn,"Unpaused")
-                    else
-                        aiSay(sfowner,ColRed,"Self Destruct isn't Active")
-                    end
-                end
-
-                if(OLS[3] ~= "this" and OLS[3] ~= "that" and OLS[3] ~= "stop" and OLS[3] ~= "pause" and OLS[3] ~= "unpause") then
-                    if(OLS[3] == nil) then
-                        wire.ports.ShipCore["Self Destruct"] = 1
-
-                        aiSay(sfowner,"No time specified. Activating Self Destruct")
-                    else
-                        wire.ports.SDTimeLeft = tonumber(OLS[3])
-                        wire.ports.SDActive = 1
-
-                        if(tonumber(OLS[3]) == 69) then
-                            aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds. Nice.")
-                        else
-                            aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(OLS[3]),ColOng," seconds.")
-                        end
-
-                        wire.ports.ShipCore:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
-
-                        timer.create("sd",1,0,function()
-                            wire.ports.SDTimeLeft = wire.self().SDTimeLeft - 1
-
-                            if(wire.self().SDTimeLeft <= 0) then
-                                wire.ports.ShipCore["Self Destruct"] = 1
-                                timer.stop("sd")
-                            end
-
-                            if(wire.self().SDTimeLeft == 0) then
-                                aiSay(sfowner,"Ship Destruct")
-                            end
-
-                            if(wire.self().SDTimeLeft == 5) then
-                                aiSay(sfowner,"Self Destruct in",ColGrn," 5 ",ColOng,"seconds.")
-                            end
-
-                            if(wire.self().SDTimeLeft == 10) then
-                                aiSay(sfowner,"Self Destruct in",ColGrn," 10 ",ColOng,"seconds.")
-                            end
-
-                            if(wire.self().SDTimeLeft == 30) then
-                                aiSay(sfowner,"Self Destruct in",ColGrn," 30 ",ColOng,"seconds.")
-                            end
-
-                            if(wire.self().SDTimeLeft == 60) then
-                                aiSay(sfowner,"Self Destruct in",ColGrn," 60 ",ColOng,"seconds.")
-                            end
-                        end)
-                    end
-                end
-            end
+        if(CMD("sd")) then
+            print(OLS[3])
+            SelfDestruct(OLS[3])
         end
 
         ------------
         ---Alarms---
         ------------
-        if(OLS[2] == "alert") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
-                aiSay(sfowner,ColRed,"Ship Core not linked!")
-            else
-                if(OLS[3] == "green") then
-                    wire.ports.ShipCore:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
-                    wire.ports.ShipCore:entity():stopEnvironmentSound()
-
-                    wire.ports.Alert = "Green"
-                    wire.ports.AlertCol = AlertGreen
-
-                    timer.stop("alighton")
-                    timer.stop("alightoff")
-
-                    aiSay(sfowner,"Condition",ColGrn," Green ",ColOng,"Stand down.")
-
-                    if(GateCol == 1) then
-                        if(IsValid(wire.ports.Stargate) == true) then
-                            wire.ports.Stargate["Event Horion Color"] = Color(255,255,255)
-                        end
-                    end
-                end
-
-
-                if(OLS[3] == "blue") then
-                    wire.ports.ShipCore:entity():setEnvironmentSound("st/misc/bluealert.wav",0.4)
-
-                    wire.ports.Alert = "Blue"
-                    wire.ports.AlertCol = AlertBlue
-
-                    timer.start("alighton")
-
-                    aiSay(sfowner,"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
-
-                    if(GateCol == 1) then
-                        if(IsValid(wire.ports.Stargate) == true) then
-                            wire.ports.Stargate["Event Horion Color"] = AlertBlue
-                        end
-                    end
-                end
-
-                if(OLS[3] == "red") then
-                    wire.ports.ShipCore:entity():setEnvironmentSound("st/misc/voy_redalert_loop.wav",0.4)
-
-                    wire.ports.Alert = "Red"
-                    wire.ports.AlertCol = AlertRed
-
-                    timer.start("alighton")
-
-                    aiSay(sfowner,"Condition",ColRed," Red ",ColOng,"Battle Stations!")
-
-                    if(GateCol == 1) then
-                        if(IsValid(wire.ports.Stargate) == true) then
-                            wire.ports.Stargate["Event Horion Color"] = AlertRed
-                        end
-                    end
-                end
-
-                if(OLS[3] == "black") then
-                    wire.ports.ShipCore:entity():setEnvironmentSound("st/misc/dsc_black_alert_short.wav",0.4)
-
-                    wire.ports.Alert = "Black"
-                    wire.ports.AlertCol = AlertBlack
-
-                    timer.start("alighton")
-
-                    aiSay(sfowner,"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
-
-                    if(GateCol == 1) then
-                        if(IsValid(wire.ports.Stargate) == true) then
-                            wire.ports.Stargate["Event Horion Color"] = AlertBlack
-                        end
-                    end
-                end
-
-                if(OLS[3] == "abandon") then
-                    wire.ports.ShipCore:entity():setEnvironmentSound("st/misc/abandon_ship.wav",0.4)
-
-                    wire.ports.Alert = "Abandon Ship"
-                    wire.ports.AlertCol = AlertRed
-
-                    timer.start("alighton")
-
-                    aiSay(sfowner,ColRed,"Abandon Ship!")
-
-                    if(GateCol == 1) then
-                        if(IsValid(wire.ports.Stargate) == true) then
-                            wire.ports.Stargate["Event Horion Color"] = Color(200,0,0)
-                        end
-                    end
-                end
-            end
+        if(CMD("alert")) then
+            Alert(OLS[3])
         end
 
-        if(OLS[2] == "ldon") then
-            wire.ports.ShipCore:entity():setEnvironmentSound("st/misc/rom_redalert.wav",0.4)
-
-            allDoors(0)
-            allForceFields(1)
-
-            wire.ports.Lockdown = 1
-
-            if(IsValid(wire.ports.Shield) ~= true) then
-                aiSay(sfowner,ColRed,"Shield Emitter not linked!")
-            else
-                wire.ports.Shield["Activate"] = 1
-            end
-
-            if(IsValid(wire.ports.Rings) == true) then
-                wire.ports.Rings["UnUsable"] = 1
-            end
-
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not Linked!")
-            else
-                wire.ports.LSCore["Disable Noclip"] = 1
-            end
-
-            aiSay(sfowner,"Lockdown",ColGrn," Activated")
+        if(CMD("ldon")) then
+           LockDown(true)
         end
 
-        if(OLS[2] == "ldoff") then
-            wire.ports.ShipCore:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
-            wire.ports.ShipCore:entity():stopEnvironmentSound()
-
-            allForceFields(0)
-
-            wire.ports.Lockdown = 0
-
-            if(IsValid(wire.ports.Rings) == true) then
-                wire.ports.Rings["UnUsable"] = 0
-            end
-
-            if(IsValid(wire.ports.LSCore) ~= true) then
-                aiSay(sfowner,ColRed,"Life Support Core not Linked!")
-            else
-                wire.ports.LSCore["Disable Noclip"] = 0
-            end
-
-            aiSay(sfowner,"Lockdown",ColGrn," Deactivated")
+        if(CMD("ldoff")) then
+            LockDown(false)
         end
 
         -----------------------
         ---Doors/Forcefields---
         -----------------------
-        if(OLS[2] == "bridge" or OLS[2] == "br") then
-            wire.ports.BridgeDoor = wire.self().BridgeDoor == 0 and 1 or 0
-
-            if(wire.self().BridgeDoor == 0) then
-                aiSay(sfowner,"Bridge Door",ColGrn," Opened")
+        if(CMD("bridge") or CMD("br")) then
+            if(not IsValid(BridgeDoor)) then
+                aiSay(sfowner,"You do not have a Bridge Door linked!")
             else
-                aiSay(sfowner,"Bridge Door",ColRed," Closed")
+                if(BridgeDoor["Opened_1"] == 0) then
+                    BridgeDoor["Open_1"] = 1
+                    aiSay(sfowner,"Bridge Door",ColGrn," Opened")
+                else
+                    BridgeDoor["Open_1"] = 0
+                    aiSay(sfowner,"Bridge Door",ColRed," Closed")
+                end
             end
         end
-        if(OLS[2] == "bridgeff" or OLS[2] == "brff") then
-            wire.ports.BridgeFF = wire.self().BridgeFF == 0 and 1 or 0
-
-            if(wire.self().BridgeFF == 0) then
-                aiSay(sfowner,"Bridge Forcefield",ColGrn," Activated")
+        if(CMD("bridgeff") or CMD("brff")) then
+            if(not IsValid(BridgeFF)) then
+                aiSay(sfowner,"You do not have a Bridge Forcefield linked!")
             else
-                aiSay(sfowner,"Bridge Forcefield",ColRed," Deactivated")
-            end
-        end
-
-        if(OLS[2] == "gateroom" or OLS[2] == "gr" or OLS[2] == "gater") then
-            wire.ports.GateRDoor = wire.self().GateRDoor == 0 and 1 or 0
-
-            if(wire.self().GateRDoor == 0) then
-                aiSay(sfowner,"Gateroom Door",ColGrn," Opened")
-            else
-                aiSay(sfowner,"Gateroom Door",ColRed," Closed")
-            end
-        end
-        if(OLS[2] == "gateroomff" or OLS[2] == "grff") then
-            wire.ports.GateRFF = wire.self().GateRFF == 0 and 1 or 0
-
-            if(wire.self().GateRFF == 0) then
-                aiSay(sfowner,"Gateroom Forcefield",ColGrn," Activated")
-            else
-                aiSay(sfowner,"Gateroom Forcefield",ColRed," Deactivated")
-            end
-        end
-        if(OLS[2] == "gateff" or OLS[2] == "gff") then
-            wire.ports.GateFF = wire.self().GateFF == 0 and 1 or 0
-
-            if(wire.self().GateFF == 0) then
-                aiSay(sfowner,"Gate Forcefield",ColGrn," Activated")
-            else
-                aiSay(sfowner,"Gate Forcefield",ColRed," Deactivated")
+                if(BridgeFF["Active"] == 0) then
+                    BridgeFF["Activate"] = 1
+                    aiSay(sfowner,"Bridge Forcefield",ColGrn," Activated")
+                else
+                    BridgeFF["Activate"] = 0
+                    aiSay(sfowner,"Bridge Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "trans" or OLS[2] == "transporter") then
-            wire.ports.TransDoor = wire.self().TransDoor == 0 and 1 or 0
-
-            if(wire.self().TransDoor == 0) then
-                aiSay(sfowner,"Transporter Door",ColGrn," Opened")
+        if(CMD("gateroom") or CMD("gater") or CMD("gr")) then
+            if(not IsValid(GateRDoor)) then
+                aiSay(sfowner,"You do not have a Gateroom Door linked!")
             else
-                aiSay(sfowner,"Transporter Door",ColRed," Closed")
+                if(GateRDoor["Opened_1"] == 0) then
+                    GateRDoor["Open_1"] = 1
+                    aiSay(sfowner,"Gateroom Door",ColGrn," Opened")
+                else
+                    GateRDoor["Open_1"] = 0
+                    aiSay(sfowner,"Gateroom Door",ColRed," Closed")
+                end
             end
         end
-        if(OLS[2] == "transff") then
-            wire.ports.TransFF = wire.self().TransFF == 0 and 1 or 0
-
-            if(wire.self().TransFF == 0) then
-                aiSay(sfowner,"Transporter Forcefield",ColGrn," Activated")
+        if(CMD("gateroomff") or CMD("gaterff") or CMD("gr")) then
+            if(not IsValid(GateRFF)) then
+                aiSay(sfowner,"You do not have a Gateroom Forcefield linked!")
             else
-                aiSay(sfowner,"Transporter Forcefield",ColRed," Deactivated")
+                if(GateRFF["Active"] == 0) then
+                    GateRFF["Activate"] = 1
+                    aiSay(sfowner,"Gateroom Forcefield",ColGrn," Activated")
+                else
+                    GateRFF["Activate"] = 0
+                    aiSay(sfowner,"Gateroom Forcefield",ColRed," Deactivated")
+                end
             end
         end
-
-        if(OLS[2] == "eng" or OLS[2] == "engineering") then
-            wire.ports.EngDoor = wire.self().EngDoor == 0 and 1 or 0
-
-            if(wire.self().EngDoor == 0) then
-                aiSay(sfowner,"Engineering Door",ColGrn," Opened")
+        if(CMD("gateff") or CMD("gff")) then
+            if(not IsValid(GateFF)) then
+                aiSay(sfowner,"You do not have a Gate Forcefield linked!")
             else
-                aiSay(sfowner,"Engineering Door",ColRed," Closed")
-            end
-        end
-        if(OLS[2] == "engff" or OLS[2] == "engineeringff") then
-            wire.ports.EngFF = wire.self().EngFF == 0 and 1 or 0
-
-            if(wire.ports.EngFF == 0) then
-                aiSay(sfowner,"Engineering Forcefield",ColGrn," Activated")
-            else
-                aiSay(sfowner,"Engineering Forcefield",ColRed," Deactivated")
-            end
-        end
-
-        if(OLS[2] == "coreff") then
-            wire.ports.CoreFF = wire.self().CoreFF == 0 and 1 or 0
-
-            if(wire.self().CoreFF == 0) then
-                aiSay(sfowner,"Core Forcefield",ColGrn," Activated")
-            else
-                aiSay(sfowner,"Core Forcefield",ColRed," Deactivated")
+                if(GateFF["Active"] == 0) then
+                    GateFF["Activate"] = 1
+                    aiSay(sfowner,"Gate Forcefield",ColGrn," Activated")
+                else
+                    GateFF["Activate"] = 0
+                    aiSay(sfowner,"Gate Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "lh" or OLS[2] == "lhangar" or OLS[2] == "lefthangar" or OLS[2] == "hl") then
-            wire.ports.HangarDoorLeft = wire.self().HangarDoorLeft == 0 and 1 or 0
-
-            if(wire.self().HangarDoorLeft == 0) then
-                aiSay(sfowner,"Left Hangar",ColGrn," Opened")
+        if(CMD("transporter") or CMD("trans")) then
+            if(not IsValid(TransDoor)) then
+                aiSay(sfowner,"You do not have a Transporter Door linked!")
             else
-                aiSay(sfowner,"Left Hangar",ColRed," Closed")
+                if(TransDoor["Opened_1"] == 0) then
+                    TransDoor["Open_1"] = 1
+                    aiSay(sfowner,"Transporter Door",ColGrn," Opened")
+                else
+                    TransDoor["Open_1"] = 0
+                    aiSay(sfowner,"Transporter Door",ColRed," Closed")
+                end
+            end
+        end
+        if(CMD("transporterff") or CMD("transff")) then
+            if(not IsValid(TransFF)) then
+                aiSay(sfowner,"You do not have a Transporter Forcefield linked!")
+            else
+                if(TransFF["Active"] == 0) then
+                    TransFF["Activate"] = 1
+                    aiSay(sfowner,"Transporter Forcefield",ColGrn," Activated")
+                else
+                    TransFF["Activate"] = 0
+                    aiSay(sfowner,"Transporter Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "rh" or OLS[2] == "rhangar" or OLS[2] == "righthangar" or OLS[2] == "hr") then
-            wire.ports.HangarDoorRight = wire.self().HangarDoorRight == 0 and 1 or 0
-
-            if(wire.self().HangarDoorRight == 0) then
-                aiSay(sfowner,"Right Hangar",ColGrn," Opened")
+        if(CMD("engineering") or CMD("eng")) then
+            if(not IsValid(EngDoor)) then
+                aiSay(sfowner,"You do not have a Engineering Door linked!")
             else
-                aiSay(sfowner,"Right Hangar",ColRed," Closed")
+                if(EngDoor["Opened_1"] == 0) then
+                    EngDoor["Open_1"] = 1
+                    aiSay(sfowner,"Engineering Door",ColGrn," Opened")
+                else
+                    EngDoor["Open_1"] = 0
+                    aiSay(sfowner,"Engineering Door",ColRed," Closed")
+                end
+            end
+        end
+        if(CMD("engineeringff") or CMD("engff")) then
+            if(not IsValid(EngFF)) then
+                aiSay(sfowner,"You do not have a Engineering Forcefield linked!")
+            else
+                if(EngFF["Active"] == 0) then
+                    EngFF["Activate"] = 1
+                    aiSay(sfowner,"Engineering Forcefield",ColGrn," Activated")
+                else
+                    EngFF["Activate"] = 0
+                    aiSay(sfowner,"Engineering Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "h" or OLS[2] == "hang" or OLS[2] == "hangar") then
-            wire.ports.HangarDoor = wire.self().HangarDoor == 0 and 1 or 0
-
-            if(wire.self().HangarDoor == 0) then
-                aiSay(sfowner,"Hangar",ColGrn," Opened")
+        if(CMD("coreff")) then
+            if(not IsValid(CoreFF)) then
+                aiSay(sfowner,"You do not have a Core Forcefield linked!")
             else
-                aiSay(sfowner,"Hangar",ColRed," Closed")
+                if(CoreFF["Active"] == 0) then
+                    CoreFF["Activate"] = 1
+                    aiSay(sfowner,"Core Forcefield",ColGrn," Activated")
+                else
+                    CoreFF["Activate"] = 0
+                    aiSay(sfowner,"Core Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "ha" or OLS[2] == "hanga" or OLS[2] == "hangara" or OLS[2] == "hangaraccess") then
-            wire.ports.HangarAccessDoor = wire.self().HangarAccessDoor == 0 and 1 or 0
-
-            if(wire.self().HangarAccessDoor == 0) then
-                aiSay(sfowner,"Hangar Access",ColGrn," Opened")
+        if(CMD("lefthangar") or CMD("lhangar") or CMD("lh") or CMD("hl")) then
+            if(not IsValid(HangarDoorLeft)) then
+                aiSay(sfowner,"You do not have a Left Hangar Door linked!")
             else
-                aiSay(sfowner,"Hangar Access",ColRed," Closed")
+                if(HangarDoorLeft["Opened_1"] == 0) then
+                    HangarDoorLeft["Open_1"] = 1
+                    aiSay(sfowner,"Left Hangar",ColGrn," Opened")
+                else
+                    HangarDoorLeft["Open"] = 0
+                    aiSay(sfowner,"Left Hangar",ColRed," Closed")
+                end
             end
         end
 
-        if(OLS[2] == "hff" or OLS[2] == "hangff" or OLS[2] == "hangarff") then
-            wire.ports.HangarFF = wire.self().HangarFF == 0 and 1 or 0
-
-            if(wire.self().HangarFF == 0) then
-                aiSay(sfowner,"Hangar Forcefield",ColGrn," Activated")
+        if(CMD("righthangar") or CMD("rhangar") or CMD("rh") or CMD("hr")) then
+            if(not IsValid(HangarDoorRight)) then
+                aiSay(sfowner,"You do not have a Right Hangar Door linked!")
             else
-                aiSay(sfowner,"Hangar Forcefield",ColRed," Deactivated")
+                if(HangarDoorRight["Opened_1"] == 0) then
+                    HangarDoorRight["Open_1"] = 1
+                    aiSay(sfowner,"Right Hangar",ColGrn," Opened")
+                else
+                    HangarDoorRight["Open"] = 0
+                    aiSay(sfowner,"Right Hangar",ColRed," Closed")
+                end
             end
         end
 
-        if(OLS[2] == "lhff" or OLS[2] == "lhangff" or OLS[2] == "lhangarff" or OLS[2] == "lefthangarff" or OLS[2] == "lefthangff") then
-            wire.ports.LeftHangarFF = wire.self().LeftHangarFF == 0 and 1 or 0
-
-            if(wire.self().LeftHangarFF == 0) then
-                aiSay(sfowner,"Left Hangar Forcefield",ColGrn," Activated")
+        if(CMD("hangar") or CMD("hang") or CMD("h")) then
+            if(not IsValid(HangarDoor)) then
+                aiSay(sfowner,"You do not have a Hangar Door linked!")
             else
-                aiSay(sfowner,"Left Hangar Forcefield",ColRed," Deactivated")
+                if(HangarDoor["Opened_1"] == 0) then
+                    HangarDoor["Open_1"] = 1
+                    aiSay(sfowner,"Hangar",ColGrn," Opened")
+                else
+                    HangarDoor["Open_1"] = 0
+                    aiSay(sfowner,"Hangar",ColRed," Closed")
+                end
             end
         end
 
-        if(OLS[2] == "rhff" or OLS[2] == "rhangff" or OLS[2] == "rhangarff" or OLS[2] == "righthangarff" or OLS[2] == "righthangff") then
-            wire.ports.RightHangarFF = wire.self().RightHangarFF == 0 and 1 or 0
-
-            if(wire.self().RightHangarFF == 0) then
-                aiSay(sfowner,"Right Hangar Forcefield",ColGrn," Activated")
+        if(CMD("hangaraccess") or CMD("hangara") or CMD("hanga") or CMD("ha")) then
+            if(not IsValid(HangarAccessDoor)) then
+                aiSay(sfowner,"You do not have a Hangar Access Door linked!")
             else
-                aiSay(sfowner,"Right Hangar Forcefield",ColRed," Deactivated")
+                if(HangarAccessDoor["Opened_1"] == 0) then
+                    HangarAccessDoor["Open_1"] = 1
+                    aiSay(sfowner,"Hangar Access",ColGrn," Opened")
+                else
+                    HangarAccessDoor["Open_1"] = 0
+                    aiSay(sfowner,"Hangar Access",ColRed," Closed")
+                end
             end
         end
 
-        if(OLS[2] == "haff" or OLS[2] == "hangaff" or OLS[2] == "hangaraff" or OLS[2] == "hangaraccessff") then
-            wire.ports.HangarAFF = wire.self().HangarAFF == 0 and 1 or 0
-
-            if(wire.self().HangarAFF == 0) then
-                aiSay(sfowner,"Hangar Access Forcefield",ColGrn," Activated")
+        if(CMD("hangarff") or CMD("hangff") or CMD("hff")) then
+            if(not IsValid(HangarFF)) then
+                aiSay(sfowner,"You do not have a Hangar Forcefield linked!")
             else
-                aiSay(sfowner,"Hangar Access Forcefield",ColRed," Deactivated")
+                if(HangarFF["Active"] == 0) then
+                    HangarFF["Activate"] = 1
+                    aiSay(sfowner,"Hangar Forcefield",ColGrn," Activated")
+                else
+                    HangarFF["Activate"] = 0
+                    aiSay(sfowner,"Hangar Forcefield",ColRed," Deactivated")
+                end
             end
         end
 
-        if(OLS[2] == "shut" or OLS[2] == "shutters" or OLS[2] == "shutter") then
+        if(CMD("lefthangarff") or CMD("lhangarff") or CMD("lhff") or CMD("hlff")) then
+            if(not IsValid(LeftHangarFF)) then
+                aiSay(sfowner,"You do not have a Left Hangar Forcefield linked!")
+            else
+                if(LeftHangarFF["Active"] == 0) then
+                    LeftHangarFF["Activate"] = 1
+                    aiSay(sfowner,"Left Hangar Forcefield",ColGrn," Activated")
+                else
+                    LeftHangarFF["Activate"] = 0
+                    aiSay(sfowner,"Left Hangar Forcefield",ColRed," Deactivated")
+                end
+            end
+        end
+
+        if(CMD("righthangarff") or CMD("lhangarff") or CMD("lhff") or CMD("hlff")) then
+            if(not IsValid(RightHangarFF)) then
+                aiSay(sfowner,"You do not have a Right Hangar Forcefield linked!")
+            else
+                if(RightHangarFF["Active"] == 0) then
+                    RightHangarFF["Activate"] = 1
+                    aiSay(sfowner,"Right Hangar Forcefield",ColGrn," Activated")
+                else
+                    RightHangarFF["Activate"] = 0
+                    aiSay(sfowner,"Right Hangar Forcefield",ColRed," Deactivated")
+                end
+            end
+        end
+
+        if(CMD("hangaraccessff") or CMD("hangaraff") or CMD("hangaff") or CMD("haff")) then
+            if(not IsValid(HangarAFF)) then
+                aiSay(sfowner,"You do not have a Hangar Access Forcefield linked!")
+            else
+                if(HangarAFF["Active"] == 0) then
+                    HangarAFF["Activate"] = 1
+                    aiSay(sfowner,"Hangar Access Forcefield",ColGrn," Activated")
+                else
+                    HangarAFF["Activate"] = 0
+                    aiSay(sfowner,"Hangar Access Forcefield",ColRed," Deactivated")
+                end
+            end
+        end
+
+        if(CMD("shutters") or CMD("shutter") or CMD("shut")) then
             wire.ports.Shutters = wire.self().Shutters == 0 and 1 or 0
 
             if(wire.self().Shutters == 0) then
@@ -1150,7 +1575,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "bulk" or OLS[2] == "blast") then
+        if(CMD("bulkheads") or CMD("blastdoors") or CMD("bulk") or CMD("blast")) then
             wire.ports.BlastDoors = wire.self().BlastDoors == 0 and 1 or 0
 
             if(wire.self().BlastDoors == 0) then
@@ -1160,7 +1585,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "otherdoors" or OLS[2] == "odoors") then
+        if(CMD("otherdoors") or CMD("otherdoor") or CMD("od")) then
             wire.ports.OtherDoors = wire.self().OtherDoors == 0 and 1 or 0
 
             if(wire.self().OtherDoors == 0) then
@@ -1170,7 +1595,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "otherforcefields" or OLS[2] == "offs") then
+        if(CMD("otherffs") or CMD("offs")) then
             wire.ports.OtherFFs = wire.self().OtherFFs == 0 and 1 or 0
 
             if(wire.self().OtherFFs == 0) then
@@ -1180,7 +1605,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "doors" or OLS[2] == "alldoors" or OLS[2] == "adoors") then
+        if(CMD("alldoors") or CMD("adoors") or CMD("doors") or CMD("ad")) then
             ADoors = notVar(ADoors)
 
             allDoors(ADoors)
@@ -1192,7 +1617,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "forcefields" or OLS[2] == "ffs") then
+        if(CMD("forcefields") or CMD("ffs")) then
             AllFFs = notVar(AllFFs)
 
             allForceFields(AllFFs)
@@ -1207,33 +1632,34 @@ chat.listen(function(message, player)
         ----------
         ---Misc---
         ----------
-        if(OLS[2] == "sugged") then
+        if(CMD("sugged")) then
              chat.sayAlliance(ColPink,"[",AIName,"] ",ColOng,"sugged xd")
+             playSound(sfowner:pos(),"mono",1000,4,100,"https://cdn.discordapp.com/attachments/915811722646925312/1153013386121068695/sugged.wav")
         end
 
-        if(OLS[2] == "asay") then
+        if(CMD("asay")) then
             chat.sayAlliance(ColPink,"[",AIName,"]",ColOng,message:sub(6+#Prefix))
         end
 
-        if(OLS[2] == "fsay") then
+        if(CMD("fsay")) then
             chat.say(ColPink,"[",AIName,"]",ColOng,message:sub(6+#Prefix))
         end
 
-        if(OLS[2] == "o'neill") then
+        if(CMD("oneill") or CMD("o'neill")) then
             --aiSay(sfowner,"The O'Neill function has not been created yet.")
             ONeill()
         end
 
-        if(OLS[2] == "reset") then
+        if(CMD("reset")) then
             aiSay(sfowner,"Starfall does not have or require a Reset function.")
         end
 
-        if(OLS[2] == "help") then
+        if(CMD("help")) then
             aiSay(sfowner,AIName," Help can be found at:")
             printColor(ColOng,"https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk")
         end
 
-        if(OLS[2] == "activate" or OLS[2] == "deactivate" or OLS[2] == "enable" or OLS[2] == "disable" or OLS[2] == "work" or OLS[2] == "workn't") then
+        if(CMD("activate") or CMD("deactivate") or CMD("enable") or CMD("disable") or CMD("work") or CMD("workn't")) then
             local AimE = sfowner:aimEntity()
 
             if(IsValid(AimE)) then
@@ -1303,8 +1729,7 @@ chat.listen(function(message, player)
                 aiSay(sfowner,"You're not aiming at anything, or you don't have toolgun permission for that.")
             end
         end
-
-        if(OLS[2] == "open" or OLS[2] == "close" or OLS[2] == "lock" or OLS[2] == "unlock") then
+        if(CMD("open") or CMD("close") or CMD("lock") or CMD("unlock")) then
             local AimE = sfowner:aimEntity()
 
             if(IsValid(AimE)) then
@@ -1436,7 +1861,7 @@ chat.listen(function(message, player)
         --------------------
         ---Gate/Rings/Jam---
         --------------------
-        if(OLS[2] == "closeg" or OLS[2] == "closegate") then
+        if(CMD("closegate") or CMD("closeg")) then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
                 aiSay(sfowner,ColRed,"Stargate not linked!")
             else
@@ -1446,7 +1871,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "dial") then
+        if(CMD("dial")) then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
                 aiSay(sfowner,ColRed,"Stargate not linked!")
             else
@@ -1503,7 +1928,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "gsend") then
+        if(CMD("gsend")) then
             if(IsValid(wire.ports.Stargate:entity()) ~= true) then
                 aiSay(sfowner,ColRed,"Stargate not linked!")
             else
@@ -1517,7 +1942,7 @@ chat.listen(function(message, player)
         end
 
         ---Rings---
-        if(OLS[2] == "rdial") then
+        if(CMD("rdial")) then
             if(IsValid(wire.ports.Rings) ~= true) then
                 aiSay(sfowner,ColRed,"Rings not linked!")
             else
@@ -1545,7 +1970,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "ron") then
+        if(CMD("ron")) then
             if(IsValid(wire.ports.Rings) ~= true) then
                 aiSay(sfowner,ColRed,"Rings not linked!")
             else
@@ -1554,7 +1979,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "roff") then
+        if(CMD("roff")) then
             if(IsValid(wire.ports.Rings) ~= true) then
                 aiSay(sfowner,ColRed,"Rings not linked!")
             else
@@ -1564,7 +1989,7 @@ chat.listen(function(message, player)
         end
 
         ---Jammer---
-        if(OLS[2] == "jam") then
+        if(CMD("jam")) then
             wire.ports.Jam = wire.self().Jam == 0 and 1 or 0
 
             if(wire.self().Jam == 0) then
@@ -1578,7 +2003,7 @@ chat.listen(function(message, player)
         --------------------
         ---Weapon Control---
         --------------------
-        if(OLS[2] == "wstrength") then
+        if(CMD("wstrength")) then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
                 aiSay(sfowner,"Invalid number specified. Current weapon strength is: ",ColGrn,wire.self().WepStrength)
             elseif(tonumber(OLS[3]) > 10) then
@@ -1590,7 +2015,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "wrate") then
+        if(CMD("wrate")) then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
                 aiSay(sfowner,"Invalid number specified. Current weapon fire rate is: ",ColGrn,wire.self().WepRate)
             elseif(tonumber(OLS[3]) > 10) then
@@ -1602,7 +2027,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "btype") then
+        if(CMD("btype")) then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
                 aiSay(sfowner,"You must enter a Beam Weapon Type")
             else
@@ -1615,7 +2040,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "ttype") then
+        if(CMD("ttype")) then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
                 aiSay(sfowner,"You must enter a Torpedo Weapon Type")
             else
@@ -1628,7 +2053,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "turtype") then
+        if(CMD("turtype")) then
             if(OLS[3] == nil or tonumber(OLS[3]) ~= nil) then
                 aiSay(sfowner,"You must enter a Turret Weapon Type")
             else
@@ -1641,7 +2066,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "fire") then
+        if(CMD("fire")) then
             wire.ports.Fire = wire.self().Fire == 0 and 1 or 0
 
             if(wire.self().Fire == 0) then
@@ -1651,23 +2076,23 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "emitters") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
+        if(CMD("emitters") or CMD("emit")) then
+            if(IsValid(ShipCore) ~= true) then
                 aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
-                if(wire.ports.ShipCore["Emitters Enabled"] == 0) then
-                    wire.ports.ShipCore["Enable Emitters"] = 1
+                if(ShipCoreW["Emitters Enabled"] == 0) then
+                    ShipCoreW["Enable Emitters"] = 1
                     aiSay(sfowner,"Pulsar Emitters ",ColGrn,"Online")
                 end
 
-                if(wire.ports.ShipCore["Emitters Enabled"] == 1) then
-                    wire.ports.ShipCore["Enable Emitters"] = 0
+                if(ShipCoreW["Emitters Enabled"] == 1) then
+                    ShipCoreW["Enable Emitters"] = 0
                     aiSay(sfowner,"Pulsar Emitters ",ColRed,"Offline")
                 end
             end
         end
 
-        if(OLS[2] == "taim") then
+        if(CMD("taim")) then
             AimEF = sfowner:aimEntity()
 
             if(IsValid(AimEF)) then
@@ -1691,7 +2116,7 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "tfire") then
+        if(CMD("tfire")) then
             if(IsValid(AimEF)) then
                 if(propprotection.isAllowedForEntity(AimEF,propprotection.ACCESS_TOOLGUN) == true) then
                     AimEFW["Fire"] = 1
@@ -1709,8 +2134,8 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "ctarget") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
+        if(CMD("ctarget")) then
+            if(IsValid(ShipCore) ~= true) then
                 aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(OLS[3] == nil) then
@@ -1721,7 +2146,7 @@ chat.listen(function(message, player)
                     if(IsValid(Ply) and Ply:isPlayer()) then
                         local PlyCol = Ply:getTeamColor()
 
-                        wire.ports.ShipCore:entity():addTarget(Ply:steamID())
+                        ShipCoreW:entity():addTarget(Ply:steamID())
 
                         aiSay(sfowner,"Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
                     else
@@ -1731,8 +2156,8 @@ chat.listen(function(message, player)
             end
         end
 
-        if(OLS[2] == "cuntarget") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
+        if(CMD("cuntarget")) then
+            if(IsValid(ShipCore) ~= true) then
                 aiSay(sfowner,ColRed,"Ship Core not linked!")
             else
                 if(OLS[3] == nil) then
@@ -1743,7 +2168,7 @@ chat.listen(function(message, player)
                     if(IsValid(Ply) and Ply:isPlayer()) then
                         local PlyCol = Ply:getTeamColor()
 
-                        wire.ports.ShipCore:entity():removeTarget(Ply:steamID())
+                        ShipCoreW:entity():removeTarget(Ply:steamID())
 
                         aiSay(sfowner,"Un-Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
                     else
@@ -1763,7 +2188,7 @@ chat.listen(function(message, player)
         else
             WarpF = 0
 
-            if(OLS[2] == "help" or OLS[2] == "loc" or OLS[2] == "locations") then
+            if(OLS[2] == "locations" or OLS[2] == "help" or OLS[2] == "loc") then
                 WarpF = 1
 
                 aiSay(sfowner,"Warp Locations:")
@@ -1771,7 +2196,7 @@ chat.listen(function(message, player)
                 aiSay(sfowner,table.concatKeys(WarpLoc,", "))
             end
 
-            if(OLS[2] == "vec" or OLS[2] == "vector") then
+            if(OLS[2] == "vector" or OLS[2] == "vec") then
                 if(OLS[3] == nil) then
                     aiSay(sfowner,"Cannot warp the ship nowhere.")
                 else
@@ -1794,7 +2219,7 @@ chat.listen(function(message, player)
                 end
             end
 
-            if(OLS[2] == "ang" or OLS[2] == "angle") then
+            if(OLS[2] == "angle" or OLS[2] == "ang") then
                 if(OLS[3] == nil) then
                     aiSay(sfowner,"Cannot rotate the ship to nothing")
                 else
@@ -1829,7 +2254,7 @@ chat.listen(function(message, player)
             end
 
             if(OLS[2] == "forward" or OLS[2] == "back" or OLS[2] == "left" or OLS[2] == "right" or OLS[2] == "up" or OLS[2] == "down") then
-                if(OLS[3] == nil  and OLS[2] ~= "back") then
+                if(OLS[3] == nil and OLS[2] ~= "back") then
                     LWarp = 1
 
                     aiSay(sfowner,"Cannot warp nowhere")
@@ -1938,7 +2363,7 @@ chat.listen(function(message, player)
     end
 
     if(OLS[1] == Prefix) then
-        if(OLS[2] == "wspeed") then
+        if(CMD("wspeed")) then
             if(IsValid(wire.ports.Drive) ~= true) then
                 aiSay(sfowner,ColRed,"Warp Drive not linked!")
             else
@@ -1957,40 +2382,40 @@ chat.listen(function(message, player)
         ----------------
         ---Drive Core---
         ----------------
-        if(OLS[2] == "cspeed") then
-            if(IsValid(wire.ports.DriveCore) ~= true) then
+        if(CMD("cspeed")) then
+            if(IsValid(DriveCore) ~= true) then
                 aiSay(sfowner,ColRed,"Drive Core not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
                     aiSay(sfowner,"Invalid number specified. Current Drive Core Speed is: ",ColGrn,DCoreSpeed)
                 elseif(tonumber(OLS[3]) > 2) then
                     DCoreSpeed = 2
-                    wire.ports.DriveCore["Speed Multiplier"] = DCoreSpeed
+                    DriveCoreW["Speed Multiplier"] = DCoreSpeed
 
                     aiSay(sfowner,"Drive Core Speed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Speed to max")
                 else
                     DCoreSpeed = tonumber(OLS[3])
-                    wire.ports.DriveCore["Speed Multiplier"] = DCoreSpeed
+                    DriveCoreW["Speed Multiplier"] = DCoreSpeed
 
                     aiSay(sfowner,"Drive Core Speed set to: ",ColGrn,DCoreSpeed)
                 end
             end
         end
 
-        if(OLS[2] == "ctspeed") then
-            if(IsValid(wire.ports.DriveCore) ~= true) then
+        if(CMD("ctspeed")) then
+            if(IsValid(DriveCore) ~= true) then
                 aiSay(sfowner,ColRed,"Drive Core not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
                     aiSay(sfowner,"Invalid number specified. Current Drive Core Turnspeed is: ",ColGrn,DCoreTSpeed)
                 elseif(tonumber(OLS[3]) > 2) then
                     DCoreTSpeed = 2
-                    wire.ports.DriveCore["Turn Rate Multiplier"] = DCoreTSpeed
+                    DriveCoreW["Turn Rate Multiplier"] = DCoreTSpeed
 
                     aiSay(sfowner,"Drive Core Turnspeed cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Turnspeed to max")
                 else
                     DCoreTSpeed = tonumber(OLS[3])
-                    wire.ports.DriveCore["Turn Rate Multiplier"] = DCoreTSpeed
+                    DriveCoreW["Turn Rate Multiplier"] = DCoreTSpeed
 
                     aiSay(sfowner,"Drive Core Turnspeed set to: ",ColGrn,DCoreTSpeed)
                 end
@@ -2000,7 +2425,7 @@ chat.listen(function(message, player)
         ----------------
         ---Calculator---
         ----------------
-        if(OLS[2] == "calc") then
+        if(CMD("calc")) then
             if(tonumber(OLS[3]) == nil or tonumber(OLS[5]) == nil or OLS[3] == nil or OLS[5] == nil) then
                 aiSay(sfowner,ColRed,"NaN",ColOng," used as input, cannot calculate")
             elseif(OLS[4] == "+") then
@@ -2019,25 +2444,25 @@ chat.listen(function(message, player)
         -------------------
         ---Distress Call---
         -------------------
-        if(OLS[2] == "distress") then
-            if(IsValid(wire.ports.ShipCore) ~= true) then
+        if(CMD("distress")) then
+            if(IsValid(ShipCore) ~= true) then
                 aiSay(sfowner,ColRed,"Ship Core not linked!")
-            elseif(IsValid(wire.ports.Shield) ~= true) then
+            elseif(IsValid(Shield) ~= true) then
                 aiSay(sfowner,ColRed,"Shield Emitter not linked!")
             else
-                DistressLoc = getCurrentEnvironment(wire.ports.ShipCore:entity())
+                DistressLoc = getCurrentEnvironment(ShipCoreW:entity())
 
-                if(wire.ports.Shield:entity():class() == "atlantis_shield_emitter") then
-                    ShieldCurEng = wire.ports.Shield["Current Energy"]
-                    ShieldMaxEng = wire.ports.Shield["Max Energy"]
-                elseif(wire.ports.Shield:entity():class() == "st_shield_emitter") then
-                    ShieldCurEng = wire.ports.Shield["Total Charge"]
-                    ShieldMaxEng = wire.ports.Shield["Max Charge"]
+                if(ShieldW:entity():class() == "atlantis_shield_emitter") then
+                    ShieldCurEng = ShieldW["Current Energy"]
+                    ShieldMaxEng = ShieldW["Max Energy"]
+                elseif(ShieldW:entity():class() == "st_shield_emitter") then
+                    ShieldCurEng = ShieldW["Total Charge"]
+                    ShieldMaxEng = ShieldW["Max Charge"]
                 end
 
                 SH = math.round(ShieldCurEng / ShieldMaxEng * 100)
-                CP = math.round(wire.ports.ShipCore["Plating"])
-                HP = math.round(wire.ports.ShipCore["Health"] / wire.ports.ShipCore["Max Health"] * 100)
+                CP = math.round(ShipCoreW["Plating"])
+                HP = math.round(ShipCoreW["Health"] / ShipCoreW["Max Health"] * 100)
 
                 chat.sayAlliance(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,"Distress Call initiated from ",ZeiaMBlu,Shipname)
 
@@ -2369,3 +2794,5 @@ chat.listen(function(message, player)
 
     end
 end, sfowner)
+
+end --end for if SERVER at the top
