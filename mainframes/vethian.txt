@@ -511,7 +511,7 @@ function AutoLink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
                 if(ve:class() == "st_forcefield_emitter") then
-                    if(vw["1"] == "VForceFields") then
+                    if(vw["1"] == "VForcefields") then
                         if(vw["2"] == "BridgeFF") then
                             BridgeFF = ve:getWirelink()
 
