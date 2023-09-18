@@ -1296,7 +1296,6 @@ chat.listen(function(message, player)
         end
 
         if(CMD("sd")) then
-            print(OLS[3])
             SelfDestruct(OLS[3])
         end
 
