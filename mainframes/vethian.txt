@@ -7,7 +7,7 @@
 --@class emitter
 --@shared
 
-if SERVER then --really, don't toucht this
+if SERVER then --really, don't touch this
 
 AIVersion = "2.2.0" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
