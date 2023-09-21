@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.2.0" -- Don't touch this
+AIVersion = "2.2.1" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -45,7 +45,9 @@ function config()
 
     ALinkWarn = 1 --If you want to be warned when an autolink fails because of a missing entity
 
-    --AutoDistress = 1 --Disable this if you don't want your ship to send a distress call at 30% hull
+    --AutoDistress = 1 --Disable this if you don't want your ship to send a distress call at low hull
+    --AutoDistressAmount = 30 --% of hull to send autodistress at
+    --AutoDistressAlliance = 0 --Set to 1 to send autodistress to alliance, 0 to faction
     --This isn't implemented yet
 
     Prefix = "/v" --Set this to the prefix you need to enter first in chat for any commands
@@ -88,66 +90,23 @@ end
 function functionSetup()
     wire.ports.Active = 1
 
-    function allDoors(DoorOpen)
-        if(DoorOpen == 1) then
-            BridgeDoor["Open_1"] = 1
-            GateRDoor["Open_1"] = 1
-            TransDoor["Open_1"] = 1
-            EngDoor["Open_1"] = 1
-            wire.ports.Shutters = 1
-            wire.ports.BlastDoors = 1
-            wire.ports.OtherDoors = 1
-            HangarAccessDoor["Open_1"] = 1
-        end
+    AlertLight = 0
 
-        if(DoorOpen == 0) then
-            BridgeDoor["Open_1"] = 0
-            GateRDoor["Open_1"] = 0
-            TransDoor["Open_1"] = 0
-            EngDoor["Open_1"] = 0
-            wire.ports.Shutters = 0
-            wire.ports.BlastDoors = 0
-            wire.ports.OtherDoors = 0
-            HangarAccessDoor = 0
-        end
-    end
+    timer.create("AlertLightTimer",1,0,function()
+        AlertLight = notVar(AlertLight)
 
-    function allForceFields(FFActive)
-        if(FFActive == 1) then
-            BridgeFF["Activate"] = 1
-            GateRFF["Activate"] = 1
-            GateFF["Activate"] = 1
-            TransFF["Activate"] = 1
-            EngFF["Activate"] = 1
-            CoreFF["Activate"] = 1
-            wire.ports.OtherFFs = 1
-            HangarAFF["Activate"] = 1
+        if(AlertLight == 1) then
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["GlowBrightness"] = 5
+            end
+        else
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["GlowBrightness"] = 0
+            end
         end
-
-        if(FFActive == 0) then
-            BridgeFF["Activate"] = 0
-            GateRFF["Activate"] = 0
-            GateFF["Activate"] = 0
-            TransFF["Activate"] = 0
-            EngFF["Activate"] = 0
-            CoreFF["Activate"] = 0
-            wire.ports.OtherFFs = 0
-            HangarAFF["Activate"] = 0
-        end
-    end
-
-    timer.create("alighton",1,1,function()
-        wire.ports.AlertLightBrightness = 5
-        timer.start("alightoff")
     end)
 
-    timer.create("alightoff",1,1,function()
-        wire.ports.AlertLightBrightness = 0
-        timer.start("alighton")
-    end)
-
-    timer.stop("alighton")
-    timer.stop("alightoff")
+    timer.stop("AlertLightTimer")
 
     function disableEnt(Active)
         timer.create("disableEntToggle",5,1,function()
@@ -382,6 +341,25 @@ function functionSetup()
 end
 
 function AutoLink()
+    TorpLaunchers = {}
+    BeamEmitters = {}
+    ShipTurrets = {}
+    ShipWeapons = {}
+    Tractors = {}
+    Jammers = {}
+    AlertLights = {}
+    DoorValues = {}
+    FieldValues = {}
+
+    TorpFire = 0
+    BeamFire = 0
+    TurFire = 0
+    TractorFire = 0
+    JamActive = 0
+
+    DoorList = ""
+    FieldList = ""
+
     if(ents.self():getCore() == nil) then
         aiSay(sfowner,"There is no core on this ship! Cannot use autolink system!")
 
@@ -449,60 +427,80 @@ function AutoLink()
             DriveCoreW = v:getWirelink()
         end
 
+        if(v:class() == "torpedo_launcher") then
+            table.insert(TorpLaunchers,v)
+            table.insert(ShipWeapons,v)
+        end
+
+        if(v:class() == "beam_emitter") then
+            table.insert(BeamEmitters,v)
+            table.insert(ShipWeapons,v)
+        end
+
+        if(v:class() == "ship_turret_base") then
+            table.insert(ShipTurrets,v)
+            table.insert(ShipWeapons,v)
+        end
+
+        if(v:class() == "cruise_missile_launcher" or
+        v:class() == "sam_missile_launcher" or
+        v:class() == "heavy_missile_pod" or
+        v:class() == "ship_laser" or
+        v:class() == "keeper_emitter" or
+        v:class() == "pulsar_emitter" or
+        v:class() == "pulse_phaser_emitter" or
+        v:class() == "phaser_emitter" or
+        v:class() == "ship_cannon" or
+        v:class() == "sg_beam_emitter") then
+            table.insert(ShipWeapons,v)
+        end
+
+        if(v:class() == "tractor_emitter") then
+            table.insert(Tractors,v)
+        end
+
+        if(v:class() == "jamming_device") then
+            table.insert(Jammers,v)
+        end
+
+        if(v:class() == "gmod_wire_light") then
+            if(v:getWireName() == "VAlert") then
+                table.insert(AlertLights,v)
+            end
+        end
+
         --Door Linking
         if(v:class() == "gmod_wire_value") then
             vw = v:getWirelink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
-                if(ve:class() == "sbep_base_door_controller") then
+                if(ve:class() == "sbep_base_door_controller" or ve:class() == "cap_doors_frame") then
                     if(vw["1"] == "VDoors") then
-                        if(vw["2"] == "Bridge") then
-                            BridgeDoor = ve:getWirelink()
+                        table.insert(DoorValues,v)
 
-                            if(vw["3"] == 1) then
-                                BridgeDoor["Open_1"] = 1
+                        if(vw["3"] == 1) then
+                            if(ve:class() == "cap_doors_frame") then
+                                if(ve:getWirelink()["Opened"] == 0) then
+                                    ve:getWirelink()["Toggle"] = 1
+
+                                    timer.simple(0.1,function()
+                                        ve:getWirelink()["Toggle"] = 0
+                                    end)
+                                end
+                            else
+                                ve:getWirelink()["Open_1"] = 1
                             end
-                        elseif(vw["2"] == "Gateroom") then
-                            GateRDoor = ve:getWirelink()
+                        else
+                            if(ve:class() == "cap_doors_frame") then
+                                if(ve:getWirelink()["Opened"] == 1) then
+                                    ve:getWirelink()["Toggle"] = 1
 
-                            if(vw["3"] == 1) then
-                                GateRDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "Transporter") then
-                            TransDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                TransDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "Engineering") then
-                            EngDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                EngDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "LeftHangar") then
-                            LeftHangarDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                LeftHangarDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "RightHangar") then
-                            RightHangarDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                RightHangarDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "Hangar") then
-                            HangarDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                HangarDoor["Open_1"] = 1
-                            end
-                        elseif(vw["2"] == "HangarAccess") then
-                            HangarAccessDoor = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                HangarAccessDoor["Open_1"] = 1
+                                    timer.simple(0.1,function()
+                                        ve:getWirelink()["Toggle"] = 0
+                                    end)
+                                end
+                            else
+                                ve:getWirelink()["Open_1"] = 0
                             end
                         end
                     end
@@ -511,67 +509,13 @@ function AutoLink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
                 if(ve:class() == "st_forcefield_emitter") then
-                    if(vw["1"] == "VForcefields") then
-                        if(vw["2"] == "BridgeFF") then
-                            BridgeFF = ve:getWirelink()
+                    if(vw["1"] == "VDoors") then
+                        table.insert(FieldValues,v)
 
-                            if(vw["3"] == 1) then
-                                BridgeFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Gateroom") then
-                            GateRFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                GateRFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Gate") then
-                            GateFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                GateFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Transporter") then
-                            TransFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                TransFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Engineering") then
-                            EngFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                EngFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Core") then
-                            CoreFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                CoreFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "Hangar") then
-                            HangarFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                HangarFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "LeftHangar") then
-                            LeftHangarFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                LeftHangarFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "RightHangar") then
-                            RightHangarFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                RightHangarFF["Activate"] = 1
-                            end
-                        elseif(vw["2"] == "HangarAccess") then
-                            HangarAccessFF = ve:getWirelink()
-
-                            if(vw["3"] == 1) then
-                                HangarAccessFF["Activate"] = 1
-                            end
+                        if(vw["3"] == 1) then
+                            ve:getWirelink()["Activate"] = 1
+                        else
+                            ve:getWirelink()["Activate"] = 0
                         end
                     end
                 end
@@ -613,17 +557,12 @@ wire.adjust(function(input, output)
     input({"BrigEnt"},"ENTITY")
 
     --Outputs
-    output({"Active","WarpFactor","Tractor","Lockdown",},"NUMBER")
+    output({"Active","WarpFactor","Lockdown",},"NUMBER")
     output({"Alert"},"STRING")
-    output({"AlertCol"},"VECTOR")
-    output({"AlertLightBrightness","SDTimeLeft","SDActive","DistressCall"},"NUMBER")
+    output({"SDTimeLeft","SDActive","DistressCall"},"NUMBER")
     output({"DistressLocation"},"STRING")
-    --Jam & ForceFields
-    output({"Jam","OtherFFs"},"NUMBER")
-    --Doors
-    output({"Shutters","BlastDoors","OtherDoors"},"NUMBER")
     --Weapon Control
-    output({"Fire","WepStrength","WepRate","BeamWepType","TorpWepType","TurretWepType"},"NUMBER")
+    output({"Fire"},"NUMBER")
     --Warp Control
     output({"Warp"},"NUMBER")
     output({"Destination"},"VECTOR")
@@ -896,9 +835,13 @@ function Repair()
 end
 
 function TractorBeam()
-    wire.ports.Tractor = wire.self().Tractor == 0 and 1 or 0
+    TractorFire = notVar(TractorFire)
 
-    if(wire.self().Tractor == 0) then
+    for k,v in pairs(Tractors) do
+        v:getWirelink()["Fire"] = TractorFire
+    end
+
+    if(TractorFire == 1) then
         aiSay(sfowner,"Tractor Beam ",ColGrn,"Online")
     else
         aiSay(sfowner,"Tractor Beam ",ColRed,"Offline")
@@ -987,6 +930,13 @@ function SelfDestruct(input)
                 wire.ports.SDActive = 0
                 ShipCoreW:entity():stopEnvironmentSound()
 
+                wire.ports.Alert = "Green"
+                for k,v in pairs(AlertLights) do
+                    v:getWirelink()["RGB"] = Green
+                end
+
+                timer.start("AlertLightTimer")
+
                 aiSay(sfowner,"Self Destruct ",ColGrn,"Stopped")
             else
                 aiSay(sfowner,ColRed,"Self Destruct isn't Active")
@@ -998,6 +948,13 @@ function SelfDestruct(input)
                 timer.pause("sd")
 
                 ShipCoreW:entity():stopEnvironmentSound()
+
+                wire.ports.Alert = "Self Destruct Pause"
+                for k,v in pairs(AlertLights) do
+                    v:getWirelink()["RGB"] = AlertRed
+                end
+
+                timer.start("AlertLightTimer")
 
                 aiSay(sfowner,"Self Destruct ",ColGrn,"Paused")
             else
@@ -1031,6 +988,13 @@ function SelfDestruct(input)
                 else
                     aiSay(sfowner,"Self Destruct activated for: ",ColGrn,tonumber(input),ColOng," seconds.")
                 end
+
+                wire.ports.Alert = "Self Destruct"
+                for k,v in pairs(AlertLights) do
+                    v:getWirelink()["RGB"] = AlertRed
+                end
+
+                timer.start("AlertLightTimer")
 
                 ShipCoreW:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
 
@@ -1076,10 +1040,12 @@ function Alert(input)
             ShipCoreW:entity():stopEnvironmentSound()
 
             wire.ports.Alert = "Green"
-            wire.ports.AlertCol = AlertGreen
 
-            timer.stop("alighton")
-            timer.stop("alightoff")
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["RGB"] = AlertGreen
+            end
+
+            timer.stop("AlertLightTimer")
 
             aiSay(sfowner,"Condition",ColGrn," Green ",ColOng,"Stand down.")
 
@@ -1095,9 +1061,11 @@ function Alert(input)
             ShipCoreW:entity():setEnvironmentSound("st/misc/bluealert.wav",0.4)
 
             wire.ports.Alert = "Blue"
-            wire.ports.AlertCol = AlertBlue
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["RGB"] = AlertBlue
+            end
 
-            timer.start("alighton")
+            timer.start("AlertLightTimer")
 
             aiSay(sfowner,"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
 
@@ -1112,9 +1080,11 @@ function Alert(input)
             ShipCoreW:entity():setEnvironmentSound("st/misc/voy_redalert_loop.wav",0.4)
 
             wire.ports.Alert = "Red"
-            wire.ports.AlertCol = AlertRed
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["RGB"] = AlertRed
+            end
 
-            timer.start("alighton")
+            timer.start("AlertLightTimer")
 
             aiSay(sfowner,"Condition",ColRed," Red ",ColOng,"Battle Stations!")
 
@@ -1129,9 +1099,11 @@ function Alert(input)
             ShipCoreW:entity():setEnvironmentSound("st/misc/dsc_black_alert_short.wav",0.4)
 
             wire.ports.Alert = "Black"
-            wire.ports.AlertCol = AlertBlack
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["RGB"] = AlertBlack
+            end
 
-            timer.start("alighton")
+            timer.start("AlertLightTimer")
 
             aiSay(sfowner,"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
 
@@ -1146,9 +1118,11 @@ function Alert(input)
             ShipCoreW:entity():setEnvironmentSound("st/misc/abandon_ship.wav",0.4)
 
             wire.ports.Alert = "Abandon Ship"
-            wire.ports.AlertCol = AlertRed
+            for k,v in pairs(AlertLights) do
+                v:getWirelink()["RGB"] = AlertRed
+            end
 
-            timer.start("alighton")
+            timer.start("AlertLightTimer")
 
             aiSay(sfowner,ColRed,"Abandon Ship!")
 
@@ -1317,314 +1291,226 @@ chat.listen(function(message, player)
         -----------------------
         ---Doors/Forcefields---
         -----------------------
-        if(CMD("bridge") or CMD("br")) then
-            if(not IsValid(BridgeDoor)) then
-                aiSay(sfowner,"You do not have a Bridge Door linked!")
-            else
-                if(BridgeDoor["Opened_1"] == 0) then
-                    BridgeDoor["Open_1"] = 1
-                    aiSay(sfowner,"Bridge Door",ColGrn," Opened")
-                else
-                    BridgeDoor["Open_1"] = 0
-                    aiSay(sfowner,"Bridge Door",ColRed," Closed")
+        if(CMD("door") or CMD("doors")) then
+            if(OLS[3] == "list") then
+                for I = 1,#DoorValues do
+                    if I == #DoorValues then
+                        DoorList = ""..DoorList.." "..DoorValues[I]:getWirelink()["2"].."."
+                    else
+                        DoorList = ""..DoorList.." "..DoorValues[I]:getWirelink()["2"]..","
+                    end
                 end
-            end
-        end
-        if(CMD("bridgeff") or CMD("brff")) then
-            if(not IsValid(BridgeFF)) then
-                aiSay(sfowner,"You do not have a Bridge Forcefield linked!")
-            else
-                if(BridgeFF["Active"] == 0) then
-                    BridgeFF["Activate"] = 1
-                    aiSay(sfowner,"Bridge Forcefield",ColGrn," Activated")
-                else
-                    BridgeFF["Activate"] = 0
-                    aiSay(sfowner,"Bridge Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
 
-        if(CMD("gateroom") or CMD("gater") or CMD("gr")) then
-            if(not IsValid(GateRDoor)) then
-                aiSay(sfowner,"You do not have a Gateroom Door linked!")
+                aiSay(sfowner,"Door List: "..DoorList)
             else
-                if(GateRDoor["Opened_1"] == 0) then
-                    GateRDoor["Open_1"] = 1
-                    aiSay(sfowner,"Gateroom Door",ColGrn," Opened")
-                else
-                    GateRDoor["Open_1"] = 0
-                    aiSay(sfowner,"Gateroom Door",ColRed," Closed")
-                end
-            end
-        end
-        if(CMD("gateroomff") or CMD("gaterff") or CMD("gr")) then
-            if(not IsValid(GateRFF)) then
-                aiSay(sfowner,"You do not have a Gateroom Forcefield linked!")
-            else
-                if(GateRFF["Active"] == 0) then
-                    GateRFF["Activate"] = 1
-                    aiSay(sfowner,"Gateroom Forcefield",ColGrn," Activated")
-                else
-                    GateRFF["Activate"] = 0
-                    aiSay(sfowner,"Gateroom Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
-        if(CMD("gateff") or CMD("gff")) then
-            if(not IsValid(GateFF)) then
-                aiSay(sfowner,"You do not have a Gate Forcefield linked!")
-            else
-                if(GateFF["Active"] == 0) then
-                    GateFF["Activate"] = 1
-                    aiSay(sfowner,"Gate Forcefield",ColGrn," Activated")
-                else
-                    GateFF["Activate"] = 0
-                    aiSay(sfowner,"Gate Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
+                if(OLS[3] ~= nil) then
+                    for I = 1,#DoorValues do
+                        if(OLS[3] == "all") then -- All Doors
+                            for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
+                                if(OLS[4] == nil) then
+                                    if(v:class() == "cap_doors_frame") then
+                                        v:getWirelink()["Toggle"] = 1
 
-        if(CMD("transporter") or CMD("trans")) then
-            if(not IsValid(TransDoor)) then
-                aiSay(sfowner,"You do not have a Transporter Door linked!")
-            else
-                if(TransDoor["Opened_1"] == 0) then
-                    TransDoor["Open_1"] = 1
-                    aiSay(sfowner,"Transporter Door",ColGrn," Opened")
-                else
-                    TransDoor["Open_1"] = 0
-                    aiSay(sfowner,"Transporter Door",ColRed," Closed")
-                end
-            end
-        end
-        if(CMD("transporterff") or CMD("transff")) then
-            if(not IsValid(TransFF)) then
-                aiSay(sfowner,"You do not have a Transporter Forcefield linked!")
-            else
-                if(TransFF["Active"] == 0) then
-                    TransFF["Activate"] = 1
-                    aiSay(sfowner,"Transporter Forcefield",ColGrn," Activated")
-                else
-                    TransFF["Activate"] = 0
-                    aiSay(sfowner,"Transporter Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
+                                        timer.simple(0.1,function()
+                                            v:getWirelink()["Toggle"] = 0
+                                        end)
+                                    elseif(v:class() == "sbep_base_door_controller") then
+                                        if(v:getWirelink()["Opened_1"] == 1) then
+                                            v:getWirelink()["Open_1"] = 0
+                                        elseif(v:getWirelink()["Opened_1"] == 0) then
+                                            v:getWirelink()["Open_1"] = 1
+                                        end
+                                    end
 
-        if(CMD("engineering") or CMD("eng")) then
-            if(not IsValid(EngDoor)) then
-                aiSay(sfowner,"You do not have a Engineering Door linked!")
-            else
-                if(EngDoor["Opened_1"] == 0) then
-                    EngDoor["Open_1"] = 1
-                    aiSay(sfowner,"Engineering Door",ColGrn," Opened")
-                else
-                    EngDoor["Open_1"] = 0
-                    aiSay(sfowner,"Engineering Door",ColRed," Closed")
-                end
-            end
-        end
-        if(CMD("engineeringff") or CMD("engff")) then
-            if(not IsValid(EngFF)) then
-                aiSay(sfowner,"You do not have a Engineering Forcefield linked!")
-            else
-                if(EngFF["Active"] == 0) then
-                    EngFF["Activate"] = 1
-                    aiSay(sfowner,"Engineering Forcefield",ColGrn," Activated")
-                else
-                    EngFF["Activate"] = 0
-                    aiSay(sfowner,"Engineering Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
+                                    if(I == #DoorValues) then
+                                        aiSay(sfowner,"All Doors",ColGrn," Toggled.")
+                                    end
+                                else
+                                    if(OLS[4] == "open") then
+                                        if(v:class() == "cap_doors_frame") then
+                                            if(v:getWirelink()["Opened"] == 0) then
+                                                v:getWirelink()["Toggle"] = 1
 
-        if(CMD("coreff")) then
-            if(not IsValid(CoreFF)) then
-                aiSay(sfowner,"You do not have a Core Forcefield linked!")
-            else
-                if(CoreFF["Active"] == 0) then
-                    CoreFF["Activate"] = 1
-                    aiSay(sfowner,"Core Forcefield",ColGrn," Activated")
-                else
-                    CoreFF["Activate"] = 0
-                    aiSay(sfowner,"Core Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
+                                                timer.simple(0.1,function()
+                                                    v:getWirelink()["Toggle"] = 0
+                                                end)
+                                            end
+                                        elseif(v:class() == "sbep_base_door_controller") then
+                                            v:getWirelink()["Open_1"] = 1
+                                        end
 
-        if(CMD("lefthangar") or CMD("lhangar") or CMD("lh") or CMD("hl")) then
-            if(not IsValid(HangarDoorLeft)) then
-                aiSay(sfowner,"You do not have a Left Hangar Door linked!")
-            else
-                if(HangarDoorLeft["Opened_1"] == 0) then
-                    HangarDoorLeft["Open_1"] = 1
-                    aiSay(sfowner,"Left Hangar",ColGrn," Opened")
-                else
-                    HangarDoorLeft["Open"] = 0
-                    aiSay(sfowner,"Left Hangar",ColRed," Closed")
+                                        if(I == #DoorValues) then
+                                            aiSay(sfowner,"All Doors",ColGrn," Opened.")
+                                        end
+                                    elseif(OLS[4] == "close") then
+                                        if(v:class() == "cap_doors_frame") then
+                                            if(v:getWirelink()["Opened"] == 1) then
+                                                v:getWirelink()["Toggle"] = 1
+
+                                                timer.simple(0.1,function()
+                                                    v:getWirelink()["Toggle"] = 0
+                                                end)
+                                            end
+                                        elseif(v:class() == "sbep_base_door_controller") then
+                                            v:getWirelink()["Open_1"] = 0
+                                        end
+                                        if(I == #DoorValues) then
+                                            aiSay(sfowner,"All Doors",ColGrn," Closed.")
+                                        end
+                                    end
+                                end
+                            end
+                        else
+                            if(tostring(DoorValues[I]:getWirelink()["2"]):lower() == OLS[3]) then
+                                for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
+                                    if(#v > 1) then
+                                        DoorString = " Doors"
+                                    else
+                                        DoorString = " Door"
+                                    end
+
+                                    if(OLS[4] == nil) then
+                                        if(v:class() == "cap_doors_frame") then
+                                            v:getWirelink()["Toggle"] = 1
+
+                                            timer.simple(0.1,function()
+                                                v:getWirelink()["Toggle"] = 0
+                                            end)
+                                        elseif(v:class() == "sbep_base_door_controller") then
+                                            if(v:getWirelink()["Opened_1"] == 1) then
+                                                v:getWirelink()["Open_1"] = 0
+                                            elseif(v:getWirelink()["Opened_1"] == 0) then
+                                                v:getWirelink()["Open_1"] = 1
+                                            end
+                                        end
+                                        if(I == #DoorValues) then
+                                            aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
+                                        end
+                                    else
+                                        if(OLS[4] == "open") then
+                                            if(v:class() == "cap_doors_frame") then
+                                                if(v:getWirelink()["Opened"] == 0) then
+                                                    v:getWirelink()["Toggle"] = 1
+
+                                                    timer.simple(0.1,function()
+                                                        v:getWirelink()["Toggle"] = 0
+                                                    end)
+                                                end
+                                            elseif(v:class() == "sbep_base_door_controller") then
+                                                v:getWirelink()["Open_1"] = 1
+                                            end
+
+                                            if(I == #DoorValues) then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
+                                            end
+                                        elseif(OLS[4] == "close") then
+                                            if(v:class() == "cap_doors_frame") then
+                                                if(v:getWirelink()["Opened"] == 1) then
+                                                    v:getWirelink()["Toggle"] = 1
+
+                                                    timer.simple(0.1,function()
+                                                        v:getWirelink()["Toggle"] = 0
+                                                    end)
+                                                end
+                                            elseif(v:class() == "sbep_base_door_controller") then
+                                                v:getWirelink()["Open_1"] = 0
+                                            end
+
+                                            if(I == #DoorValues) then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
 
-        if(CMD("righthangar") or CMD("rhangar") or CMD("rh") or CMD("hr")) then
-            if(not IsValid(HangarDoorRight)) then
-                aiSay(sfowner,"You do not have a Right Hangar Door linked!")
-            else
-                if(HangarDoorRight["Opened_1"] == 0) then
-                    HangarDoorRight["Open_1"] = 1
-                    aiSay(sfowner,"Right Hangar",ColGrn," Opened")
-                else
-                    HangarDoorRight["Open"] = 0
-                    aiSay(sfowner,"Right Hangar",ColRed," Closed")
+        if(CMD("field") or CMD("forcefield") or CMD("ff")) then
+            if(OLS[3] == "list") then
+                for I = 1,#FieldValues do
+                    if I == #FieldValues then
+                        FieldList = ""..FieldList.." "..FieldValues[I]:getWirelink()["2"].."."
+                    else
+                        FieldList = ""..FieldList.." "..FieldValues[I]:getWirelink()["2"]..","
+                    end
                 end
-            end
-        end
 
-        if(CMD("hangar") or CMD("hang") or CMD("h")) then
-            if(not IsValid(HangarDoor)) then
-                aiSay(sfowner,"You do not have a Hangar Door linked!")
+                aiSay(sfowner,"Forcefield List: "..DoorList)
             else
-                if(HangarDoor["Opened_1"] == 0) then
-                    HangarDoor["Open_1"] = 1
-                    aiSay(sfowner,"Hangar",ColGrn," Opened")
-                else
-                    HangarDoor["Open_1"] = 0
-                    aiSay(sfowner,"Hangar",ColRed," Closed")
+                if(OLS[3] ~= nil) then
+                    for I = 1,#FieldValues do
+                        if(OLS[3] == "all") then
+                            for k,v in pairs(constraint.getConstrainedEntities(FieldValues[I])) do
+                                if(#v > 1) then
+                                    FieldString = " Forcefields"
+                                else
+                                    FieldString = " Forcefield"
+                                end
+
+                                if(OLS[4] == nil) then
+                                    if(v:getWirelink()["Active"] == 1) then
+                                        v:getWirelink()["Activate"] = 0
+                                    else
+                                        v:getWirelink()["Activate"] = 1
+                                    end
+                                    if(I == #FieldValues) then
+                                        aiSay(sfowner,"All Forcefields",ColGrn," Toggled.")
+                                    end
+                                else
+                                    if(OLS[4] == "open") then
+                                        v:getWirelink()["Activate"] = 1
+
+                                        if(I == #FieldValues) then
+                                            aiSay(sfowner,"All Forcefields",ColGrn," Activated.")
+                                        end
+                                    elseif(OLS[4] == "close") then
+                                        v:getWirelink()["Activate"] = 0
+                                        if(I == #FieldValues) then
+                                            aiSay(sfowner,"All Forcefields",ColGrn," Deactivated.")
+                                        end
+                                    end
+                                end
+                            end
+                        else
+                            if(tostring(FieldValues[I]:getWirelink()["2"]):lower() == OLS[3]) then
+                                for k,v in pairs(constraint.getConstrainedEntities(FieldValues[I])) do
+                                    if(#v > 1) then
+                                        FieldString = " Forcefields"
+                                    else
+                                        FieldString = " Forcefield"
+                                    end
+
+                                    if(OLS[4] == nil) then
+                                        if(v:getWirelink()["Active"] == 1) then
+                                            v:getWirelink()["Activate"] = 0
+                                        else
+                                            v:getWirelink()["Activate"] = 1
+                                        end
+                                        if(I == #FieldValues) then
+                                            aiSay(sfowner,OLS[3],FieldString,ColGrn," Toggled.")
+                                        end
+                                    else
+                                        if(OLS[4] == "open") then
+                                            v:getWirelink()["Activate"] = 1
+                                            if(I == #FieldValues) then
+                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Activated.")
+                                            end
+                                        elseif(OLS[4] == "close") then
+                                            v:getWirelink()["Activate"] = 0
+                                            if(I == #FieldValues) then
+                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Deactivated.")
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
                 end
-            end
-        end
-
-        if(CMD("hangaraccess") or CMD("hangara") or CMD("hanga") or CMD("ha")) then
-            if(not IsValid(HangarAccessDoor)) then
-                aiSay(sfowner,"You do not have a Hangar Access Door linked!")
-            else
-                if(HangarAccessDoor["Opened_1"] == 0) then
-                    HangarAccessDoor["Open_1"] = 1
-                    aiSay(sfowner,"Hangar Access",ColGrn," Opened")
-                else
-                    HangarAccessDoor["Open_1"] = 0
-                    aiSay(sfowner,"Hangar Access",ColRed," Closed")
-                end
-            end
-        end
-
-        if(CMD("hangarff") or CMD("hangff") or CMD("hff")) then
-            if(not IsValid(HangarFF)) then
-                aiSay(sfowner,"You do not have a Hangar Forcefield linked!")
-            else
-                if(HangarFF["Active"] == 0) then
-                    HangarFF["Activate"] = 1
-                    aiSay(sfowner,"Hangar Forcefield",ColGrn," Activated")
-                else
-                    HangarFF["Activate"] = 0
-                    aiSay(sfowner,"Hangar Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
-
-        if(CMD("lefthangarff") or CMD("lhangarff") or CMD("lhff") or CMD("hlff")) then
-            if(not IsValid(LeftHangarFF)) then
-                aiSay(sfowner,"You do not have a Left Hangar Forcefield linked!")
-            else
-                if(LeftHangarFF["Active"] == 0) then
-                    LeftHangarFF["Activate"] = 1
-                    aiSay(sfowner,"Left Hangar Forcefield",ColGrn," Activated")
-                else
-                    LeftHangarFF["Activate"] = 0
-                    aiSay(sfowner,"Left Hangar Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
-
-        if(CMD("righthangarff") or CMD("lhangarff") or CMD("lhff") or CMD("hlff")) then
-            if(not IsValid(RightHangarFF)) then
-                aiSay(sfowner,"You do not have a Right Hangar Forcefield linked!")
-            else
-                if(RightHangarFF["Active"] == 0) then
-                    RightHangarFF["Activate"] = 1
-                    aiSay(sfowner,"Right Hangar Forcefield",ColGrn," Activated")
-                else
-                    RightHangarFF["Activate"] = 0
-                    aiSay(sfowner,"Right Hangar Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
-
-        if(CMD("hangaraccessff") or CMD("hangaraff") or CMD("hangaff") or CMD("haff")) then
-            if(not IsValid(HangarAFF)) then
-                aiSay(sfowner,"You do not have a Hangar Access Forcefield linked!")
-            else
-                if(HangarAFF["Active"] == 0) then
-                    HangarAFF["Activate"] = 1
-                    aiSay(sfowner,"Hangar Access Forcefield",ColGrn," Activated")
-                else
-                    HangarAFF["Activate"] = 0
-                    aiSay(sfowner,"Hangar Access Forcefield",ColRed," Deactivated")
-                end
-            end
-        end
-
-        if(CMD("shutters") or CMD("shutter") or CMD("shut")) then
-            wire.ports.Shutters = wire.self().Shutters == 0 and 1 or 0
-
-            if(wire.self().Shutters == 0) then
-                aiSay(sfowner,"Shutters",ColGrn," Opened")
-            else
-                aiSay(sfowner,"Shutters",ColRed," Closed")
-            end
-        end
-
-        if(CMD("bulkheads") or CMD("blastdoors") or CMD("bulk") or CMD("blast")) then
-            wire.ports.BlastDoors = wire.self().BlastDoors == 0 and 1 or 0
-
-            if(wire.self().BlastDoors == 0) then
-                aiSay(sfowner,"Blast Doors",ColGrn," Opened")
-            else
-                aiSay(sfowner,"Blast Doors",ColRed," Closed")
-            end
-        end
-
-        if(CMD("otherdoors") or CMD("otherdoor") or CMD("od")) then
-            wire.ports.OtherDoors = wire.self().OtherDoors == 0 and 1 or 0
-
-            if(wire.self().OtherDoors == 0) then
-                aiSay(sfowner,"Other Doors",ColGrn," Opened")
-            else
-                aiSay(sfowner,"Other Doors",ColRed," Closed")
-            end
-        end
-
-        if(CMD("otherffs") or CMD("offs")) then
-            wire.ports.OtherFFs = wire.self().OtherFFs == 0 and 1 or 0
-
-            if(wire.self().OtherFFs == 0) then
-                aiSay(sfowner,"Other Forcefields",ColGrn," Activated")
-            else
-                aiSay(sfowner,"Other Forcefields",ColRed," Deactivated")
-            end
-        end
-
-        if(CMD("alldoors") or CMD("adoors") or CMD("doors") or CMD("ad")) then
-            ADoors = notVar(ADoors)
-
-            allDoors(ADoors)
-
-            if(ADoors == 1) then
-                aiSay(sfowner,"All Doors",ColGrn," Opened")
-            else
-                aiSay(sfowner,"All Doors",ColRed," Closed")
-            end
-        end
-
-        if(CMD("forcefields") or CMD("ffs")) then
-            AllFFs = notVar(AllFFs)
-
-            allForceFields(AllFFs)
-
-            if(AllFFs == 1) then
-                aiSay(sfowner,"All Forcefields",ColGrn," Activated")
-            else
-                aiSay(sfowner,"All Forcefields",ColRed," Deactivated")
             end
         end
 
@@ -1649,10 +1535,6 @@ chat.listen(function(message, player)
             ONeill()
         end
 
-        if(CMD("reset")) then
-            aiSay(sfowner,"Starfall does not have or require a Reset function.")
-        end
-
         if(CMD("help")) then
             aiSay(sfowner,AIName," Help can be found at:")
             printColor(ColOng,"https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk")
@@ -1671,11 +1553,16 @@ chat.listen(function(message, player)
                         AimName = "Forcefield"
                     end
                 else
-                    AimEW = AimE:getWirelink()
-                    AimName = AimE:getPrintName()
-
                     if(propprotection.isAllowedForEntity(AimE,propprotection.ACCESS_TOOLGUN) == true) then
-                        if(AimEW:inputType("Activate") ~= false) then
+                        AimEW = AimE:getWirelink()
+
+                        if(AimE:getPrintName() ~= nil) then
+                            AimName = AimE:getPrintName()
+                        else
+                            AimName = tostring(AimE:class())
+                        end
+
+                        if(AimEW ~= nil and AimEW:inputType("Activate") ~= false) then
                             if(OLS[2] == "activate" or OLS[2] == "work") then
                                 if(AimEW["Activate"] == 1) then
                                     aiSay(sfowner,"That ",ColGrn,AimName,ColOng," is already activated!")
@@ -1989,9 +1876,13 @@ chat.listen(function(message, player)
 
         ---Jammer---
         if(CMD("jam")) then
-            wire.ports.Jam = wire.self().Jam == 0 and 1 or 0
+            JamActive = notVar(JamActive)
 
-            if(wire.self().Jam == 0) then
+            for k,v in pairs(Jammers) do
+                v:getWirelink()["Activate"] = JamActive
+            end
+
+            if(JamActive == 1) then
                 aiSay(sfowner,"Jamming Device ",ColGrn,"Enabled")
             else
                 aiSay(sfowner,"Jamming Device ",ColRed,"Disabled")
@@ -2004,24 +1895,44 @@ chat.listen(function(message, player)
         --------------------
         if(CMD("wstrength")) then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
-                aiSay(sfowner,"Invalid number specified. Current weapon strength is: ",ColGrn,wire.self().WepStrength)
+                aiSay(sfowner,"Current weapon strength is: ",ColGrn,wire.self().WepStrength)
             elseif(tonumber(OLS[3]) > 10) then
-                wire.ports.WepStrength = 10
+                for k,v in pairs(ShipWeapons) do
+                    if(v:getWirelink():inputType("Strength") ~= nil) then
+                        v:getWirelink()["Strength"] = 10
+                    end
+                end
+
                 aiSay(sfowner,"Weapon Strength cannot go above ",ColGrn,"10",ColOng," Setting Weapon Strength to max")
             else
-                wire.ports.WepStrength = tonumber(OLS[3])
+                for k,v in pairs(ShipWeapons) do
+                    if(v:getWirelink():inputType("Strength") ~= nil) then
+                        v:getWirelink()["Strength"] = tonumber(OLS[3])
+                    end
+                end
+
                 aiSay(sfowner,"Weapon Strength set to: ",ColGrn,OLS[3])
             end
         end
 
         if(CMD("wrate")) then
             if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 1) then
-                aiSay(sfowner,"Invalid number specified. Current weapon fire rate is: ",ColGrn,wire.self().WepRate)
+                aiSay(sfowner,"Current weapon fire rate is: ",ColGrn,wire.self().WepRate)
             elseif(tonumber(OLS[3]) > 10) then
-                wire.ports.WepRate = 10
+                for k,v in pairs(ShipWeapons) do
+                    if(v:getWirelink():inputType("Refire Rate") ~= nil) then
+                        v:getWirelink()["Refire Rate"] = 10
+                    end
+                end
+
                 aiSay(sfowner,"Weapon Fire Rate cannot go above ",ColGrn,"10",ColOng," Setting Weapon Fire Rate to max")
             else
-                wire.ports.WepRate = tonumber(OLS[3])
+                for k,v in pairs(ShipWeapons) do
+                    if(v:getWirelink():inputType("Refire Rate") ~= nil) then
+                        v:getWirelink()["Refire Rate"] = tonumber(OLS[3])
+                    end
+                end
+
                 aiSay(sfowner,"Weapon Fire Rate set to: ",ColGrn,OLS[3])
             end
         end
@@ -2031,7 +1942,10 @@ chat.listen(function(message, player)
                 aiSay(sfowner,"You must enter a Beam Weapon Type")
             else
                 if(BeamType[OLS[3]] ~= nil) then
-                    wire.ports.BeamWepType = BeamType[OLS[3]]
+                    for k,v in pairs(BeamEmitters) do
+                        v:getWirelink()["Set Type"] = BeamType[OLS[3]]
+                    end
+
                     aiSay(sfowner,"Beam Weapon Type changed to: ",ColGrn,OLS[3])
                 else
                     aiSay(sfowner,"Unrecognized Beam Weapon Type: ",ColRed,OLS[3])
@@ -2044,7 +1958,10 @@ chat.listen(function(message, player)
                 aiSay(sfowner,"You must enter a Torpedo Weapon Type")
             else
                 if(TorpType[OLS[3]] ~= nil) then
-                    wire.ports.TorpWepType = TorpType[OLS[3]]
+                    for k,v in pairs(TorpLaunchers) do
+                        v:getWirelink()["Set Type"] = TorpType[OLS[3]]
+                    end
+
                     aiSay(sfowner,"Torpedo Weapon Type changed to: ",ColGrn,OLS[3])
                 else
                     aiSay(sfowner,"Unrecognized Torpedo Weapon Type: ",ColRed,OLS[3])
@@ -2057,7 +1974,10 @@ chat.listen(function(message, player)
                 aiSay(sfowner,"You must enter a Turret Weapon Type")
             else
                 if(TurretType[OLS[3]] ~= nil) then
-                    wire.ports.TurretWepType = TurretType[OLS[3]]
+                    for k,v in pairs(ShipTurrets) do
+                        v:getWirelink()["Set Type"] = TurretType[OLS[3]]
+                    end
+
                     aiSay(sfowner,"Turret Weapon Type changed to: ",ColGrn,OLS[3])
                 else
                     aiSay(sfowner,"Unrecognized Turret Weapon Type: ",ColRed,OLS[3])
@@ -2066,12 +1986,72 @@ chat.listen(function(message, player)
         end
 
         if(CMD("fire")) then
-            wire.ports.Fire = wire.self().Fire == 0 and 1 or 0
+            if(OLS[3] == nil) then
+                wire.ports.Fire = wire.self().Fire == 0 and 1 or 0
 
-            if(wire.self().Fire == 0) then
-                aiSay(sfowner,"Weapons ",ColGrn,"Online")
+                if(wire.self().Fire == 1 or TorpFire == 1 or BeamFire == 1 or TurFire == 1) then
+                    TorpFire = 0
+                    BeamFire = 0
+                    TurFire = 0
+
+                    for k,v in pairs(ShipWeapons) do
+                        v:getWirelink()["Fire"] = 0
+                    end
+
+                    aiSay(sfowner,"All Weapons ",ColRed,"Offline")
+                else
+                    TorpFire = 1
+                    BeamFire = 1
+                    TurFire = 1
+
+                    for k,v in pairs(ShipWeapons) do
+                        v:getWirelink()["Fire"] = 1
+                    end
+
+                    aiSay(sfowner,"All Weapons ",ColGrn,"Online")
+                end
             else
-                aiSay(sfowner,"Weapons ",ColRed,"Offline")
+                if(OLS[3] == "torp" or OLS[3] == "torps") then
+                    TorpFire = notVar(TorpFire)
+
+                    for k,v in pairs(TorpLaunchers) do
+                        v:getWirelink()["Fire"] = TorpFire
+                    end
+
+                    if(TorpFire == 1) then
+                        aiSay(sfowner,"Torpedo Launchers ",ColGrn,"Online")
+                    else
+                        aiSay(sfowner,"Torpedo Launchers ",ColRed,"Offline")
+                    end
+                end
+
+                if(OLS[3] == "beams" or OLS[3] == "phasers") then
+                    BeamFire = notVar(BeamFire)
+
+                    for k,v in pairs(BeamEmitters) do
+                        v:getWirelink()["Fire"] = BeamFire
+                    end
+
+                    if(BeamFire == 1) then
+                        aiSay(sfowner,"Beam Emitters ",ColGrn,"Online")
+                    else
+                        aiSay(sfowner,"Beam Emitters ",ColRed,"Offline")
+                    end
+                end
+
+                if(OLS[3] == "turrets" or OLS[3] == "tur") then
+                    TurFire = notVar(TurFire)
+
+                    for k,v in pairs(ShipTurrets) do
+                        v:getWirelink()["Fire"] = TurFire
+                    end
+
+                    if(TurFire == 1) then
+                        aiSay(sfowner,"Ship Turrets ",ColGrn,"Online")
+                    else
+                        aiSay(sfowner,"Ship Turrets ",ColRed,"Offline")
+                    end
+                end
             end
         end
 
