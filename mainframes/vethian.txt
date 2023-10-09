@@ -350,6 +350,9 @@ function AutoLink()
     AlertLights = {}
     DoorValues = {}
     FieldValues = {}
+    Stargates = {}
+    RingPlats = {}
+    Transporters = {}
 
     TorpFire = 0
     BeamFire = 0
@@ -359,6 +362,43 @@ function AutoLink()
 
     DoorList = ""
     FieldList = ""
+
+    hook.add("input","InputChangedHook",function(iname,val)
+        if(iname == "Stargate" and IsValid(val)) then
+            local v = val:entity()
+
+            if(v:class() == "stargate_atlantis" or
+            v:class() == "stargate_infinity" or
+            v:class() == "stargate_movie" or
+            v:class() == "stargate_sg1" or
+            v:class() == "stargate_tollan" or
+            v:class() == "stargate_universe") then
+                Stargate = v
+                StargateW = v:getWirelink()
+            end
+        end
+
+        if(iname == "Rings" and IsValid(val)) then
+            local v = val:entity()
+
+            if(v:class() == "ring_base_ancient" or
+            v:class() == "ring_base_goauld" or
+            v:class() == "ring_base_ori") then
+                RingPlat = v
+                RingPlatW = v:getWirelink()
+            end
+        end
+
+        if(iname == "Transporter" and IsValid(val)) then
+            local v = val:entity()
+
+            if(v:class() == "asgard_transporter" or
+            v:class() == "transporter_pad") then
+                Transporter = v
+                TransporterW = v:getWirelink()
+            end
+        end
+    end)
 
     if(ents.self():getCore() == nil) then
         aiSay(sfowner,"There is no core on this ship! Cannot use autolink system!")
@@ -467,6 +507,51 @@ function AutoLink()
             if(v:getWireName() == "VAlert") then
                 table.insert(AlertLights,v)
             end
+        end
+
+
+
+        if(v:class() == "stargate_atlantis" or
+        v:class() == "stargate_infinity" or
+        v:class() == "stargate_movie" or
+        v:class() == "stargate_sg1" or
+        v:class() == "stargate_tollan" or
+        v:class() == "stargate_universe") then
+            table.insert(Stargates,v)
+        end
+
+        if(IsValid(Stargate) ~= true) then
+            if(#Stargates > 1 and ALinkWarn == 1) then
+                aiSay(sfowner,"There is more than 1 stargate, cannot autolink!")
+            elseif(#Stargates == 1) then
+                Stargate = table.unpack(Stargates,1,1)
+                StargateW = table.unpack(Stargates,1,1):getWirelink()
+            end
+        end
+
+        if(v:class() == "ring_base_ancient" or
+        v:class() == "ring_base_goauld" or
+        v:class() == "ring_base_ori") then
+            table.insert(RingPlats,v)
+        end
+
+        if(#RingPlats > 1 and ALinkWarn == 1) then
+            aiSay(sfowner,"There is more than 1 Ring Platform, cannot autolink!")
+        elseif(#RingPlats == 1) then
+            RingPlat = table.unpack(RingPlats,1,1)
+            RingPlatW = table.unpack(RingPlats,1,1):getWirelink()
+        end
+
+        if(v:class() == "asgard_transporter" or
+        v:class() == "transporter_pad") then
+            table.insert(Transporters,v)
+        end
+
+        if(#Transporters > 1 and ALinkWarn == 1) then
+            aiSay(sfowner,"There is more than 1 Transporter, cannot autolink!")
+        elseif(#Transporters == 1) then
+            Transporter = table.unpack(Transporters,1,1)
+            TransporterW = table.unpack(Transporters,1,1):getWirelink()
         end
 
         --Door Linking
@@ -1052,6 +1137,8 @@ function Alert(input)
             if(GateCol == 1) then
                 if(IsValid(wire.ports.Stargate) == true) then
                     wire.ports.Stargate["Event Horion Color"] = Color(255,255,255)
+                elseif(IsValid(Stargate)) then
+                    StargateW["Event Horizon Color"] = Color(255,255,255)
                 end
             end
         end
@@ -1072,6 +1159,8 @@ function Alert(input)
             if(GateCol == 1) then
                 if(IsValid(wire.ports.Stargate) == true) then
                     wire.ports.Stargate["Event Horion Color"] = AlertBlue
+                elseif(IsValid(Stargate)) then
+                    StargateW["Event Horizon Color"] = AlertBlue
                 end
             end
         end
@@ -1091,6 +1180,8 @@ function Alert(input)
             if(GateCol == 1) then
                 if(IsValid(wire.ports.Stargate) == true) then
                     wire.ports.Stargate["Event Horion Color"] = AlertRed
+                elseif(IsValid(Stargate)) then
+                    StargateW["Event Horizon Color"] = AlertRed
                 end
             end
         end
@@ -1110,6 +1201,8 @@ function Alert(input)
             if(GateCol == 1) then
                 if(IsValid(wire.ports.Stargate) == true) then
                     wire.ports.Stargate["Event Horion Color"] = AlertBlack
+                elseif(IsValid(Stargate)) then
+                    StargateW["Event Horizon Color"] = AlertBlack
                 end
             end
         end
@@ -1129,6 +1222,8 @@ function Alert(input)
             if(GateCol == 1) then
                 if(IsValid(wire.ports.Stargate) == true) then
                     wire.ports.Stargate["Event Horion Color"] = Color(200,0,0)
+                elseif(IsValid(Stargate)) then
+                    StargateW["Event Horizon Color"] = Color(200,0,0)
                 end
             end
         end
@@ -1138,9 +1233,6 @@ end
 function LockDown(input)
     if(input == true) then
         ShipCoreW:entity():setEnvironmentSound("st/misc/rom_redalert.wav",0.4)
-
-        allDoors(0)
-        allForceFields(1)
 
         wire.ports.Lockdown = 1
 
@@ -1165,8 +1257,6 @@ function LockDown(input)
         ShipCoreW:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
         ShipCoreW:entity():stopEnvironmentSound()
 
-        allForceFields(0)
-
         wire.ports.Lockdown = 0
 
         if(IsValid(wire.ports.Rings) == true) then
@@ -1179,7 +1269,115 @@ function LockDown(input)
             LSCoreW["Disable Noclip"] = 0
         end
 
-        aiSay(sfowner,"Lockdown",ColGrn," Deactivated")
+        aiSay(sfowner,"Lockdown ",ColGrn,"Disabled")
+    end
+end
+
+function Diagnostic(diagcheck)
+    local aiment = sfowner:aimEntity()
+
+    if(not IsValid(aiment)) then
+        aiSay(sfowner,"You're not even looking at anything!")
+        --play curb your enthusiasm here because funny
+    else
+        if(aiment:getCore() == nil) then
+            aiSay(sfowner,"There is no Core on that ship!")
+            --play curb your enthusiam here because more funny
+
+            return
+        end
+
+        if(IsValid(aiment:GetCore():getShield())) then
+            aiSay(sfowner,"There is no Shield on that ship!")
+        end
+
+        for k,v in pairs(constraint.getAllConstrainedEntities(aiment)) do
+            if(v:class() == "stargazer_energy_core") then
+                EnergyCore = v
+                EnergyCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Energy Core on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_refinement_core") then
+                Refinery = v
+                RefineryW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Refinery on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_water_core") then
+                WaterCore = v
+                WaterCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Water Core on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_ls_core") then
+                LSCore = v
+                LSCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Life Support Core on this ship!")
+                end
+            end
+
+            if(v:class() == "st_cloaking_device") then
+                CloakDevice = v
+                CloakDeviceW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Cloaking Device on this ship!")
+                end
+            end
+
+            if(v:class() == "drive_core") then
+                DriveCore = v
+                DriveCoreW = v:getWirelink()
+            end
+
+            if(v:class() == "torpedo_launcher") then
+                table.insert(TorpLaunchers,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "beam_emitter") then
+                table.insert(BeamEmitters,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "ship_turret_base") then
+                table.insert(ShipTurrets,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "cruise_missile_launcher" or
+            v:class() == "sam_missile_launcher" or
+            v:class() == "heavy_missile_pod" or
+            v:class() == "ship_laser" or
+            v:class() == "keeper_emitter" or
+            v:class() == "pulsar_emitter" or
+            v:class() == "pulse_phaser_emitter" or
+            v:class() == "phaser_emitter" or
+            v:class() == "ship_cannon" or
+            v:class() == "sg_beam_emitter") then
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "tractor_emitter") then
+                table.insert(Tractors,v)
+            end
+
+            if(v:class() == "jamming_device") then
+                table.insert(Jammers,v)
+            end
+        end
     end
 end
 
@@ -1286,6 +1484,10 @@ chat.listen(function(message, player)
 
         if(CMD("ldoff")) then
             LockDown(false)
+        end
+
+        if(CMD("helper") or CMD("diagnose") or CMD("diag")) then
+            Diagnostic(OLS[3])
         end
 
         -----------------------
@@ -1758,7 +1960,7 @@ chat.listen(function(message, player)
         end
 
         if(CMD("dial")) then
-            if(IsValid(wire.ports.Stargate:entity()) ~= true) then
+            if(IsValid(Stargate) ~= true) then
                 aiSay(sfowner,ColRed,"Stargate not linked!")
             else
                 if(OLS[4] == nil) then
