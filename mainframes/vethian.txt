@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.2.1" -- Don't touch this
+AIVersion = "2.2.3" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -933,7 +933,7 @@ function TractorBeam()
     end
 end
 
-function Shield()
+function ShieldFunc()
     if(IsValid(Shield) ~= true) then
         aiSay(sfowner,ColRed,"Shield Emitter not linked!")
     else
@@ -1456,7 +1456,7 @@ chat.listen(function(message, player)
         end
 
         if(CMD("shield")) then
-            Shield()
+            ShieldFunc()
         end
 
         if(CMD("cloak")) then
