@@ -9,12 +9,12 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.2.3" -- Don't touch this
+AIVersion = "2.2.4" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
 Made by Nova Astral
-Discord: Nova Astral#2079
+Discord: novaastral
 Steam: http://steamcommunity.com/profiles/76561198068127098
 Github: https://github.com/NovaAstral/Novas-Public-SFs
 
@@ -24,13 +24,12 @@ This is the docs on command usage:
 https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk/
 
 If you want to make a suggestion/bug report,
-either use The Spartan Alliance discord channel for Vethian, or the github issues section
+You can ping me on the TSCM Community Discord, or use the github issues section
 ]]--
 
 --This is the custom config setup, change these if you'd like
 function config()
     wire.ports.WarpFactor = 10 --This is the starting warp factor
-    wire.ports.Shutters = 1 --This opens the shutters when the mainframe is spawned
 
     GateCol = 1 --Set this to 0 if you don't want your stargate event horizon to change colors on alert
 
@@ -68,7 +67,7 @@ end
 function nameCheck()
     if(PrintOnSpawn == 1) then
         if(Shipname == "Shipname") then
-            aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
+            aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 38",ColOng,"] of this mainframe")
         else
             chat.say(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,AIName,ColGrn," v",AIVersion,ColOng," active",ColOng," on: ",ZeiaMBlu,Shipname)
         end
