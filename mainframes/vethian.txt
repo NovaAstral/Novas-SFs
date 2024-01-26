@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.2.4" -- Don't touch this
+AIVersion = "2.3.0" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -39,6 +39,8 @@ function config()
 
     AutoTarget =  1 --If Target destroyed, try to target another of the same entity owned by the same person
     AutoTargetPrint = 1 --Print in chat when AutoTarget targets a new entity
+    TargetLeading = 0 --Default value for target leading, can be changed with /t lead
+    AimFixed = 1 --If the mainframe should automatically aim fixed wepaons like the Ship Cannon and Keeper Emitter
 
     CmdSound = 0 --If you want Vethian to audibly say the outputs of commands (WIP!)
 
@@ -52,11 +54,11 @@ function config()
     Prefix = "/v" --Set this to the prefix you need to enter first in chat for any commands
     WarpPrefix = "/warp" --This is the prefix for using the warp drive
     TPPrefix = "/pad" --This is the prefix for using the transporter
-    TargetPrefix = "/t" --Targetting is WIP!
+    TargetPrefix = "/t" --This is the prefix for using the targetting system
     --These must be 1 word, you cannot do for example: "/v warp"
 
     wire.ports.WepStrength = 10 --I would set these lower if you dont have alot of resources
-    wire.ports.WepRate = 10
+    wire.ports.WepRate = 10 --You can set these with commands (wrate, wstrength) though
 
     AlertGreen = Color(0,0,0):ToVector() * 255 --Alert colors for the light outputs
     AlertBlue = Color(0,0,255):ToVector() * 255
@@ -312,30 +314,143 @@ function functionSetup()
         end
     end)
 
-    function Target(Ent,Print)
+    function TargetWeps(Ent,Print,TPos)
+        TarCloaked = 0
+
         wire.ports.TargetEnt = Ent
-        wire.ports.TargetPos = Ent:obbCenterW()
+        if(Ent:pos() ~= Vector(0,0,0)) then
+            wire.ports.TargetPos = Ent:obbCenterW()
+        end
+
         wire.ports.TargetLocked = 1
 
-        --timer target for autotargetting
+        if(not IsValid(Ent) or not IsValid(Ent:owner())) then
+            aiSay(sfowner,"That is not a valid target! (Are you looking at a shield?)")
+            return
+        end
+
+        local Tar = Ent
 
         if(Ent:owner():name() == "") then
             wire.ports.TargetOwner = ents.NULL_ENTITY
             TarColor = Color(255,255,255):ToVector() * 255
         else
             wire.ports.TargetOwner = Ent:owner()
-            TarColor = Vector(Ent:owner():getTeamColor())
+            TarColor = Ent:owner():getTeamColor()
         end
 
         if(Print == 1) then
-            if(Ent:isPlayer()) then
-                aiSay(sfowner,"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
+            if(TPos ~= Vector(0,0,0)) then
+                aiSay(sfowner,"Targetting Position: ",ColGrn,TPos)
             else
-                aiSay(sfowner,"Targetting ",Ent:class(),ColOng," Owned by ",TarColor,Ent:owner())
+                if(Ent:isPlayer()) then
+                    aiSay(sfowner,"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
+                else
+                    aiSay(sfowner,"Targetting ",ColGrn,Ent:class(),ColOng," Owned by ",TarColor,Ent:owner():name())
+                end
             end
         end
 
-        -- timer.create("tarcheck",0.1,0,function() end) --this shouldn't be here
+        if(TPos ~= Vector(0,0,0)) then
+            if(timer.exists("tarcheck")) then
+                timer.remove("tarcheck")
+            end
+
+            local TarPos = TPos
+            for k,v in pairs(ShipWeapons) do
+                local WepW = v:getWirelink()
+
+                if(AimFixed == 1 and v:class() == "ship_cannon") then
+                    v:setAng((TarPos - v:pos()):Angle())
+                end
+
+                if(AimFixed == 1 and v:class() == "keeper_emitter") then
+                    v:setAng((TarPos - v:pos()):Angle())
+                end
+
+                if(WepW:inputType("Target") ~= nil) then
+                    WepW["Target"] = TarPos
+                end
+            end
+        else
+            timer.create("tarcheck",0.1,0,function()
+                if(IsValid(Tar) and Tar:pos() ~= Vector(0,0,0)) then
+                    if(TarCloaked == 1) then
+                        TarCloaked = 0
+                        aiSay(sfowner,"Target has uncloaked!")
+                    end
+
+                    local Offset = TarOffset(Tar)
+                    wire.ports.TargetPos = Tar:obbCenterW()+Tar:up()*Offset
+
+                    for k,v in pairs(ShipWeapons) do
+                        if(not IsValid(v)) then
+                            table.remove(ShipWeapons,v) --delete removed weapons from the ship weapons table
+                        else
+                            local WepW = v:getWirelink()
+                            if(TargetLeading == 1) then
+                                if(GetProjVel(v) ~= 0) then
+                                    local TarPos = gvintercept(v:pos(), v:vel(), Tar:pos()+Tar:up()*Offset, Tar:vel(), GetProjVel(v))
+
+                                    if(WepW:inputType("Target") ~= nil) then
+                                        WepW["Target"] = TarPos
+                                    end
+
+                                    if(AimFixed == 1 and v:class() == "ship_cannon") then
+                                        v:setAng((TarPos - v:pos()):Angle())
+                                    end
+                                else
+                                    local TarPos = Tar:pos() + Tar:up()*Offset
+
+                                    if(WepW:inputType("Target") ~= nil) then
+                                        WepW["Target"] = TarPos
+                                    end
+
+                                    if(AimFixed == 1 and v:class() == "keeper_emitter") then
+                                        v:setAng((TarPos - v:pos()):Angle())
+                                    end
+                                end
+                            else
+                                local TarPos = Tar:pos() + Tar:up()*Offset
+
+                                if(WepW:inputType("Target") ~= nil) then
+                                    WepW["Target"] = TarPos
+                                else
+                                    if(AimFixed == 1 and v:class() == "ship_cannon" or v:class() == "keeper_emitter") then
+                                        v:setAng((TarPos - v:pos()):Angle())
+                                    end
+                                end
+                            end
+                        end
+
+                    end
+                else
+                    if(AutoTarget == 1) then
+                        if(WepTargets ~= nil and #WepTargets > 0) then
+                            local Tar = table.remove(WepTargets,1)
+
+                            if(IsValid(Tar)) then
+                                TargetWeps(Tar,AutoTargetPrint,Vector(0,0,0))
+                            end
+                        elseif(not IsValid(Tar)) then
+                            aiSay(sfowner,"Target Lost! Likely destroyed.")
+
+                            wire.ports.TargetLocked = 0
+
+                            timer.remove("tarcheck")
+                        elseif(IsValid(Tar) and TarCloaked == 0) then
+                            TarCloaked = 1
+                            aiSay(sfowner,"Target has cloaked!")
+                        end
+                    elseif(not IsValid(Tar)) then
+                        aiSay(sfowner,"Target Lost! Likely destroyed.")
+                        wire.ports.TargetLocked = 0
+
+                        timer.remove("tarcheck")
+                    end
+                end
+            end)
+        end
     end
 end
 
@@ -408,9 +523,11 @@ function AutoLink()
         ShipCoreW = ents.self():getCore():getWirelink()
     end
 
-    if(IsValid(ShipCore:getShield())) then
+    if(IsValid(ShipCore) and ShipCore:class() == "ship_core") then
         Shield = ShipCore:getShield()
-        ShieldW = ShipCore:getShield():getWirelink()
+        if(IsValid(Shield)) then
+            ShieldW = ShipCore:getShield():getWirelink()
+        end
     else
         aiSay(sfowner,"There is no Shield on this ship!")
     end
@@ -508,8 +625,6 @@ function AutoLink()
             end
         end
 
-
-
         if(v:class() == "stargate_atlantis" or
         v:class() == "stargate_infinity" or
         v:class() == "stargate_movie" or
@@ -593,7 +708,7 @@ function AutoLink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
                 if(ve:class() == "st_forcefield_emitter") then
-                    if(vw["1"] == "VDoors") then
+                    if(vw["1"] == "VForcefields" or vw["1"] == "VForcefield") then
                         table.insert(FieldValues,v)
 
                         if(vw["3"] == 1) then
@@ -1640,16 +1755,16 @@ chat.listen(function(message, player)
                     end
                 end
 
-                aiSay(sfowner,"Forcefield List: "..DoorList)
+                aiSay(sfowner,"Forcefield List: "..FieldList)
             else
                 if(OLS[3] ~= nil) then
                     for I = 1,#FieldValues do
                         if(OLS[3] == "all") then
                             for k,v in pairs(constraint.getConstrainedEntities(FieldValues[I])) do
                                 if(#v > 1) then
-                                    FieldString = " Forcefields"
+                                    FieldString = "VForcefields"
                                 else
-                                    FieldString = " Forcefield"
+                                    FieldString = "VForcefield"
                                 end
 
                                 if(OLS[4] == nil) then
@@ -2196,7 +2311,11 @@ chat.listen(function(message, player)
                     TurFire = 0
 
                     for k,v in pairs(ShipWeapons) do
-                        v:getWirelink()["Fire"] = 0
+                        if(not IsValid(v)) then
+                            table.remove(ShipWeapons,v) --delete removed weapons from the ship weapons table
+                        else
+                            v:getWirelink()["Fire"] = 0
+                        end
                     end
 
                     aiSay(sfowner,"All Weapons ",ColRed,"Offline")
@@ -2206,7 +2325,11 @@ chat.listen(function(message, player)
                     TurFire = 1
 
                     for k,v in pairs(ShipWeapons) do
-                        v:getWirelink()["Fire"] = 1
+                        if(not IsValid(v)) then
+                            table.remove(ShipWeapons,v) --delete removed weapons from the ship weapons table
+                        else
+                            v:getWirelink()["Fire"] = 1
+                        end
                     end
 
                     aiSay(sfowner,"All Weapons ",ColGrn,"Online")
@@ -2216,7 +2339,12 @@ chat.listen(function(message, player)
                     TorpFire = notVar(TorpFire)
 
                     for k,v in pairs(TorpLaunchers) do
-                        v:getWirelink()["Fire"] = TorpFire
+                        if(not IsValid(v)) then
+                            table.remove(TorpLaunchers,v) --delete removed weapons from the ship weapons table
+                        else
+                            v:getWirelink()["Fire"] = TorpFire
+                        end
+
                     end
 
                     if(TorpFire == 1) then
@@ -2230,7 +2358,11 @@ chat.listen(function(message, player)
                     BeamFire = notVar(BeamFire)
 
                     for k,v in pairs(BeamEmitters) do
-                        v:getWirelink()["Fire"] = BeamFire
+                        if(not IsValid(v)) then
+                            table.remove(BeamEmitters,v) --delete removed weapons from the ship weapons table
+                        else
+                            v:getWirelink()["Fire"] = BeamFire
+                        end
                     end
 
                     if(BeamFire == 1) then
@@ -2244,7 +2376,11 @@ chat.listen(function(message, player)
                     TurFire = notVar(TurFire)
 
                     for k,v in pairs(ShipTurrets) do
-                        v:getWirelink()["Fire"] = TurFire
+                        if(not IsValid(v)) then
+                            table.remove(ShipTurrets,v) --delete removed weapons from the ship weapons table
+                        else
+                            v:getWirelink()["Fire"] = TurFire
+                        end
                     end
 
                     if(TurFire == 1) then
@@ -2967,11 +3103,113 @@ chat.listen(function(message, player)
     end
 end, sfowner)
 
-chat.listen(function(message, player)
+chat.listen(function(message, player) --Targetting
     local OLS = message:lower():explode(" ", true)
 
     if(OLS[1] == TargetPrefix) then
+        if(OLS[2] == "help") then
+            aiSay(sfowner,"You can find the Targetting commands on page 15 here: https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk/edit?usp=sharing")
+        elseif(OLS[2] == "list") then
+            aiSay(sfowner,"Target List: \n",table.concatKeys(TarType,", "))
+        elseif(OLS[2] == "this" or OLS[2] == "that") then
+            if(IsValid(sfowner:aimEntity())) then
+                TargetWeps(sfowner:aimEntity(),1,Vector(0,0,0))
+            else
+               aiSay(sfowner,"You're not looking at anything!")
+            end
+        elseif(OLS[2] == "here") then
+            TargetWeps(ents.self(),1,sfowner:aimPos())
+        elseif(OLS[2] == "next") then
+            if(WepTargets ~= nil and #WepTargets > 0) then
+                TarTableIndex = TarTableIndex+1
 
+                TargetWeps(WepTargets[TarTableIndex],1,Vector(0,0,0))
+            else
+                aiSay(sfowner,"You're not targetting anything, cannot switch to next target.")
+            end
+        elseif(OLS[2] == "off") then
+            wire.ports.TargetEnt = ents.NULL_ENTITY
+            wire.ports.TargetPos = Vector(0,0,0)
+            wire.ports.TargetLocked = 0
+
+            for k,v in pairs(ShipWeapons) do
+                if(not IsValid(v)) then
+                    table.remove(ShipWeapons,v) --delete removed weapons from the ship weapons table
+                else
+                    local WepW = v:getWirelink()
+
+                    if(WepW:inputType("Target") ~= nil) then
+                        WepW["Target"] = Vector(0,0,0)
+                    end
+                end
+            end
+
+            if(timer.exists("tarcheck")) then
+                timer.remove("tarcheck")
+            end
+
+            aiSay(sfowner,"Disabling Targetting")
+        elseif(OLS[2] == "lead") then
+            TargetLeading = notVar(TargetLeading)
+
+            if(TargetLeading == 1) then
+                aiSay(sfowner,ColGrn,"Enabling ",ColOng,"Target Leading")
+            else
+                aiSay(sfowner,ColRed,"Disabling ",ColOng,"Target Leading")
+            end
+        elseif(OLS[2] == "aim") then
+            AimFixed = notVar(AimFixed)
+
+            if(AimFixed == 1) then
+                aiSay(sfowner,ColGrn,"Enabling ",ColOng,"Fixed Weapon Aiming")
+            else
+                aiSay(sfowner,ColRed,"Disabling ",ColOng,"Fixed Weapon Aiming")
+            end
+        else
+            if(OLS[2] ~= nil) then
+                WepTarPly = find.playerByName(OLS[2])
+            end
+
+            if(OLS[3] ~= nil) then
+                WepTarPly2 = find.playerByName(OLS[3])
+            end
+
+            if(IsValid(WepTarPly) and WepTarPly:isPlayer()) then
+                TargetWeps(WepTarPly,1,Vector(0,0,0))
+            else
+                if(IsValid(WepTarPly2) and WepTarPly2:isPlayer()) then
+                    if(TarType[OLS[2]] ~= nil) then
+                        WepTargets = find.byClass(TarType[OLS[2]],function(ent)
+                            if(ent:owner() == WepTarPly2) then
+                                return true
+                            else
+                                return false
+                            end
+                        end)
+                    else
+                        WepTargets = find.byClass(OLS[2],function(ent)
+                            if(ent:owner() == WepTarPly2) then
+                                return true
+                            else
+                                return false
+                            end
+                        end)
+                    end
+
+                    local Tar = table.remove(WepTargets,1)
+
+                    if(IsValid(Tar)) then
+                        TarTableIndex = 1
+
+                        TargetWeps(Tar,1,Vector(0,0,0))
+                    else
+                        aiSay(sfowner,"The Player ",WepTarPly2:getTeamColor(),WepTarPly2:name(),ColOng," Does not own a ",ColRed,OLS[2])
+                    end
+                else
+                    aiSay(sfowner,"There is no player by the name ",ColRed,OLS[3])
+                end
+            end
+        end
     end
 end, sfowner)
 

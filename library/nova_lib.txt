@@ -25,7 +25,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.2.4"
+    local AIVers = "2.3.0"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -89,6 +89,65 @@ TransportLoc = {
     ["lavabase"] = Vector(-9416,-1104,-5376),
     ["hell"] = Vector(-8235,-970,-4815),
     ["space"] = Vector(-707,-2889,-5946)
+}
+
+TarType = { --Sorted alphabetically
+    ["ag3"] = "ag_3",
+
+    ["ball"] = "sent_ball",
+    ["borg"] = "box_*",
+    ["button"] = "func_button",
+
+    ["collector"] = "stargazer_water_core_collector",
+    ["core"] = "ship_core",
+    ["cube"] = "box_cube",
+    ["cubetac"] = "box_cube_tactical",
+
+    ["dest"] = "sg_vehicle_shuttle",
+    ["drive"] = "ship_drive",
+    ["drivecore"] = "drive_core",
+
+    ["e2"] = "gmod_wire_expression2",
+
+    ["f302"] = "sg_vehicle_f302",
+    ["forcefield"] = "st_forcefield",
+
+    ["gateg"] = "sg_vehicle_gate_glider",
+    ["glider"] = "sg_vehicle_glider",
+    ["grenade"] = "grenade_ar2",
+    ["gyro"] = "gyropod_advanced",
+
+    ["jamming"] = "jamming_device",
+    ["jumper"] = "*puddle_jumper",
+
+    ["kino"] = "kino_ball",
+
+    ["malp"] = "malp",
+
+    ["node"] = "stargazer_node",
+    ["npc"] = "npc_*",
+
+    ["prop"] = "prop_physics",
+
+    ["ragdoll"] = "prop_ragdoll",
+    ["ring"] = "ring_base_ancient",
+    ["rotaty"] = "sf-rotatybase",
+
+    ["sat"] = "stargate_asuran",
+    ["sbepdrive"] = "warpdrive",
+    ["sbnode"] = "resource_node",
+    ["sgshield"] = "shield_generator",
+    ["shield"] = "st_shield_emitter",
+    ["shuttle"] = "*shuttle*",
+    ["spacemine"] = "sf-spacemine",
+    ["sphere"] = "box_sphere",
+    ["stargate"] = "stargate_*",
+
+    ["tardis"] = "^gmod_tardis$",
+    ["teltac"] = "sg_vehicle_teltac",
+    ["turret"] = "gmod_wire_turret",
+
+    ["zpm"] = "zpm_mk3"
 }
 
 --Beam Weapon Types
@@ -226,6 +285,55 @@ local planetCenter = {
     ["Lava Planet"] = Vector(-9792, -80, -4688),
     ["Moon"] = Vector(-4480, 13792, 9920)
 }
+
+function GetProjVel(ent)
+    if(ent:class() == "ship_cannon") then --ship_cannon_projectile
+        return 3000
+    elseif(ent:class() == "pulse_phaser_emitter") then --pulse_phaser / pulse_disruptor
+        return 8264 -- maybe actually 8200 or 8300
+    elseif(ent:class() == "ship_turret_base") then
+        local entw = ent:getWirelink() --flak/kinetic 8000
+
+        if(entw["Type"] == "Flak" or entw["Type"] == "Kinetic") then
+            return 8000
+        elseif(entw["Type"] == "Destiny Pulse" and ent:model() == "models/madman07/main_weapon/main_stand.mdl") then
+            return 12000
+        elseif(entw["Type"] == "Ion Laser") then
+            return 0
+        else
+            return 6000
+        end
+    --[[ -- doesn't track properly, will sometimes turn targetpos NaN and vanish
+    elseif(ent:class() == "torpedo_launcher") then
+        local entw = ent:getWirelink()
+
+        if(entw["Type"] == "Biomolecular" or entw["Type"] == "Photon" or entw["Type"] == "Photon (TMP)" or entw["Type"] == "Photon (TMP)" or entw["Type"] == "Transphasic Chroniton") then
+            return 3500
+        elseif(entw["Type"] == "Chroniton") then
+            return 3000
+        elseif(entw["Type"] == "Plasma") then
+            return 1000
+        elseif(entw["Type"] == "Quantum") then
+            return 2500
+        elseif(entw["Type"] == "Transphasic") then
+            return 4000
+        elseif(entw["Type"] == "Tricobalt") then
+            return 1000
+        end
+        ]]--
+    else
+        return 0
+    end
+end
+
+function TarOffset(ent)
+    if(ent:class() == "st_shuttle_type11" or ent:class() == "sci_fi_shuttle") then
+        return 200
+    else
+        return 0
+    end
+end
+
 
 --Easy Wire In/Out creation function made by Princess Nova
 function wire.adjust(fn)
@@ -398,4 +506,16 @@ function table:concatKeys(sep) --Function by Princess Nova
     local keys = {}
     for k in pairs(self) do table.insert(keys, k) end
     return table.concat(keys, sep)
+end
+
+function calcTOF(lpos, lvel, projspeed) --Function by Princess Nova
+    local a = lvel:LengthSqr() - projspeed ^ 2
+    local b = 2 * lpos:Dot(lvel)
+    local c = lpos:LengthSqr()
+
+    return (-b - math.sqrt(b ^ 2 - 4 * a * c)) / (2 * a)
+end
+
+function gvintercept(cannonpos, cannonvel, targetpos, targetvel, projspeed) --Function by Princess Nova
+    return targetpos + targetvel * calcTOF(targetpos - cannonpos,targetvel - cannonvel,projspeed)
 end
