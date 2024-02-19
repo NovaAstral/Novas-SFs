@@ -1,0 +1,418 @@
+--@name System Sim
+--@author Nova Astral
+--@shared
+---@require effects_library.txt
+--@class emitter
+
+if SERVER then
+    local SimSpeed = 22 --How fast the solar system will simulate
+    net.setDTVar("Int",22,SimSpeed)
+
+    wire.createOutputs({"Time"},{"Normal"})
+
+    Time = 0 --where will it start
+    SunSize = 1
+    SunColG = 120 --default 120
+
+    SunAng = Angle(0,0,0)
+    Sun = holograms.create(ents.self():pos() + ents.self():up()*50,SunAng,"models/sprops/geometry/sphere_9.mdl",Vector(2,2,2)*SunSize)
+    Sun:setMaterial("cmats/light")
+    Sun:setColor(255,SunColG,0)
+
+    timer.create("SunAngle",0.1,0,function()
+        SunAng = SunAng + Angle(0,1*SimSpeed,0)
+        Sun:setAng(SunAng)
+    end)
+
+    HTwinsParent = holograms.create(Sun:pos(),Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    HTwinsParent:setAlpha(0)
+
+    TwinsMidAng = Angle(0,0,0)
+    HTwinsMidParent = holograms.create(Sun:pos()+Sun:right()*35,Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    HTwinsMidParent:setAlpha(0)
+
+    AshTwinAng = Angle(0,0,0)
+    AshTwin = holograms.create(HTwinsMidParent:pos()+HTwinsMidParent:right()*5,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(0.8,0.8,0.8))
+    AshTwin:setMaterial("models/debug/debugwhite")
+    AshTwin:setColor(255,220,130)
+
+    AshTwinSunGlow = holograms.create(AshTwin:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2))
+    AshTwinSunGlow:setParent(AshTwin)
+    AshTwinSunGlow:setAlpha(0)
+
+    EmberTwinAng = Angle(0,0,0)
+    EmberTwin = holograms.create(HTwinsMidParent:pos()+HTwinsMidParent:right()*-5,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(0.8,0.8,0.8))
+    EmberTwin:setMaterial("models/debug/debugwhite")
+    EmberTwin:setColor(255,190,50)
+
+    EmberTwinSunGlow = holograms.create(EmberTwin:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2))
+    EmberTwinSunGlow:setParent(EmberTwin)
+    EmberTwinSunGlow:setAlpha(0)
+
+    AshTwin:setParent(HTwinsMidParent)
+    EmberTwin:setParent(HTwinsMidParent)
+    HTwinsMidParent:setParent(HTwinsParent)
+
+
+
+    TimberHearthParent = holograms.create(Sun:pos(),Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    TimberHearthParent:setAlpha(0)
+
+    TimberHearth = holograms.create(Sun:pos()+Sun:right()*85,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(1.5,1.5,1.5))
+    TimberHearth:setMaterial("models/debug/debugwhite")
+    TimberHearth:setColor(0,120,0)
+
+    TimberHearthSunGlow = holograms.create(TimberHearth:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*2)
+    TimberHearthSunGlow:setParent(TimberHearth)
+    TimberHearthSunGlow:setAlpha(0)
+
+    Attlerock = holograms.create(TimberHearth:pos()+TimberHearth:right()*15,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(0.3,0.3,0.3))
+    Attlerock:setMaterial("models/debug/debugwhite")
+    Attlerock:setColor(100,100,100)
+
+    AttlerockSunGlow = holograms.create(Attlerock:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*0.4)
+    AttlerockSunGlow:setParent(Attlerock)
+    AttlerockSunGlow:setAlpha(0)
+
+    TimberHearth:setParent(TimberHearthParent)
+    Attlerock:setParent(TimberHearth)
+
+
+
+    BrittleHollowParent = holograms.create(Sun:pos(),Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    BrittleHollowParent:setAlpha(0)
+
+    BrittleHollow = holograms.create(Sun:pos()+Sun:right()*125,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(1.2,1.2,1.2))
+    BrittleHollow:setMaterial("models/debug/debugwhite")
+    BrittleHollow:setColor(85,85,150)
+
+    BrittleHollowSunGlow = holograms.create(BrittleHollow:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*1.5)
+    BrittleHollowSunGlow:setParent(BrittleHollow)
+    BrittleHollowSunGlow:setAlpha(0)
+
+    HollowsLantern = holograms.create(BrittleHollow:pos()+BrittleHollow:right()*15,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(0.3,0.3,0.3))
+    HollowsLantern:setMaterial("cmats/light")
+    HollowsLantern:setColor(255,120,0)
+
+    HollowsLanternSunGlow = holograms.create(HollowsLantern:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*0.4)
+    HollowsLanternSunGlow:setParent(HollowsLantern)
+    HollowsLanternSunGlow:setAlpha(0)
+
+    BrittleHollow:setParent(BrittleHollowParent)
+    HollowsLantern:setParent(BrittleHollow)
+
+
+
+    GiantsDeepParent = holograms.create(Sun:pos(),Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    GiantsDeepParent:setAlpha(0)
+
+    GiantsDeep = holograms.create(Sun:pos()+Sun:right()*180,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(3,3,3))
+    GiantsDeep:setMaterial("models/debug/debugwhite")
+    GiantsDeep:setColor(0,180,0)
+
+    GiantsDeepSunGlow = holograms.create(GiantsDeep:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*4)
+    GiantsDeepSunGlow:setParent(GiantsDeep)
+    GiantsDeepSunGlow:setAlpha(0)
+
+    GiantsDeep:setParent(GiantsDeepParent)
+
+    OPCMain = holograms.create(GiantsDeep:pos()+GiantsDeep:right()*20,Angle(0,115,0),"models/sprops/misc/alphanum/alphanum_star_1.mdl",Vector(0.5,0.5,0.5))
+    OPCMain:setParent(GiantsDeep)
+    OPCMain:setMaterial("models/debug/debugwhite")
+    OPCMain:setColor(170,135,30)
+
+    OPCTube1 = holograms.create(GiantsDeep:pos()+Vector(5,2,0)+GiantsDeep:right()*20,Angle(0,165,0),"models/sprops/misc/tubes_superthin/size_1/tube_18.mdl",Vector(0.2,0.2,0.2))
+    OPCTube1:setMaterial("models/debug/debugwhite")
+    OPCTube1:setColor(170,135,30)
+
+    OPCTube2 = holograms.create(GiantsDeep:pos()+Vector(10,5,0)+GiantsDeep:right()*20,Angle(0,235,0),"models/sprops/misc/tubes_superthin/size_1/tube_18.mdl",Vector(0.2,0.2,0.2))
+    OPCTube2:setMaterial("models/debug/debugwhite")
+    OPCTube2:setColor(170,135,30)
+
+    OPCTube1:setParent(GiantsDeep)
+    OPCTube2:setParent(GiantsDeep)
+
+
+
+    DarkBrambleParent = holograms.create(Sun:pos(),Angle(0,0,0),"models/hunter/misc/sphere025x025.mdl",Vector(0.1,0.1,0.1))
+    DarkBrambleParent:setAlpha(0)
+
+    DarkBramble = holograms.create(Sun:pos()+Sun:right()*220,Angle(0,0,0),"models/sprops/geometry/sphere_9.mdl",Vector(1.5,1.5,1.5))
+    DarkBramble:setMaterial("models/debug/debugwhite")
+    DarkBramble:setColor(130,255,255)
+
+    DarkBrambleSunGlow = holograms.create(DarkBramble:pos(),Angle(0,0,0),"models/cerus/weapons/projectiles/pc_proj.mdl",Vector(1,1.2,2)*2)
+    DarkBrambleSunGlow:setParent(DarkBramble)
+    DarkBrambleSunGlow:setAlpha(0)
+
+    DarkBramble:setParent(DarkBrambleParent)
+
+    timer.create("planet_glow_ang",0.1,0,function()
+        AshTwinSunGlow:setAng((Sun:pos() - AshTwinSunGlow:pos()):Angle())
+        EmberTwinSunGlow:setAng((Sun:pos() - EmberTwinSunGlow:pos()):Angle())
+        TimberHearthSunGlow:setAng((Sun:pos() - TimberHearthSunGlow:pos()):Angle())
+        AttlerockSunGlow:setAng((Sun:pos() - AttlerockSunGlow:pos()):Angle())
+        BrittleHollowSunGlow:setAng((Sun:pos() - BrittleHollowSunGlow:pos()):Angle())
+        HollowsLanternSunGlow:setAng((Sun:pos() - HollowsLanternSunGlow:pos()):Angle())
+        GiantsDeepSunGlow:setAng((Sun:pos() - GiantsDeepSunGlow:pos()):Angle())
+        DarkBrambleSunGlow:setAng((Sun:pos() - DarkBrambleSunGlow:pos()):Angle())
+    end)
+
+
+    function MovePlanets()
+        HTwinsParent:setAngVel(Angle(0,10*SimSpeed,0))
+        HTwinsMidParent:setAngVel(Angle(0,50*SimSpeed,0))
+        TimberHearthParent:setAngVel(Angle(0,8*SimSpeed,0))
+        TimberHearth:setAngVel(Angle(0,16*SimSpeed,0))
+        BrittleHollowParent:setAngVel(Angle(0, 6 * SimSpeed, 0))
+        BrittleHollow:setAngVel(Angle(0, 12 * SimSpeed, 0))
+        GiantsDeep:setAngVel(Angle(0,10*SimSpeed,0))
+        GiantsDeepParent:setAngVel(Angle(0, 4 * SimSpeed, 0))
+        DarkBrambleParent:setAngVel(Angle(0,2*SimSpeed,0))
+    end
+    MovePlanets()
+
+    --For the glowy effects
+    net.setDTVar("Entity",1,Sun or ents.NULL_ENTITY)
+    net.setDTVar("Entity",2,HollowsLantern or ents.NULL_ENTITY)
+    net.setDTVar("Int",1,SunSize)
+    net.setDTVar("Int",2,SunColG)
+
+    function lerp(a, b, t)
+        return a + (b - a) * math.clamp(t, 0, 1)
+    end
+
+    function gradient(a, b, t)
+        return lerp(a, b, t)
+    end
+
+    local myStartColor = Color(255)
+    local myEndColor = Color(0, 255)
+
+    function SysTimer()
+        Time = Time+1 --1320 seconds = 22 minutes
+
+        if(Time < 1320) then
+            local grad = gradient(SunColG,0,Time / 1293)
+            Sun:setColor(255,grad,0)
+
+            net.setDTVar("Vector",1,Sun:getColor():ToVector())
+        end
+
+        if(Time >= 660 and Time < 1320) then --start sun expansion halfway through the 'loop'
+            local scale = math.clamp(Time - 660, 0, 660) / 660
+            SunSize = 1 + scale
+            Sun:setScale(2 * SunSize)
+        end
+
+        if(Time == 1220) then
+            SimSpeed = 1 --Set sim speed to 1 so music sounds good --4 is max before the music desyncs
+            net.setDTVar("Int",22,SimSpeed)
+
+            MovePlanets()
+
+            timer.adjust("SysTimer",1 / SimSpeed,0,function()
+                SysTimer()
+            end)
+        end
+
+        if(Time == 1233) then --Start end times, 1 minute 29 seconds before the end
+            net.setDTVar("Int",3,1)
+
+            timer.simple(0.2,function()
+                net.setDTVar("Int",3,0)
+            end)
+        end
+
+        if(Time == 1322) then --sun contracting
+            SunRDec = 0
+
+            timer.create("sun_contract",0.01,0,function()
+                if(Sun:getScale() >= 0.001) then
+                    local SunScale = math.clamp(Sun:getScale()-0.009*SimSpeed,0.005,4)
+                    Sun:setScale(SunScale,SunScale,SunScale)
+
+                    SunR = Sun:getColor().r
+                    local G = math.clamp(Sun:getColor().g + 1*SimSpeed,0,255)
+                    local B = math.clamp(Sun:getColor().b + 1*SimSpeed,0,255)
+
+                    if(SunRDec == 0) then
+                        SunB = Sun:color().b --Check if blue is 255, then make red go away
+
+                        if(SunB == 255) then
+                            SunRDec = 1
+                        end
+                    elseif(SunRDec == 1 and Time < 1335) then
+                        SunR = math.clamp(Sun:getColor().r - 1*SimSpeed,100,255)
+                    end
+
+                    Sun:setColor(SunR,G,B)
+                    net.setDTVar("Vector",1,Sun:getColor():ToVector())
+                end
+            end)
+        end
+
+        if(Time == 1329) then --sun expand
+            timer.create("sun_expand",0.01,0,function()
+                timer.remove("sun_contract")
+
+                local SunScale = math.clamp(Sun:getScale()+0.045*SimSpeed,0.1,70)
+                Sun:setScale(SunScale,SunScale,SunScale)
+            end)
+
+            timer.create("planet_sunglows",0.01,0,function()
+                if(Time >= 1330) then
+                    local SunGlow = math.clamp(AshTwinSunGlow:color().a + 2,0,255)
+                    AshTwinSunGlow:setAlpha(SunGlow)
+                    EmberTwinSunGlow:setAlpha(SunGlow)
+                end
+
+                if(Time >= 1332) then
+                    local SunGlow = math.clamp(TimberHearthSunGlow:color().a + 2,0,255)
+                    TimberHearthSunGlow:setAlpha(SunGlow)
+                    AttlerockSunGlow:setAlpha(SunGlow)
+                end
+
+                if(Time >= 1335) then
+                    local SunGlow = math.clamp(BrittleHollowSunGlow:color().a + 2,0,255)
+                    BrittleHollowSunGlow:setAlpha(SunGlow)
+                    HollowsLanternSunGlow:setAlpha(SunGlow)
+                end
+
+                if(Time >= 1337) then
+                    local SunGlow = math.clamp(GiantsDeepSunGlow:color().a + 2,0,255)
+                    GiantsDeepSunGlow:setAlpha(SunGlow)
+                end
+
+                if(Time >= 1340) then
+                    local SunGlow = math.clamp(DarkBrambleSunGlow:color().a + 2,0,255)
+                    DarkBrambleSunGlow:setAlpha(SunGlow)
+                end
+            end)
+        end
+
+        if(Time == 1335) then--Disable hourglass twins
+            AshTwin:setAlpha(0)
+            EmberTwin:setAlpha(0)
+        end
+
+        if(Time == 1338) then --Disable Timber Hearth
+            TimberHearth:setAlpha(0)
+            Attlerock:setAlpha(0)
+        end
+
+        if(Time == 1341) then--Disable Brittle Hollow
+            BrittleHollow:setAlpha(0)
+            HollowsLantern:setAlpha(0)
+        end
+
+        if(Time == 1346) then --Disable Giants Deep
+            GiantsDeep:setAlpha(0)
+            OPCMain:setAlpha(0)
+            OPCTube1:setAlpha(0)
+            OPCTube2:setAlpha(0)
+        end
+
+        if(Time == 1348) then --Disable Dark Bramble
+            DarkBramble:setAlpha(0)
+        end
+
+        if(Time == 1358) then --when player hit sound finishes
+            SunAlpha = 255
+            timer.remove("sun_expand")
+            timer.remove("planet_sunglows")
+
+            timer.create("sun_disable",0.01,0,function()
+                SunAlpha = SunAlpha - 1*SimSpeed
+
+                Sun:setAlpha(SunAlpha)
+
+                if(SunAlpha <= 0) then
+                    net.setDTVar("Int",4,1)
+
+                    timer.simple(0.5,function()
+                        net.setDTVar("Int",4,0)
+                    end)
+
+                    timer.remove("sun_disable")
+
+                    resetSystem()
+                end
+            end)
+
+            AshTwinSunGlow:setAlpha(0)
+            EmberTwinSunGlow:setAlpha(0)
+            TimberHearthSunGlow:setAlpha(0)
+            AttlerockSunGlow:setAlpha(0)
+            BrittleHollowSunGlow:setAlpha(0)
+            HollowsLanternSunGlow:setAlpha(0)
+            GiantsDeepSunGlow:setAlpha(0)
+            DarkBrambleSunGlow:setAlpha(0)
+        end
+
+        wire.ports.Time = Time
+    end
+
+    timer.create("SysTimer",1 / SimSpeed,0,function()
+        SysTimer()
+    end)
+
+    function resetSystem()
+
+    end
+end
+
+if CLIENT then
+    permissions.register(permissions.DRAW_HALOS)
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    net.listenForAllDTVarChanges()
+
+    SpriteText = Material("particle/particle_glow_05")
+    SunCol = Color(255,SunColG,0)
+    SunSize = net.getDTVar("Int",1)
+    Sun = net.getDTVar("Entity",1)
+
+    if(IsValid(Sun)) then
+        Sun:setLOD(0)
+        sunHalo = holograms.addHalo(Sun, SunCol, 10, 10, 3, true, false)
+    end
+
+    if(IsValid(net.getDTVar("Entity",2))) then
+        local lanternHalo = holograms.addHalo(net.getDTVar("Entity",2), SunCol, 2, 2, 3, true, false)
+    end
+
+    net.listenForAllDTVarChanges()
+
+    hook("dtvarchanged","DTVar Callback",function(type,index,old,new)
+        --print(type,index,old,new)
+        if(type == "Int" and index == 1) then
+            SunSize = new
+        end
+
+        if(type == "Vector" and index == 1) then
+            SunCol = new:ToColor()
+
+            if(IsValid(Sun) and sunHalo ~= nil) then
+                sunHalo.Color = SunCol
+            end
+        end
+
+        if(type == "Int" and index == 3 and new == 1) then
+            if(IsValid(Sun)) then
+                snd = sounds.playURL("https://cdn.discordapp.com/attachments/915811722646925312/1201174477917126726/End_Times_Sun.wav","3d",function(channel,a,callback)
+                    audio = channel
+
+                    audio:setVolume(1.5)
+                    audio:setPos(Sun:pos())
+                    audio:set3DFadeDistance(1000,1000000000)
+                    audio:setPlaybackRate(net.getDTVar("Int",22))
+                end)
+            end
+        end
+
+        if(type == "Int" and index == 4 and new == 1) then
+            sunHalo.Color = Color(0,0,0)
+        end
+    end)
+end

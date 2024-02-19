@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.3.0" -- Don't touch this
+AIVersion = "2.3.1" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -40,7 +40,7 @@ function config()
     AutoTarget =  1 --If Target destroyed, try to target another of the same entity owned by the same person
     AutoTargetPrint = 1 --Print in chat when AutoTarget targets a new entity
     TargetLeading = 0 --Default value for target leading, can be changed with /t lead
-    AimFixed = 1 --If the mainframe should automatically aim fixed wepaons like the Ship Cannon and Keeper Emitter
+    AimFixed = 0 --If the mainframe should automatically aim fixed wepaons like the Ship Cannon and Keeper Emitter
 
     CmdSound = 0 --If you want Vethian to audibly say the outputs of commands (WIP!)
 
@@ -369,7 +369,7 @@ function functionSetup()
                 end
 
                 if(WepW:inputType("Target") ~= nil) then
-                    WepW["Target"] = TarPos
+                    WepW["Target"] = Tar:obbCenterW()
                 end
             end
         else
@@ -396,14 +396,18 @@ function functionSetup()
                                         WepW["Target"] = TarPos
                                     end
 
-                                    if(AimFixed == 1 and v:class() == "ship_cannon") then
-                                        v:setAng((TarPos - v:pos()):Angle())
+                                    if(v:class() == "ship_cannon") then
+                                        if(AimFixed == 1) then
+                                            v:setAng((TarPos - v:pos()):Angle())
+                                        end
+
+                                        wire.ports.CannonLeadTarPos = TarPos
                                     end
                                 else
                                     local TarPos = Tar:pos() + Tar:up()*Offset
 
                                     if(WepW:inputType("Target") ~= nil) then
-                                        WepW["Target"] = TarPos
+                                        WepW["Target"] = Tar:obbCenterW()
                                     end
 
                                     if(AimFixed == 1 and v:class() == "keeper_emitter") then
@@ -412,11 +416,12 @@ function functionSetup()
                                 end
                             else
                                 local TarPos = Tar:pos() + Tar:up()*Offset
+                                wire.ports.CannonLeadTarPos = TarPos
 
                                 if(WepW:inputType("Target") ~= nil) then
-                                    WepW["Target"] = TarPos
+                                    WepW["Target"] = Tar:obbCenterW()
                                 else
-                                    if(AimFixed == 1 and v:class() == "ship_cannon" or v:class() == "keeper_emitter") then
+                                    if(AimFixed == 1 and v:class() == "ship_cannon" or AimFixed == 1 and v:class() == "keeper_emitter") then
                                         v:setAng((TarPos - v:pos()):Angle())
                                     end
                                 end
@@ -769,10 +774,11 @@ wire.adjust(function(input, output)
     output({"TargetPos"},"VECTOR")
     output({"TargetEnt","TargetOwner"},"ENTITY")
     output({"TargetLocked"},"NUMBER")
+    output({"CannonLeadTarPos"},"VECTOR")
 end)
 end
 
-if CLIENT then -- PlaySound Function because nets dont work on include1
+if CLIENT then -- PlaySound Function because nets dont work on include
     permissions.register(permissions.PLAY_URL_SOUNDS)
 
     function playCLSound()
@@ -789,7 +795,6 @@ if CLIENT then -- PlaySound Function because nets dont work on include1
                 audio:setVolume(net.getDTVar("Float",1))
                 audio:setPos(net.getDTVar("Vector",1))
                 audio:set3DFadeDistance(net.getDTVar("Int",1),net.getDTVar("Int",1)*1000)
-
             end
         end)
     end
@@ -3151,6 +3156,7 @@ chat.listen(function(message, player) --Targetting
             aiSay(sfowner,"Disabling Targetting")
         elseif(OLS[2] == "lead") then
             TargetLeading = notVar(TargetLeading)
+            wire.ports.TargetLeading = TargetLeading
 
             if(TargetLeading == 1) then
                 aiSay(sfowner,ColGrn,"Enabling ",ColOng,"Target Leading")

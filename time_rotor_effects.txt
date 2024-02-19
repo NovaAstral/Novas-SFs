@@ -1,0 +1,108 @@
+--@name Time Rotor Effects
+--@author
+--@shared
+--@require effects_library.txt
+---@require superweapons/libraries/effects_library.txt
+--@class emitter
+
+if SERVER then
+    wire.createInputs({"Activate","Ent1","Ent2","RotorActive","IntPos"},{"Normal","Entity","Entity","Normal","Normal"})
+
+    net.setDTVar("Bool", 1, wire.ports.Activate ~= 0)
+    net.setDTVar("Entity", 1, wire.ports.Ent1 or ents.NULL_ENTITY)
+    net.setDTVar("Entity", 2, wire.ports.Ent2 or ents.NULL_ENTITY)
+    net.setDTVar("Int",1,wire.ports.IntPos or 0)
+
+    function WireDetect(name,value)
+        if(name == "Activate") then
+            net.setDTVar("Bool",1,wire.ports.Activate ~= 0)
+        elseif(name == "Ent1") then
+            net.setDTVar("Entity",1,wire.ports.Ent1 or ents.NULL_ENTITY)
+        elseif(name == "Ent2") then
+            net.setDTVar("Entity",2,wire.ports.Ent2 or ents.NULL_ENTITY)
+        elseif(name == "IntPos") then
+            net.setDTVar("Int",1,wire.ports.IntPos or 0)
+        elseif(name == "RotorActive") then
+            net.setDTVar("Bool",2,wire.ports.RotorActive ~= 0)
+        end
+    end
+
+    hook.add("input","wiredetect",WireDetect)
+end
+
+if CLIENT then
+    net.listenForDTVarChanges("Entity",index)
+    net.listenForDTVarChanges("Bool",index)
+    net.listenForDTVarChanges("Int",index)
+
+    local RenderOn = net.getDTVar("Bool",1)
+    local Ent1 = net.getDTVar("Entity",1)
+    local Ent2 = net.getDTVar("Entity",2)
+    local IntPos = net.getDTVar("Int",1)
+    local RotorOn = net.getDTVar("Bool",2)
+
+    local speed = 2
+    local timeStep = 0
+    local lastStart = 0
+
+    hook("dtvarchanged","DTVar Callback",function(type,index,old,new)
+        if(type == "Bool" and index == 1) then
+            RenderOn = new
+        elseif(type == "Entity") then
+            if index == 1 then
+                Ent1 = new
+            else
+                Ent2 = new
+            end
+        elseif(type == "Bool" and index == 2) then
+            RotorOn = new
+            if new then
+                lastStart = time.curTime()
+            end
+        elseif(type == "Int" and index == 1) then
+            IntPos = new
+        end
+    end)
+
+    local BeamText = Material("effects/laser_beam")
+    local SpriteText = Material("particle/particle_glow_05")
+
+    hook.add("render","timerotor_render",function()
+        if(RenderOn == true and IsValid(Ent1) and IsValid(Ent2)) then
+            render.setTexture(BeamText) --Main Beam
+            render.setColor(255,95,215)
+            effects.drawBeamPos(Ent1:pos(),Ent2:pos(),25,50,2)
+
+            render.setTexture(BeamText) --Inner Beam
+            render.setColor(200,200,200)
+            effects.drawBeamPos(Ent1:pos(),Ent2:pos(),20,50,2)
+
+            render.setTexture(SpriteText) --Main Sprite
+            render.setColor(255,95,215)
+            effects.drawSprite(Ent1:pos()+Vector(0,0,7),150,100,0) --Lower Sprite
+            effects.drawSprite(Ent2:pos()+Vector(0,0,-12),150,100,0) --Upper Sprite
+
+            render.setTexture(SpriteText) --Inner Sprite
+            render.setColor(200,200,200)
+            effects.drawSprite(Ent1:pos()+Vector(0,0,7),90,100,0) --Lower Sprite
+            effects.drawSprite(Ent2:pos()+Vector(0,0,-12),90,100,0) --Upper Sprite
+
+            if(RotorOn == true) or (math.round(timeStep * 100) ~= 0) then
+                local offset = (time.curTime() - lastStart) * speed
+                timeStep = (math.cos(offset) * -1 / 2 + 0.5)
+            end
+
+            local courseA = (Ent2:pos() - Ent1:pos()) / 2
+            local courseB = (Ent1:pos() - Ent2:pos()) / 2
+
+            render.setTexture(SpriteText) --Rotor Sprite
+            render.setColor(230,110,0)
+            effects.drawSprite(Ent1:pos() + courseA * timeStep,150,100,0)
+            effects.drawSprite(Ent2:pos() + courseB * timeStep,150,100,0)
+
+            render.setColor(200,200,200) --Inner Rotor Sprite
+            effects.drawSprite(Ent1:pos() + courseA * timeStep,50,50,0)
+            effects.drawSprite(Ent2:pos() + courseB * timeStep,50,50,0)
+        end
+    end)
+end

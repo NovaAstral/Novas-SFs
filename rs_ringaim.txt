@@ -1,0 +1,40 @@
+--@name RS RingAim
+--@author
+
+if SERVER then
+wire.createInputs({"ParentCube","ChildCyl","Target","Activate"},{"entity","entity","vector","normal"})
+
+function AimFunc(active)
+    if(active == true) then
+        timer.create("Aim",0.1,0,function()
+            if(IsValid(wire.ports.ParentCube)) then
+                local Ang = (wire.ports.Target - wire.ports.ParentCube:pos()):Angle()
+                wire.ports.ParentCube:setAng(Angle(0,Ang.y,0))
+            end
+
+            if(IsValid(wire.ports.ChildCyl)) then
+                local Ang = (wire.ports.Target - wire.ports.ChildCyl:pos()):Angle():Normalize()
+                wire.ports.ChildCyl:setAng(Angle(math.clamp(Ang.x,-70,70),wire.ports.ParentCube:ang().y,0))
+            end
+        end)
+    else
+        timer.remove("Aim")
+    end
+end
+
+function WireDetect(name,value)
+    if(name == "Activate") then
+        if(value >= 1) then
+            if(Target ~= Vector(0,0,0)) then
+                AimFunc(true)
+            else
+                AimFunc(false)
+            end
+        else
+            AimFunc(false)
+        end
+    end
+end
+
+hook.add("input","wiredetect",WireDetect)
+end
