@@ -1,0 +1,359 @@
+--@name Shock Cannon
+--@author
+--@shared
+--@class emitter
+--@require effect_wep/lib/effects_library.txt
+--@require public/_libraries/geometry.txt
+--@model models/sbep_community/ssnavalbase.mdl
+
+if SERVER then
+wire.createInputs({"Fire","Target","LBOffset","MBOffset","RBOffset"},{"normal","vector","normal","normal","normal"})
+wire.createOutputs({"SoundPlaying"},{"normal"})
+
+TurTurn = holograms.create(ents.self():pos(),ents.self():ang(),"models/sbep_community/ssnavalmid.mdl",Vector(2,2,2))
+TurTurn:setParent(ents.self())
+
+CannParent = holograms.create(TurTurn:pos(),TurTurn:ang(),"models/hunter/blocks/cube025x025x025.mdl",Vector(1,1,1))
+CannParent:setAlpha(0)
+CannParent:setParent(TurTurn)
+
+LeftCannon = holograms.create(ents.self():pos()+ents.self():right() * -70,ents.self():ang(),"models/sbep_community/navalgun.mdl",Vector(2,2,2))
+LeftCannon:setParent(CannParent)
+
+MiddleCannon = holograms.create(ents.self():pos(),ents.self():ang(),"models/sbep_community/navalgun.mdl",Vector(2,2,2))
+MiddleCannon:setParent(CannParent)
+
+RightCannon = holograms.create(ents.self():pos()+ents.self():right() * 70,ents.self():ang(),"models/sbep_community/navalgun.mdl",Vector(2,2,2))
+RightCannon:setParent(CannParent)
+
+net.setDTVar("Entity",1,LeftCannon)
+net.setDTVar("Entity",2,MiddleCannon)
+net.setDTVar("Entity",3,RightCannon)
+
+LBOffset = 0
+MBOffset = 0
+RBOffset = 0
+
+function mathApproach(Cur,Tar,Change)
+    if(Tar > Cur) then
+        return math.clamp(Cur+Change,Cur,Tar)
+    elseif(Tar < Cur) then
+        return math.clamp(Cur-Change,Tar,Cur)
+    else
+        return Cur
+    end
+end
+
+hook("think", "turaim", function()
+    if(CannonAiming == true) then
+        local a = ents.self():toLocal(CannParent:ang())
+        local b = ents.self():toLocal((wire.ports.Target - ents.self():pos()):Angle())
+        b.p = math.clamp(b.p, -45, 0) -- Clamps the elevation between 0 and 45°
+
+        local localRotation = geometry.cappedRotation(a, b, 100 * time.frameTime())
+        if localRotation == b then return end -- Avoid setting angle when unnecessary
+
+        TurTurn:setAng(ents.self():toWorld(Angle(0, localRotation.y, 0)))
+        CannParent:setAng(ents.self():toWorld(Angle(localRotation.p + LBOffset, localRotation.y, 0)))
+    else
+
+    end
+end)
+
+hook.add("input","wiredetect",function(name,value)
+    if(name == "Fire") then
+        if(value >= 1) then
+            net.start()
+            net.writeString("firegun")
+            net.broadcast()
+        end
+    elseif(name == "Target") then
+        if(value ~= Vector(0,0,0)) then
+            CannonAiming = true
+        else
+            CannonAiming = false
+        end
+    elseif(name == "LBOffset") then
+        LBOffset = value
+        LeftCannon:setAng(CannParent:toWorld(Angle(LBOffset, 0, 0)))
+    elseif(name == "MBOffset") then
+        MBOffset = value
+        MiddleCannon:setAng(CannParent:toWorld(Angle(MBOffset, 0, 0)))
+    elseif(name == "RBOffset") then
+        RBOffset = value
+        RightCannon:setAng(CannParent:toWorld(Angle(RBOffset, 0, 0)))
+    end
+end)
+
+hook("net", "net", function()
+    local Str = net.readString()
+    local Ent = net.readEntity()
+    sd = 0
+
+    --make sd trigger only once
+
+    if(Str == "playingsnd") then
+        wire.ports.SoundPlaying = 1
+        net.start()
+        net.writeString("firegun2")
+        net.broadcast()
+    elseif(Str == "playingsnd_unset") then
+        wire.ports.SoundPlaying = 0
+    elseif(Str == "wep_sd" and sd == 0) then
+        sd = 1
+
+        if(propprotection.isAllowedForEntity(Ent,propprotection.ACCESS_TOOLGUN) == true and ents.self():owner():hasDamageEnabled() and Ent:owner():hasDamageEnabled()) then
+            if(Ent:class() == "ship_core" or Ent:class() == "st_shuttle_type9" or Ent:class() == "st_shuttle_type11" or Ent:class() == "st_shuttle_type6" or Ent:class() == "atlantis_puddle_jumper" or Ent:class() == "sci_fi_shuttle") then
+                Ent:getWirelink()["Self Destruct"] = 1
+            else
+                Ents = constraint.getAllConstrainedEntities(Ent,function(ent)
+                    if(ent:class() == "ship_core") then
+                        ent:getWirelink()["Self Destruct"] = 1
+                    end
+                end)
+            end
+        end
+
+        timer.simple(10,function()
+            sd = 0
+        end)
+    end
+
+end)
+
+else --client
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+    permissions.register(permissions.PLAY_CLIENT_SOUNDS)
+
+    GarmillasBeam = false --Garmillas Beam, red
+    Type3 = false --Type 3 physical cannon shells
+
+    function mathApproach(Cur,Tar,Change)
+        if(Tar > Cur) then
+            return math.clamp(Cur+Change,Cur,Tar)
+        elseif(Tar < Cur) then
+            return math.clamp(Cur-Change,Tar,Cur)
+        else
+            return Cur
+        end
+    end
+
+    function ShootgunCL()
+        LCan = net.getDTVar("Entity",1)
+        MCan = net.getDTVar("Entity",2)
+        RCan = net.getDTVar("Entity",3)
+
+        if(not IsValid(LCan) or not IsValid(MCan) or not IsValid(RCan)) then
+            return
+        end
+
+        if(GarmillasBeam == false and Type3 == false) then
+            beamfinalthickness = 60
+            beamcol = Color(255,255,255)
+            beammat = Material("effects/blueblacklargebeam") --sprites/physbeama
+        elseif(GarmillasBeam == true and Type3 == false) then
+            beamfinalthickness = 60
+            beamcol = Color(255,255,255)
+            beammat = Material("particle/redblacklargebeam") --sprites/physbeama
+        elseif(GarmillasBeam == false and Type3 == true) then
+
+        end
+        --effects/beam_blue_asgard
+        --effects/tool_tracer
+        --effects/blueblacklargebeam
+        --particle/redblacklargebeam
+
+        --constants, dont touch
+        beamsteps = 20 --how many steps the beam takes to extend and resize
+        Lbeamlength = 0
+        Mbeamlength = 0
+        Rbeamlength = 0
+        beamthickness = 0
+        SmonkAlpha = 255
+        SplodeAlpha = 255
+
+        local Lstartpos = LCan:pos() + LCan:forward() * 560
+        local Mstartpos = MCan:pos() + MCan:forward() * 560
+        local Rstartpos = RCan:pos() + RCan:forward() * 560
+        local Laimdir = LCan:forward()
+        local Maimdir = MCan:forward()
+        local Raimdir = RCan:forward()
+
+        Ltrhit = trace.traceDirection(Lstartpos,Laimdir,ents.self())
+        Ltrhitdist = Ltrhit.HitPos:Distance(Lstartpos)
+        Ltrhitent = Ltrhit.Entity
+
+        Mtrhit = trace.traceDirection(Mstartpos,Maimdir,ents.self())
+        Mtrhitdist = Mtrhit.HitPos:Distance(Mstartpos)
+        Mtrhitent = Mtrhit.Entity
+
+        Rtrhit = trace.traceDirection(Rstartpos,Raimdir,ents.self())
+        Rtrhitdist = Rtrhit.HitPos:Distance(Rstartpos)
+        Rtrhitent = Rtrhit.Entity
+
+        if(Type3 == true) then
+            hook.add("render", "drawsmonk", function()
+                render.setColor(Color(255,255,255,SmonkAlpha))
+                render.setTexture(Material("llapp/particles/smoke01_main"))
+                local dir = 1
+
+                dir = -1
+                effects.drawSprite(LCan:pos() + LCan:forward() * 290,100,100,time.curTime()*dir*20)
+                effects.drawSprite(MCan:pos() + MCan:forward() * 290,100,100,time.curTime()*-dir*20)
+                effects.drawSprite(RCan:pos() + RCan:forward() * 290,100,100,time.curTime()*dir*20)
+            end)
+
+            timer.create("smonkfade",0.015,256,function()
+                SmonkAlpha = math.clamp(SmonkAlpha-2,0,255)
+
+                if(SmonkAlpha <= 0) then
+                    timer.remove("smonkfade")
+                    hook.remove("render","drawsmonk")
+                end
+            end)
+
+            timer.create("explosion",2,1,function()
+                hook.add("render", "drawsplosion", function()
+                    render.setColor(Color(255,255,255,SplodeAlpha))
+                    render.setTexture(Material("gui/effects/explosion")) --this doesnt fucking exist
+                    local dir = 1
+
+                    dir = -1
+
+                    for I=1,5 do
+                        effects.drawSprite(Ltrhit.HitPos,100,100,time.curTime()*dir*20*I)
+                        effects.drawSprite(Mtrhit.HitPos,100,100,time.curTime()*dir*-25*I)
+                        effects.drawSprite(Rtrhit.HitPos,100,100,time.curTime()*dir*22*I)
+                    end
+                end)
+
+                explsnd = "sound/ambient/explosions/explode_"..math.random(1,5)..".wav" --fix this
+
+                snd = sounds.playFile(explsnd,"3d",function(channel,a,callback)
+                    if(channel) then
+                        explsnd = channel
+                        explsnd:setVolume(0.1)
+                        explsnd:set3DFadeDistance(1500,10000000000000)
+
+                        explsnd:setPos(Ltrhit.HitPos,nil)
+                    else
+                        print(callback)
+                    end
+                end)
+
+                timer.create("splodealpha",0.015,256,function()
+                    SplodeAlpha = math.clamp(SplodeAlpha-2,0,255)
+
+                    if(SplodeAlpha <= 0) then
+                        timer.remove("splodealpha")
+                        hook.remove("render","drawsplosion")
+                    end
+                end)
+            end)
+        else --only draw the beams if its not a type 3
+            hook.add("render","drawbeam",function()
+                render.setTexture(beammat)
+                render.setColor(beamcol)
+                effects.drawBeam(Lstartpos,Laimdir,Lbeamlength,beamthickness,1700,8)
+
+                render.setTexture(beammat)
+                render.setColor(beamcol)
+                effects.drawBeam(Mstartpos,Maimdir,Mbeamlength,beamthickness,1700,8)
+
+                render.setTexture(beammat)
+                render.setColor(beamcol)
+                effects.drawBeam(Rstartpos,Raimdir,Rbeamlength,beamthickness,1700,8)
+            end)
+
+            timer.create("beammove",0.015,beamsteps*5,function()
+                Lbeamlength = mathApproach(Lbeamlength,Ltrhitdist,beamsteps * 20)
+                Mbeamlength = mathApproach(Mbeamlength,Mtrhitdist,beamsteps * 20)
+                Rbeamlength = mathApproach(Rbeamlength,Rtrhitdist,beamsteps * 20)
+            end)
+
+            timer.create("beamsize",0.015,beamsteps*2,function()
+                beamthickness = mathApproach(beamthickness,beamfinalthickness,beamfinalthickness / beamsteps)
+            end)
+
+            timer.simple(2,function() --stop beam size and move the start to the end
+                timer.remove("beamsize")
+                timer.remove("beammove")
+                timer.create("beammove2",0.015,beamsteps*2,function()
+                    Lstartpos = Lstartpos + Laimdir * Ltrhitdist / (beamsteps * 2)
+                    Lbeamlength = Lbeamlength - Ltrhitdist / (beamsteps * 2)
+
+                    Mstartpos = Mstartpos + Maimdir * Mtrhitdist / (beamsteps * 2)
+                    Mbeamlength = Mbeamlength - Mtrhitdist / (beamsteps * 2)
+
+                    Rstartpos = Rstartpos + Raimdir * Rtrhitdist / (beamsteps * 2)
+                    Rbeamlength = Rbeamlength - Rtrhitdist / (beamsteps * 2)
+                end)
+            end)
+
+            timer.simple(4,function()
+                hook.remove("render","drawbeam")
+                timer.remove("beammove2")
+            end)
+        end
+    end
+
+    function playSound()
+        SoundPlaying = 0
+
+        if(GarmillasBeam == false and Type3 == false) then
+            local randomsnd = math.random(1,2)
+
+            if(randomsnd == 1) then
+                soundurl = "https://cloud.the17thdoctor.fr/s/wGKlTLSW01yOOTj/download"
+            elseif(randomsnd == 2) then
+                soundurl = "https://cloud.the17thdoctor.fr/s/zzW5rVUNwOPb6iS/download"
+            end
+        elseif(GarmillasBeam == true and Type3 == false) then --garmillas beam
+            soundurl = "https://cloud.the17thdoctor.fr/s/fb0HneRoQ7hu9do/download"
+        elseif(GarmillasBeam == false and Type3 == true) then --typ3 physical cannon shells
+            soundurl = "https://cloud.the17thdoctor.fr/s/IUGCgdUln6RZ2mg/download"
+        end
+
+        snd = sounds.playURL(soundurl,"3d",function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                if(ents.player() == ents.owner()) then
+                    net.start()
+                    net.writeString("playingsnd")
+                    net.sendToServer()
+
+                    SoundPlaying = 1
+
+                    timer.simple(1,function()
+                        net.start()
+                        net.writeString("playingsnd_unset")
+                        net.sendToServer()
+
+                        SoundPlaying = 0
+                    end)
+                end
+
+                audio = channel
+
+                audio:setVolume(1)
+                audio:setPos(ents.self():pos())
+                audio:set3DFadeDistance(1500,10000000000000)
+
+            end
+        end)
+    end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+        if(Str == "firegun") then
+            playSound()
+        elseif(Str == "firegun2") then
+            ShootgunCL()
+        end
+    end)
+end

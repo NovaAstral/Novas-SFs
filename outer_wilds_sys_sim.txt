@@ -5,7 +5,7 @@
 --@class emitter
 
 if SERVER then
-    local SimSpeed = 22 --How fast the solar system will simulate
+    local SimSpeed = 1 --How fast the solar system will simulate
     net.setDTVar("Int",22,SimSpeed)
 
     wire.createOutputs({"Time"},{"Normal"})
@@ -400,7 +400,7 @@ if CLIENT then
 
         if(type == "Int" and index == 3 and new == 1) then
             if(IsValid(Sun)) then
-                snd = sounds.playURL("https://cdn.discordapp.com/attachments/915811722646925312/1201174477917126726/End_Times_Sun.wav","3d",function(channel,a,callback)
+                snd = sounds.playURL("https://cloud.the17thdoctor.fr/s/GZBMdwYxysjsoZh/download","3d",function(channel,a,callback)
                     audio = channel
 
                     audio:setVolume(1.5)

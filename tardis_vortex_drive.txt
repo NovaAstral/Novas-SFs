@@ -1,0 +1,209 @@
+--@name Tardis Vortex Drive
+--@author
+
+if SERVER then
+
+wire.createInputs({"CollisionBox","Activate"},{"entity","normal"})
+wire.createOutputs({"Alpha","CollisionBoxEnt"},{"normal","entity"})
+
+function dupefinished()
+    Parent = constraint.findConstraintEntity(ents.self(),"Weld")
+    Ents = constraint.getAllConstrainedEntities(ents.self(),function(ent)
+        if(ent == ents.self()) then
+            return false
+        elseif(ent == wire.ports.CollisionBox) then
+            return false
+        else
+            return true
+        end
+    end)
+
+    function table.split(t, groupSize) -- func by The17thDoctor
+        local groups = {}
+
+        for i = 1, math.ceil(#t / groupSize) do
+            groups[i] = {}
+
+            for j = 1, groupSize do
+                groups[i][j] = t[(i-1) * groupSize + j]
+               end
+        end
+
+        return groups
+    end
+
+    groupy = table.split(Ents,math.ceil(#Ents/5))
+
+    EntGroup1, EntGroup2, EntGroup3, EntGroup4, EntGroup5 = unpack(groupy)
+
+    --print(#EntGroup1 .." ".. #EntGroup2)
+
+    function deparent()
+        timer.simple(0.1,function()
+            Ents = constraint.getAllConstrainedEntities(ents.self(),function(ent)
+                if(ent == ents.self()) then
+                    return false
+                elseif(ent == wire.ports.CollisionBox) then
+                    return false
+                else
+                    return true
+                end
+            end)
+
+            for k,v in pairs(Ents) do
+                v:setParent(nil)
+            end
+
+            ents.self():setParent(nil)
+
+            if(IsValid(wire.ports.CollisionBox)) then
+                wire.ports.CollisionBox:setParent(nil)
+            end
+        end)
+    end
+
+    function parent()
+        timer.simple(0.1,function()
+            Ents = constraint.getAllConstrainedEntities(ents.self(),function(ent)
+                if(ent == ents.self()) then
+                    return false
+                elseif(ent == wire.ports.CollisionBox) then
+                    return false
+                else
+                    return true
+                end
+            end)
+
+            for k,v in pairs(Ents) do
+                if(IsValid(v) and IsValid(Parent) and v ~= Parent) then
+                    v:setParent(Parent)
+                    v:setRenderMode(3)
+                end
+            end
+
+            ents.self():setParent(Parent)
+
+            if(IsValid(wire.ports.CollisionBox)) then
+                wire.ports.CollisionBox:setParent(Parent)
+            end
+        end)
+    end
+
+    function setboxalpha()
+        if(IsValid(Parent) and wire.ports.Alpha ~= Parent:color().a) then
+            wire.ports.Alpha = Parent:color().a
+        end
+
+        if(IsValid(wire.ports.CollisionBox) and IsValid(Parent)) then
+            if(Parent:getCollisionGroup() == 20 and wire.ports.CollisionBox:getCollisionGroup() ~= 20) then
+                wire.ports.CollisionBox:setCollisionGroup(20)
+            elseif(Parent:getCollisionGroup() == 0 and wire.ports.CollisionBox:getCollisionGroup() ~= 0) then
+                wire.ports.CollisionBox:setCollisionGroup(0)
+            end
+        end
+
+        for i=1,#EntGroup1 do
+            local ent = EntGroup1[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(Parent:color().a)
+            end
+        end
+    end
+
+    function setboxalpha2()
+        for i=1,#EntGroup2 do
+            local ent = EntGroup2[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(Parent:color().a)
+            end
+        end
+    end
+
+    function setboxalpha3()
+        for i=1,#EntGroup3 do
+            local ent = EntGroup3[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(Parent:color().a)
+            end
+        end
+    end
+
+    function setboxalpha4()
+        for i=1,#EntGroup4 do
+            local ent = EntGroup4[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(Parent:color().a)
+            end
+        end
+    end
+
+    function setboxalpha5()
+        for i=1,#EntGroup5 do
+            local ent = EntGroup5[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(Parent:color().a)
+            end
+        end
+    end
+
+    function setfullalpha()
+        for i=1,#Ents do
+            local ent = Ents[i]
+            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+                ent:setAlpha(255)
+            end
+        end
+    end
+
+    function WireDetect(name,value)
+        if(name == "CollisionBox") then
+            if(IsValid(value)) then
+                wire.ports.CollisionBoxEnt = value
+            end
+        elseif(name == "Activate") then
+            if(value >= 1) then
+                parent()
+
+                timer.create("setalpha",0.1,0,function()
+                    setboxalpha()
+                end)
+
+                timer.create("setalpha2",0.15,0,function()
+                    setboxalpha2()
+                end)
+
+                timer.create("setalpha3",0.20,0,function()
+                    setboxalpha3()
+                end)
+
+                timer.create("setalpha4",0.25,0,function()
+                    setboxalpha4()
+                end)
+
+                timer.create("setalpha5",0.30,0,function()
+                    setboxalpha5()
+                end)
+            elseif(value <= 0) then
+                if(timer.exists("setalpha")) then
+                    timer.remove("setalpha")
+                    setfullalpha()
+                end
+
+                if(timer.exists("setalpha2")) then
+                    timer.remove("setalpha2")
+                end
+                --deparent()
+            end
+        end
+    end
+
+    hook.add("input","wiredetect",WireDetect)
+end
+
+if starfall.isSpawnedFromDuplicator() then
+    hook.add('postduplicationpaste', 'dupefinished', dupefinished)
+else
+    dupefinished()
+end
+
+end

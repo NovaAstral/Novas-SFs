@@ -1,0 +1,256 @@
+--@name Ground Bridge Controller
+--@author Nova Astral
+--@model models/SmallBridge/Other/sbconsolelow.mdl
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt
+--@class emitter
+--@shared
+
+require("Novas-SFs/library/nova_lib.txt")
+
+if SERVER then
+    permissions.register(permissions.SET_PLAYER_POSITION)
+
+    function config()
+        Bridge1Pos = Vector(0,0,0)
+        Bridge1Ang = Angle(0,0,0)
+        Bridge2Pos = Vector(0,0,0)
+        Bridge2Ang = Angle(0,0,0)
+
+        BridgeActive = false
+        BridgeSize = 1
+        BridgeDist = 100
+        BridgeReset = 0
+
+        BridgeCol = Color(255,255,255)
+    end
+
+    if starfall.isSpawnedFromDuplicator() then
+        hook.add('postduplicationpaste', 'dupefinished', config())
+    else
+        config()
+    end
+
+    wire.adjust(function(input, output)
+        --Inputs
+        input({"Activate"},"NUMBER")
+        input({"Bridge1 Pos"},"VECTOR")
+        input({"Bridge1 Angle"},"ANGLE")
+        input({"Bridge2 Pos"},"Vector")
+        input({"Bridge2 Angle"},"ANGLE")
+        input({"Reset"},"NUMBER")
+        input({"Color"},"Vector")
+        input({"Size","Distance"},"NUMBER")
+    end)
+
+    function OpenGroundBridge()
+        if(BridgeActive == true) then return end
+        timer.simple(1,function()
+
+        BridgeActive = 1
+
+        if(not IsValid(Bridge1)) then
+            Bridge1 = holograms.create(Bridge1Pos,Bridge1Ang,"models/props_combine/portalball.mdl",0)
+        end
+
+        if(not IsValid(Bridge2)) then
+            Bridge2 = holograms.create(Bridge2Pos,Bridge2Ang,"models/props_combine/portalball.mdl",0)
+        end
+
+        timer.create("BridgeIdleSound",1,1,function()
+            if(IsValid(Bridge1)) then
+                --sounds.emitEntity(Bridge1,"ambient/levels/citadel/field_loop2.wav",75,100)
+            end
+
+            if(IsValid(Bridge2)) then
+                --sounds.emitEntity(Bridge2,"ambient/levels/citadel/field_loop2.wav",75,100)
+            end
+        end)
+
+        if(IsValid(Bridge1)) then
+            Bridge1:setColor(BridgeCol)
+        end
+
+        if(IsValid(Bridge2)) then
+            Bridge2:setColor(BridgeCol)
+        end
+
+        timer.create("BridgeOpen",0.1,1,function()
+            Bridge1:setModelScale(BridgeSize,0.3)
+            Bridge2:setModelScale(BridgeSize,0.3)
+        end)
+
+        timer.create("BridgeTP",0.1,0,function()
+            if(IsValid(Bridge1)) then
+                for k,v in ipairs(find.inSphere(Bridge1:pos(),BridgeSize*100)) do
+                    if(v:isPlayer()) then
+                        v:setPos(Bridge2:localToWorld(Vector(BridgeSize*120,0,0),ents.SET_POS_RESET_VELOCITY))
+                    end
+                end
+
+                for k,v in ipairs(find.inSphere(Bridge2:pos(),BridgeSize*100)) do
+                    if(v:isPlayer()) then
+                        v:setPos(Bridge1:localToWorld(Vector(BridgeSize*120,0,0),ents.SET_POS_RESET_VELOCITY))
+                    end
+                end
+            end
+        end)
+
+        end)
+    end
+
+    function CloseGroundBridge()
+        if(BridgeActive == false) then return end
+
+        BridgeActive = false
+
+        timer.remove("BridgeTP")
+
+        if(IsValid(Bridge1)) then
+            --sound
+            Bridge1:setModelScale(0,0.3)
+            sounds.stop(Bridge1,"ambient/levels/citadel/field_loop2.wav")
+
+            timer.simple(2,function() --stop the sound twice incase someone turned it off before it was fully on
+                sounds.stop(Bridge1,"ambient/levels/citadel/field_loop2.wav")
+            end)
+        end
+
+        if(IsValid(Bridge2)) then
+            --sound
+            Bridge2:setModelScale(0,0.3)
+            sounds.stop(Bridge2,"ambient/levels/citadel/field_loop2.wav")
+
+            timer.simple(2,function() --stop the sound twice incase someone turned it off before it was fully on
+                sounds.stop(Bridge2,"ambient/levels/citadel/field_loop2.wav")
+            end)
+        end
+    end
+
+    function ResetBridge()
+        BridgeActive = false
+
+        if(IsValid(Bridge1)) then
+            sounds.stop(Bridge1,"ambient/levels/citadel/field_loop2.wav")
+            Bridge1:remove()
+        end
+
+        if(IsValid(Bridge2)) then
+            sounds.stop(Bridge2,"ambient/levels/citadel/field_loop2.wav")
+            Bridge2:remove()
+        end
+    end
+
+    function WireTriggerBridge(value)
+        if(value >= 1) then
+            if(IsValid(Bridge1) and IsValid(Bridge2)) then
+                OpenGroundBridge()
+                net.start()
+                net.writeString("openbridge")
+                net.broadcast()
+            else
+                if(Bridge1Pos == Vector(0,0,0) or Bridge2Pos == Vector(0,0,0)) then
+                    sounds.emitEntity(ents.self(),"buttons/button2.wav")
+                else
+                    OpenGroundBridge()
+                    net.start()
+                    net.writeString("openbridge")
+                    net.broadcast()
+                end
+            end
+        else
+            CloseGroundBridge()
+            net.start()
+            net.writeString("closebridge")
+            net.broadcast()
+        end
+    end
+
+    function WireDetect(iname,value)
+        if(iname == "Activate") then
+            if(BridgeReset == 1 and value >= 1) then
+                ResetBridge()
+
+                timer.Simple(0.1,function()
+                    WireTriggerBridge(value)
+                end)
+            else
+                WireTriggerBridge(value)
+            end
+        elseif(iname == "Bridge1 Pos") then
+            if(value ~= Vector(0,0,0)) then
+                Bridge1Pos = value
+                net.setDTVar("Vector",1,value)
+            end
+        elseif(iname == "Bridge1 Angle") then
+            Bridge1Ang = value
+        elseif(iname == "Bridge2 Pos") then
+            if(value ~= Vector(0,0,0)) then
+                Bridge2Pos = value
+                net.setDTVar("Vector",2,value)
+            end
+        elseif(iname == "Bridge2 Angle") then
+            Bridge2Ang = value
+        elseif(iname == "Reset") then
+            if(value >= 1) then
+                Reset = 1
+            else
+                Reset = 0
+            end
+
+            ResetBridge()
+        elseif(iname == "Color") then
+            BridgeCol = value
+        elseif(iname == "Size") then
+            BridgeSize = math.Clamp(value,0.1,2)
+        elseif(iname == "Distance") then
+            BridgeDist = math.Clamp(value,0,32000)
+        end
+    end
+    hook.add("input","wiredetect",WireDetect)
+else --client models/props_combine/portalball.mdl
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    function playCLSound(soundurl)
+        snd1 = sounds.playURL(soundurl,"3d",function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                audio = channel
+
+                audio:setVolume(0.5)
+                audio:setPos(net.getDTVar("Vector",1))
+                audio:set3DFadeDistance(1000,1000*1000)
+            end
+        end)
+
+        snd2 = sounds.playURL(soundurl,"mono",function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                audio = channel
+
+                audio:setVolume(0.5)
+                audio:setPos(net.getDTVar("Vector",2))
+                audio:set3DFadeDistance(1000,1000*1000)
+            end
+        end)
+    end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+
+        if(Str == "openbridge") then
+            playCLSound("https://cloud.the17thdoctor.fr/s/SQmSiNuHFztMaAS/download")
+        elseif(Str == "closebridge") then
+            playCLSound("https://cloud.the17thdoctor.fr/s/gSUpBQKSw0OAHkX/download")
+        end
+    end)
+end

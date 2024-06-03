@@ -25,7 +25,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.3.1"
+    local AIVers = "2.3.6"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -518,4 +518,39 @@ end
 
 function gvintercept(cannonpos, cannonvel, targetpos, targetvel, projspeed) --Function by Princess Nova
     return targetpos + targetvel * calcTOF(targetpos - cannonpos,targetvel - cannonvel,projspeed)
+end
+
+local Hologram = starfall.getTypeDef("Hologram")
+
+function Hologram:setModelScale(scale, deltaTime) --function by The17thDoctor
+    if not IsValid(self) then error("Invalid hologram entity", 2) end
+
+    local startScale = self:getScale()
+    if type(startScale) == "VMatrix" or type(scale) == "VMatrix" then
+        error("Does not support matrix scales (I got lazy).", 2)
+    end
+
+    if type(startScale) == "number" then
+        startScale = Vector(startScale, startScale, startScale)
+    end
+
+    local endScale = scale
+    if type(scale) == "number" then
+        endScale = Vector(endScale, endScale, endScale)
+    end
+
+    local function lerp(a, b, t)
+        return a + ( b - a ) * t
+    end
+
+    local progress = 0
+    hook("think", "ModelScaleFor" .. tostring(self), function()
+        progress = math.clamp(progress + time.frameTime(), 0, deltaTime)
+        self:setScale(lerp(startScale, endScale, progress / deltaTime))
+
+        if progress == deltaTime then
+            hook("think", "ModelScaleFor" .. tostring(self))
+            return
+        end
+    end)
 end

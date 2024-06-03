@@ -15,14 +15,28 @@ if CLIENT then
             printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"You did not enter a valid URL ",ColRed,net.getDTVar("String",1))
             return
         else
-            snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,a,callback)
+            snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,errornum,callback)
                 if(not channel) then
                     if(callback == "BASS_ERROR_NO3D") then
-                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error "..tostring(errornum)..". Try turning on 'Mono'")
+                    elseif(callback == "BASS_ERROR_FILEOPEN") then
+                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error "..tostring(errornum)..". Invalid link.")
                     else
-                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                        printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error "..tostring(errornum)..". ",Color(255,0,0,255),callback)
                     end
                 else
+                    if(ents.player() == ents.owner()) then
+                        net.start()
+                        net.writeString("playingsnd")
+                        net.sendToServer()
+
+                        timer.simple(1,function()
+                            net.start()
+                            net.writeString("playingsnd_unset")
+                            net.sendToServer()
+                        end)
+                    end
+
                     audio = channel
 
                     audio:setVolume(net.getDTVar("Float",1))
@@ -54,11 +68,12 @@ else -- Server
     net.setDTVar("String",2,"3d") --audio flag
     net.setDTVar("Vector",1,Vector(0,0,0)) --url
     net.setDTVar("Int",1,1000) --fadestart
-    net.setDTVar("Int",2,2000) --fadeend
+    net.setDTVar("Int",2,1000000000) --fadeend
     net.setDTVar("Float",1,1) --volume
     net.setDTVar("Int",3,100) --pitch
 
-    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono","Pitch","Loop"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal","Normal","Normal"})
+    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono","Pitch","Loop"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal","Normal","Normal"},{"","","","","Volume is between 0 and 1","","Don't change this unless you know what you're doing.","","",""})
+    wire.createOutputs({"SoundPlaying",},{"Normal"})
 
     function WireDetect(name,value)
         if(name == "Play") then
@@ -98,6 +113,16 @@ else -- Server
             net.setDTVar("Int",3,math.clamp(value,0,255))
         end
     end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+
+        if(Str == "playingsnd") then
+            wire.ports.SoundPlaying = 1
+        elseif(Str == "playingsnd_unset") then
+            wire.ports.SoundPlaying = 0
+        end
+    end)
 
     hook.add("input","wiredetect",WireDetect)
 end

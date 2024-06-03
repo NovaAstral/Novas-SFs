@@ -1,0 +1,204 @@
+--@name Beam gun
+--@author
+--@shared
+--@class emitter
+--@require effect_wep/lib/effects_library.txt
+--@model models/veegi/emitter/emitter2.mdl
+
+if SERVER then
+wire.createInputs({"Activate"},{"normal"})
+wire.createOutputs({"SoundPlaying"},{"normal"})
+
+hook.add("input","wiredetect",function(name,value)
+    if(name == "Activate") then
+        if(value >= 1) then
+            net.start()
+            net.writeString("firegun")
+            net.broadcast()
+        end
+    end
+end)
+
+hook("net", "net", function()
+    local Str = net.readString()
+    local Ent = net.readEntity()
+    sd = 0
+
+    --make sd trigger only once
+
+    if(Str == "playingsnd") then
+        wire.ports.SoundPlaying = 1
+        net.start()
+        net.writeString("firegun2")
+        net.broadcast()
+    elseif(Str == "playingsnd_unset") then
+        wire.ports.SoundPlaying = 0
+    elseif(Str == "wep_sd" and sd == 0) then
+        sd = 1
+
+        if(propprotection.isAllowedForEntity(Ent,propprotection.ACCESS_TOOLGUN) == true and ents.self():owner():hasDamageEnabled() and Ent:owner():hasDamageEnabled()) then
+            if(Ent:class() == "ship_core" or Ent:class() == "st_shuttle_type9" or Ent:class() == "st_shuttle_type11" or Ent:class() == "st_shuttle_type6" or Ent:class() == "atlantis_puddle_jumper" or Ent:class() == "sci_fi_shuttle") then
+                Ent:getWirelink()["Self Destruct"] = 1
+            else
+                Ents = constraint.getAllConstrainedEntities(Ent,function(ent)
+                    if(ent:class() == "ship_core") then
+                        ent:getWirelink()["Self Destruct"] = 1
+                    end
+                end)
+            end
+        end
+
+        timer.simple(10,function()
+            sd = 0
+        end)
+    end
+
+end)
+
+else --client
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    function mathApproach(Cur,Tar,Change)
+        if(Tar > Cur) then
+            return math.clamp(Cur+Change,Cur,Tar)
+        elseif(Tar < Cur) then
+            return math.clamp(Cur-Change,Tar,Cur)
+        else
+            return Cur
+        end
+    end
+
+    function ShootgunCL()
+        Offset = 50
+
+        glowmat = Material("sprites/physg_glow2") --default prites/physg_glow2
+        glowfinalsize = 1000
+        glowcol = Color(230,110,0)
+
+        beamsteps = 20 --how many steps the beam takes to extend and resize
+        beamfinalthickness = 600
+        beamcol = Color(230,110,0)
+        beammat = Material("sprites/physbeama") --default sprites/physbeama
+
+        --constants, dont touch
+        glowsize = 0
+        beamlength = 0
+        beamthickness = 0
+
+        local startpos = ents.self():pos()
+        local aimdir = ents.self():up()
+
+        timer.simple(10,function() --wait 10s before doing the thing
+            timer.create("glowsize",0.05,500,function()
+                glowsize = math.clamp(glowsize+6,0,glowfinalsize)
+            end)
+
+            hook.add("render","drawbeam",function()
+                render.setColor(beamcol)
+                render.setTexture(beammat)
+                effects.drawBeam(startpos+ents.self():up()*Offset,aimdir,beamlength,beamthickness,1700,8)
+            end)
+
+            hook.add("render", "drawglow", function()
+                render.setColor(glowcol)
+                render.setTexture(glowmat)
+                local dir = 1
+
+                for I=1,5 do
+                    dir = -dir
+                    effects.drawSprite(startpos+ents.self():up()*Offset,glowsize,glowsize,time.curTime()*dir*30*I)
+                end
+            end)
+        end)
+
+        timer.simple(20,function() --beam fires at 20s
+            trhit = trace.traceDirection(startpos+ents.self():up()*Offset,aimdir,ents.self())
+            trhitdist = trhit.HitPos:Distance(startpos)
+            trhitent = trhit.Entity
+
+            timer.simple(1,function()
+                if(IsValid(trhitent)) then
+                    net.start()
+                    net.writeString("wep_sd")
+                    net.writeEntity(trhitent)
+                    net.sendToServer()
+                end
+            end)
+
+            timer.create("beammove",0.015,beamsteps,function()
+                beamlength = mathApproach(beamlength,trhitdist,trhitdist / 20)
+            end)
+
+            timer.create("beamsize",0.015,beamsteps*2,function()
+                beamthickness = mathApproach(beamthickness,beamfinalthickness,beamfinalthickness / beamsteps)
+            end)
+
+            timer.simple(7,function() --un-size beam
+                timer.remove("beamsize")
+                timer.remove("glowsize")
+
+                timer.create("beamsize2",0.015,beamsteps*2,function()
+                    beamthickness = mathApproach(beamthickness,0,beamfinalthickness / beamsteps)
+                end)
+
+                timer.create("glowsize2",0.05,500,function()
+                    glowsize = math.clamp(glowsize-18,0,glowfinalsize)
+                end)
+            end)
+        end)
+
+        timer.simple(40,function()
+            hook.remove("render","drawglow")
+            hook.remove("render","drawbeam")
+            timer.remove("beamsize2")
+            timer.remove("glowsize2")
+        end)
+    end
+
+    local soundurl = "https://cloud.the17thdoctor.fr/s/HftWDscw7Rs77Lk/download"
+    SoundPlaying = 0
+
+    function playSound()
+        snd = sounds.playURL(soundurl,"3d",function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                if(ents.player() == ents.owner()) then
+                    net.start()
+                    net.writeString("playingsnd")
+                    net.sendToServer()
+
+                    SoundPlaying = 1
+
+                    timer.simple(1,function()
+                        net.start()
+                        net.writeString("playingsnd_unset")
+                        net.sendToServer()
+
+                        SoundPlaying = 0
+                    end)
+                end
+
+                audio = channel
+
+                audio:setVolume(1)
+                audio:setPos(ents.self():pos())
+                audio:set3DFadeDistance(5000,10000000000000)
+
+            end
+        end)
+    end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+        if(Str == "firegun") then
+            playSound()
+        elseif(Str == "firegun2") then
+            ShootgunCL()
+        end
+    end)
+end

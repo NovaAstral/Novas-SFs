@@ -1,0 +1,74 @@
+--@name Spore Spinwarp
+--@author
+
+wire.createInputs({"Warp","Destination","Parent","Activate"},{"Normal","Vector","Entity","Normal"})
+wire.createOutputs({"PlaySnd","Active","SpinAmount","SpinOut"},{"Normal","Normal","Normal","Normal"})
+
+Active = 0
+SpinAmount = 1
+SpinOut = 1
+
+wire.ports.SpinAmount = SpinAmount
+wire.ports.Active = Active
+wire.ports.SpinOut = SpinOut
+
+function ActivateWarp()
+    Active = 1
+    wire.ports.Active = Active
+
+    OriginalAng = wire.ports.Parent:ang()
+
+    AngX = OriginalAng.x
+    AngY = OriginalAng.y
+    AngZ = OriginalAng.z
+
+    timer.create("spin",0.06,0,function()
+        wire.ports.SpinAmount = SpinAmount
+
+        if(SpinOut == 1) then
+            SpinAmount = math.clamp(SpinAmount * 1.1,1,4320)
+
+            wire.ports.Parent:setAng((Angle(1*SpinAmount,AngY,AngZ)))
+
+            if(SpinAmount == 4320) then
+                SpinOut = 0
+
+                wire.ports.SpinOut = SpinOut
+                wire.ports.Parent:setPos(WarpDest)
+            end
+        else
+            SpinAmount = math.clamp(SpinAmount / 1.1,1,4320)
+
+            wire.ports.Parent:setAng((Angle(1*SpinAmount,AngY,AngZ)))
+
+            if(SpinAmount == 1) then
+                timer.remove("spin")
+
+                Active = 0
+                SpinOut = 1
+
+                wire.ports.Parent:setAng(OriginalAng)
+                wire.ports.Active = Active
+                wire.ports.SpinOut = SpinOut
+                wire.ports.PlaySnd = 0
+            end
+        end
+    end)
+end
+
+function WireDetect(name,value)
+    if(name == "Warp" and value == 1) then
+        if(Active == 0) then
+            wire.ports.PlaySnd = 1
+        end
+    elseif(name == "Destination") then
+        if(value ~= Vector(0,0,0)) then
+            WarpDest = value
+        end
+    elseif(name == "Activate" and value >= 1) then
+        ActivateWarp()
+        wire.ports.PlaySnd = 0
+    end
+end
+
+hook.add("input","wiredetect",WireDetect)
