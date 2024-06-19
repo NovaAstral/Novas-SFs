@@ -9,10 +9,8 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.3.6" -- Don't touch this
+AIVersion = "2.3.9" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
-
---Vethian cannot target kino's directly :)
 
 --[[
 Made by Nova Astral
@@ -73,13 +71,13 @@ function nameCheck()
         if(Shipname == "Shipname") then
             aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 38",ColOng,"] of this mainframe")
         else
-            chat.say(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,AIName,ColGrn," v",AIVersion,ColOng," active",ColOng," on: ",ZeiaMBlu,Shipname)
+            chat.say(ColPink,"[",AIName,"] ",ColTeam,AIName,ColGrn," v",AIVersion,ColOng," active",ColOng," on: ",ZeiaMBlu,Shipname)
         end
     else
         if(Shipname == "Shipname") then
             aiSay(sfowner,"Shipname not set. Set it on [",ColRed,"Line 36",ColOng,"] of this mainframe")
         else
-            aiSay(sfowner," [",AIName,"] ",ColGrn," v",AIVersion,ColOng," active on: ",ZeiaMBlu,Shipname)
+            aiSay(sfowner,"[",AIName,"] ",ColGrn," v",AIVersion,ColOng," active on: ",ZeiaMBlu,Shipname)
         end
     end
 
@@ -699,7 +697,7 @@ function AutoLink()
             vw = v:getWirelink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
-                if(ve:class() == "sbep_base_door_controller" or ve:class() == "cap_doors_frame") then
+                if(ve:class() == "sbep_base_door_controller" or ve:class() == "cap_doors_frame" or ve:class() == "sci_fi_door") then
                     if(vw["1"] == "VDoors") then
                         table.insert(DoorValues,v)
 
@@ -712,6 +710,8 @@ function AutoLink()
                                         ve:getWirelink()["Toggle"] = 0
                                     end)
                                 end
+                            elseif(ve:class() == "sci_fi_door") then
+                                ve:getWirelink()["Open"] = 1
                             else
                                 ve:getWirelink()["Open_1"] = 1
                             end
@@ -724,6 +724,8 @@ function AutoLink()
                                         ve:getWirelink()["Toggle"] = 0
                                     end)
                                 end
+                            elseif(ve:class() == "sci_fi_door") then
+                                ve:getWirelink()["Open"] = 0
                             else
                                 ve:getWirelink()["Open_1"] = 0
                             end
@@ -754,10 +756,13 @@ function dupefinished()
 
     timer.simple(1,function()
 
-        SetAIName()
         config()
-        nameCheck()
+
+        SetAIName()
+
         functionSetup()
+
+        nameCheck()
 
         AIVersCheck()
 
@@ -1161,7 +1166,7 @@ function SelfDestruct(input)
                     v:getWirelink()["RGB"] = Green
                 end
 
-                timer.start("AlertLightTimer")
+                timer.stop("AlertLightTimer")
 
                 aiSay(sfowner,"Self Destruct ",ColGrn,"Stopped")
             else
@@ -1180,7 +1185,7 @@ function SelfDestruct(input)
                     v:getWirelink()["RGB"] = AlertRed
                 end
 
-                timer.start("AlertLightTimer")
+                timer.stop("AlertLightTimer")
 
                 aiSay(sfowner,"Self Destruct ",ColGrn,"Paused")
             else
@@ -1193,6 +1198,8 @@ function SelfDestruct(input)
                 timer.unpause("sd")
 
                 ShipCoreW:entity():setEnvironmentSound("alarm/sga_midway_selfdestruct.wav")
+
+                timer.start("AlertLightTimer")
 
                 aiSay(sfowner,"Self Destruct ",ColGrn,"Unpaused")
             else
@@ -1276,10 +1283,10 @@ function Alert(input)
             aiSay(sfowner,"Condition",ColGrn," Green ",ColOng,"Stand down.")
 
             if(GateCol == 1) then
-                if(IsValid(wire.ports.Stargate) == true) then
-                    wire.ports.Stargate["Event Horion Color"] = Color(255,255,255)
+                if(IsValid(wire.ports.Stargate)) then
+                    wire.ports.Stargate["Event Horion Color"] = Vector(255,255,255)
                 elseif(IsValid(Stargate)) then
-                    StargateW["Event Horizon Color"] = Color(255,255,255)
+                    StargateW["Event Horizon Color"] = Vector(255,255,255)
                 end
             end
         end
@@ -1298,7 +1305,7 @@ function Alert(input)
             aiSay(sfowner,"Condition",ColBlu," Blue ",ColOng,"Prepare for Battle.")
 
             if(GateCol == 1) then
-                if(IsValid(wire.ports.Stargate) == true) then
+                if(IsValid(wire.ports.Stargate)) then
                     wire.ports.Stargate["Event Horion Color"] = AlertBlue
                 elseif(IsValid(Stargate)) then
                     StargateW["Event Horizon Color"] = AlertBlue
@@ -1319,7 +1326,7 @@ function Alert(input)
             aiSay(sfowner,"Condition",ColRed," Red ",ColOng,"Battle Stations!")
 
             if(GateCol == 1) then
-                if(IsValid(wire.ports.Stargate) == true) then
+                if(IsValid(wire.ports.Stargate)) then
                     wire.ports.Stargate["Event Horion Color"] = AlertRed
                 elseif(IsValid(Stargate)) then
                     StargateW["Event Horizon Color"] = AlertRed
@@ -1340,7 +1347,7 @@ function Alert(input)
             aiSay(sfowner,"Condition",ColWht," Black ",ColOng,"Shipwide Experiment")
 
             if(GateCol == 1) then
-                if(IsValid(wire.ports.Stargate) == true) then
+                if(IsValid(wire.ports.Stargate)) then
                     wire.ports.Stargate["Event Horion Color"] = AlertBlack
                 elseif(IsValid(Stargate)) then
                     StargateW["Event Horizon Color"] = AlertBlack
@@ -1361,10 +1368,10 @@ function Alert(input)
             aiSay(sfowner,ColRed,"Abandon Ship!")
 
             if(GateCol == 1) then
-                if(IsValid(wire.ports.Stargate) == true) then
-                    wire.ports.Stargate["Event Horion Color"] = Color(200,0,0)
+                if(IsValid(wire.ports.Stargate)) then
+                    wire.ports.Stargate["Event Horion Color"] = Vector(200,0,0)
                 elseif(IsValid(Stargate)) then
-                    StargateW["Event Horizon Color"] = Color(200,0,0)
+                    StargateW["Event Horizon Color"] = Vector(200,0,0)
                 end
             end
         end
@@ -1383,7 +1390,7 @@ function LockDown(input)
             ShieldW["Activate"] = 1
         end
 
-        if(IsValid(wire.ports.Rings) == true) then
+        if(IsValid(wire.ports.Rings)) then
             wire.ports.Rings["UnUsable"] = 1
         end
 
@@ -1400,7 +1407,7 @@ function LockDown(input)
 
         wire.ports.Lockdown = 0
 
-        if(IsValid(wire.ports.Rings) == true) then
+        if(IsValid(wire.ports.Rings)) then
             wire.ports.Rings["UnUsable"] = 0
         end
 
@@ -1626,6 +1633,12 @@ chat.listen(function(message, player)
                                         timer.simple(0.1,function()
                                             v:getWirelink()["Toggle"] = 0
                                         end)
+                                    elseif(v:class() == "sci_fi_door") then
+                                        if(v:getWirelink()["Opened"] == 1) then
+                                            v:getWirelink()["Open"] = 0
+                                        elseif(v:getWirelink()["Opened"] == 0) then
+                                            v:getWirelink()["Open"] = 1
+                                        end
                                     elseif(v:class() == "sbep_base_door_controller") then
                                         if(v:getWirelink()["Opened_1"] == 1) then
                                             v:getWirelink()["Open_1"] = 0
@@ -1647,6 +1660,8 @@ chat.listen(function(message, player)
                                                     v:getWirelink()["Toggle"] = 0
                                                 end)
                                             end
+                                        elseif(v:class() == "sci_fi_door") then
+                                            v:getWirelink()["Open"] = 1
                                         elseif(v:class() == "sbep_base_door_controller") then
                                             v:getWirelink()["Open_1"] = 1
                                         end
@@ -1663,9 +1678,12 @@ chat.listen(function(message, player)
                                                     v:getWirelink()["Toggle"] = 0
                                                 end)
                                             end
+                                        elseif(v:class() == "sci_fi_door") then
+                                            v:getWirelink()["Open"] = 0
                                         elseif(v:class() == "sbep_base_door_controller") then
                                             v:getWirelink()["Open_1"] = 0
                                         end
+
                                         if(I == #DoorValues) then
                                             aiSay(sfowner,"All Doors",ColGrn," Closed.")
                                         end
@@ -1674,11 +1692,39 @@ chat.listen(function(message, player)
                             end
                         else
                             if(tostring(DoorValues[I]:getWirelink()["2"]):lower() == OLS[3]) then
+                                DoorPrint = 0
+
                                 for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
                                     if(#v > 1) then
                                         DoorString = " Doors"
+
+                                        if(I == #DoorValues and OLS[4] == nil) then
+                                            if(OLS[4] == "open") then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
+                                            elseif(OLS[4] == "close") then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
+                                            else
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
+                                            end
+                                        end
                                     else
                                         DoorString = " Door"
+
+                                        if(DoorPrint == 0) then --jank ass shit so it doesnt print twice
+                                            DoorPrint = 1
+
+                                            if(OLS[4] == "open") then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
+                                            elseif(OLS[4] == "close") then
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
+                                            else
+                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
+                                            end
+
+                                            timer.simple(0.1,function()
+                                                DoorPrint = 0
+                                            end)
+                                        end
                                     end
 
                                     if(OLS[4] == nil) then
@@ -1688,6 +1734,12 @@ chat.listen(function(message, player)
                                             timer.simple(0.1,function()
                                                 v:getWirelink()["Toggle"] = 0
                                             end)
+                                        elseif(v:class() == "sci_fi_door") then
+                                            if(v:getWirelink()["Opened"] == 1) then
+                                                v:getWirelink()["Open"] = 0
+                                            elseif(v:getWirelink()["Opened"] == 0) then
+                                                v:getWirelink()["Open"] = 1
+                                            end
                                         elseif(v:class() == "sbep_base_door_controller") then
                                             if(v:getWirelink()["Opened_1"] == 1) then
                                                 v:getWirelink()["Open_1"] = 0
@@ -1695,9 +1747,7 @@ chat.listen(function(message, player)
                                                 v:getWirelink()["Open_1"] = 1
                                             end
                                         end
-                                        if(I == #DoorValues) then
-                                            aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
-                                        end
+
                                     else
                                         if(OLS[4] == "open") then
                                             if(v:class() == "cap_doors_frame") then
@@ -1708,12 +1758,10 @@ chat.listen(function(message, player)
                                                         v:getWirelink()["Toggle"] = 0
                                                     end)
                                                 end
+                                            elseif(v:class() == "sci_fi_door") then
+                                                v:getWirelink()["Open"] = 1
                                             elseif(v:class() == "sbep_base_door_controller") then
                                                 v:getWirelink()["Open_1"] = 1
-                                            end
-
-                                            if(I == #DoorValues) then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
                                             end
                                         elseif(OLS[4] == "close") then
                                             if(v:class() == "cap_doors_frame") then
@@ -1724,12 +1772,10 @@ chat.listen(function(message, player)
                                                         v:getWirelink()["Toggle"] = 0
                                                     end)
                                                 end
+                                            elseif(v:class() == "sci_fi_door") then
+                                                v:getWirelink()["Open"] = 0
                                             elseif(v:class() == "sbep_base_door_controller") then
                                                 v:getWirelink()["Open_1"] = 0
-                                            end
-
-                                            if(I == #DoorValues) then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
                                             end
                                         end
                                     end
@@ -1789,11 +1835,29 @@ chat.listen(function(message, player)
                             end
                         else
                             if(tostring(FieldValues[I]:getWirelink()["2"]):lower() == OLS[3]) then
+                                FieldPrint = 0
+
                                 for k,v in pairs(constraint.getConstrainedEntities(FieldValues[I])) do
                                     if(#v > 1) then
                                         FieldString = " Forcefields"
                                     else
                                         FieldString = " Forcefield"
+
+                                        if(FieldPrint == 0) then --jank ass shit so it doesnt print twice
+                                            FieldPrint = 1
+
+                                            if(OLS[4] == "open" or OLS[4] == "off") then
+                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Deactivated.")
+                                            elseif(OLS[4] == "close" or OLS[4] == "on") then
+                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Activated.")
+                                            else
+                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Toggled.")
+                                            end
+
+                                            timer.simple(0.1,function()
+                                                DoorPrint = 0
+                                            end)
+                                        end
                                     end
 
                                     if(OLS[4] == nil) then
@@ -1802,20 +1866,11 @@ chat.listen(function(message, player)
                                         else
                                             v:getWirelink()["Activate"] = 1
                                         end
-                                        if(I == #FieldValues) then
-                                            aiSay(sfowner,OLS[3],FieldString,ColGrn," Toggled.")
-                                        end
                                     else
-                                        if(OLS[4] == "open") then
+                                        if(OLS[4] == "open" or OLS[4] == "off") then
                                             v:getWirelink()["Activate"] = 1
-                                            if(I == #FieldValues) then
-                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Activated.")
-                                            end
-                                        elseif(OLS[4] == "close") then
+                                        elseif(OLS[4] == "close" or OLS[4] == "on") then
                                             v:getWirelink()["Activate"] = 0
-                                            if(I == #FieldValues) then
-                                                aiSay(sfowner,OLS[3],FieldString,ColGrn," Deactivated.")
-                                            end
                                         end
                                     end
                                 end
@@ -2271,7 +2326,11 @@ chat.listen(function(message, player)
             else
                 if(TorpType[OLS[3]] ~= nil) then
                     for k,v in pairs(TorpLaunchers) do
-                        v:getWirelink()["Set Type"] = TorpType[OLS[3]]
+                        if(OLS[4] ~= "1" and v:getWirelink()["Type"] ~= "Tricobalt") then
+                            v:getWirelink()["Set Type"] = TorpType[OLS[3]]
+                        else
+                            v:getWirelink()["Set Type"] = TorpType[OLS[3]]
+                        end
                     end
 
                     aiSay(sfowner,"Torpedo Weapon Type changed to: ",ColGrn,OLS[3])
@@ -2429,7 +2488,7 @@ chat.listen(function(message, player)
         end
 
         if(CMD("tfire")) then
-            if(IsValid(AimEF)) then
+            if(IsValid(AimEF) and IsValid(AimEFW)) then
                 if(propprotection.isAllowedForEntity(AimEF,propprotection.ACCESS_TOOLGUN) == true) then
                     AimEFW["Fire"] = 1
 

@@ -1,0 +1,408 @@
+--@name LCARS Interface
+--@author Nova Astral & The17thDoctor
+--@dependency STEAM_0:0:52002590 public/_libraries/rendering.txt cl
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/lcars_library.txt cl
+--@resolution 1024 1024
+--@shared
+
+if CLIENT then
+ShipName = "U.S.S. Placeholder - NCC - 1234567890"
+ShipFont = render.createFont("Swiss911 XCm BT",40,100,false,false,false,false,0)
+
+interfacefont = render.createFont("Swiss911 XCm BT",60,100,false,false,false,false,0)
+lcarsfont = render.createFont("Swiss911 XCm BT",25,100,false,false,false,false,0)
+
+Menu = 1
+Alert = "Green"
+OwnerLockdown = false
+
+ColMain = Color(255,120,0)
+ColButtonIdle = Color(255,170,0)
+ColPressed = Color(255,200,50)
+ColAlertGrn = ColMain
+ColAlertYellow = Color(255,200,50)
+ColAlertRed = Color(255,50,0)
+ColAlertBlue = Color(35,35,255)
+ColAlertIntruder = Color(220,80,0)
+ColAlertSecret = ColMain
+ColOwnerLockdown = ColMain
+
+permissions.register(permissions.PLAY_CLIENT_SOUNDS)
+
+local randomNumbers = {{}, {}, {}, {}, {}, {}, index = 0, index2 = 6}
+for i = 1, 6 do
+    for j = 1, 10 do
+        randomNumbers[i][j] = ""
+    end
+end
+
+timer.create("Generate Random Numbers", 0.50, 0, function()
+    randomNumbers.index = randomNumbers.index + 1
+    if randomNumbers.index > 6 then randomNumbers.index = 1 end
+
+    for i = 1, 10 do
+        randomNumbers[randomNumbers.index][i] = tostring(math.random(0, 99999))
+    end
+end)
+
+function RenderRandomNumbers()
+    for i = 1, 6 do
+        if i == randomNumbers.index then
+            render.setColor(255, 200, 50)
+        elseif (i == randomNumbers.index - 1) or (randomNumbers.index == 1 and i == 6) then
+            render.setColor(255, 200, 100)
+        else
+            render.setColor(255, 120, 0)
+        end
+
+        for j = 1, 10 do
+            render.drawText(lcarsfont,200+j*45,-5 + 20 * i,randomNumbers[i][j],render.TEXT_ALIGN_RIGHT)
+        end
+    end
+end
+
+function RenderMainMenu()
+    local topleft_top = {
+        x = 80, y = 100,
+        orientation = "BR",
+        hWidth = 200, hHeight = 20,
+        vWidth = 150, vHeight = 50,
+        outArcWidth = 30, outArcHeight = 30,
+        inArcWidth = 50, inArcHeight = 20,
+        cache = true
+    }
+
+    local topleft_bottom = {
+        x = 80, y = 270    ,
+        orientation = "TR",
+        hWidth = 200, hHeight = 20,
+        vWidth = 150, vHeight = 50,
+        outArcWidth = 30, outArcHeight = 30,
+        inArcWidth = 50, inArcHeight = 20,
+        cache = true
+    }
+
+    local bottomleft = {
+        x = 80, y = 880,
+        orientation = "BR",
+        hWidth = 200, hHeight = 40,
+        vWidth = 150, vHeight = 110,
+        outArcWidth = 30, outArcHeight = 30,
+        inArcWidth = 50, inArcHeight = 20,
+        cache = true
+    }
+
+    render.setColor(ColMain)
+    lcars.drawCorner(topleft_top)
+    lcars.drawCorner(topleft_bottom)
+    lcars.drawCorner(bottomleft)
+
+
+    render.setColor(ColOwnerLockdown)
+    render.drawRect(5,5,150,90) --top left cube
+
+    --top middle lines
+    render.setColor(ColMain)
+    render.drawRect(360,160,20,20) --top
+    render.drawRect(385,160,450,20)
+    render.drawRect(840,160,180,20)
+
+    render.drawRect(360,190,20,20) --bottom
+    render.drawRect(385,190,80,20)
+    render.drawRect(470,190,450,20)
+    render.drawRect(925,190,95,20)
+
+    for i = 1, 11 do
+        _G["sidebutton"..i]:draw()
+    end
+
+    render.setColor(ColButtonIdle)
+    render.drawText(ShipFont,360,980,ShipName,render.TEXT_ALIGN_LEFT) --shipname
+    render.setColor(ColMain)
+    render.drawRect(365+render.getTextSize(ShipFont,ShipName),980,1000 - (365+render.getTextSize(ShipFont,ShipName)),40) --shipname empty space filler
+    render.setColor(ColMain)
+    lcars.halfCircle(1000, 1000, 20, "r") --bottom right corner
+
+    render.setColor(ColButtonIdle)
+    render.drawText(interfacefont,660,10,"LCARS INTERFACE "..ents.self():index()) --lcars text top right corner
+
+
+    --top right alert buttons
+    tlabutton:draw()
+    tmabutton:draw()
+    trabutton:draw()
+    blabutton:draw()
+    bmabutton:draw()
+    brabutton:draw()
+end
+
+hook("render","drawscreen",function()
+    render.clear()
+    render.setTexture()
+
+    render.setColor(255,255,255)
+
+    local x,y = render.cursorPos(ents.player())
+
+    if(x and y) then
+        render.drawText(lcarsfont,x,y,math.round(x,0)..","..math.round(y,0))
+    end
+
+    RenderMainMenu()
+    RenderRandomNumbers()
+
+    if(Menu == "") then
+
+    end
+end)
+
+--buttons
+buttons.clear()
+
+ownerLockdownButton = lcars.button("OwnerLockdown",5,5,150,90,20,ColMain,ColPressed,"")
+
+for i = 1, 11 do --these will be seperated later because they will need to be different buttons :(
+    _G["sidebutton"..i] = lcars.button("Sidebutton"..i,5,220+55*i,150,50,0,ColButtonIdle,ColPressed,"st/console/beep06.wav")
+end
+
+tlabutton = lcars.button("TopLeftAlert",680,65,100,40,20,ColAlertGrn,ColPressed,"") --green
+tmabutton = lcars.button("TopMidAlert",785,65,100,40,20,ColAlertYellow,ColButtonIdle,"") --yellow
+trabutton = lcars.button("TopRightAlert",890,65,100,40,20,ColAlertRed,ColPressed,"")--red
+blabutton = lcars.button("BottomLeftAlert",680,110,100,40,20,ColAlertBlue,ColPressed,"") --blue
+bmabutton = lcars.button("BottomMidAlert",785,110,100,40,20,ColAlertIntruder,ColPressed,"") --intruder alert
+brabutton = lcars.button("BottomRightAlert",890,110,100,40,20,ColButtonIdle,ColPressed,"")
+
+SecretAlert = lcars.button("SecretAlert",1000,1000,24,24,20,ColMain,ColPressed,"st/shuttlecraft/computer_respond.mp3") --rainbow mode :3
+
+function AlertColChange(newcol)
+    local RA = ColMain.r
+    local GA = ColMain.g
+    local BA = ColMain.b
+    Time = 0
+
+    timer.remove("ColChange")
+    timer.create("ColChange",0.001,32,function()
+        Time = Time+1/32
+        R = RA + (newcol.r - RA) * Time
+        G = GA + (newcol.g - GA) * Time
+        B = BA + (newcol.b - BA) * Time
+
+        ColMain = Color(R,G,B)
+
+        if(OwnerLockdown == false) then
+            ColOwnerLockdown = Color(R,G,B)
+        end
+    end)
+end
+
+hook("net", "net", function()
+    local Str1 = net.readString()
+    local Str2 = net.readString()
+
+    if(Str1 == "ownerlockdown") then
+        if(OwnerLockdown == false) then
+            OwnerLockdown = true
+
+            ColOwnerLockdown = ColAlertRed
+        else
+            OwnerLockdown = false
+
+            ColOwnerLockdown = ColMain
+        end
+    elseif(Str1 == "alert") then
+        if(Str2 ~= "secret") then
+            timer.remove("secretalert")
+        end
+
+        if(Str2 == "green") then
+            AlertColChange(ColAlertGrn)
+            Alert = "Green"
+        elseif(Str2 == "yellow") then
+            AlertColChange(ColAlertYellow)
+            Alert = "Yellow"
+        elseif(Str2 == "red") then
+            AlertColChange(ColAlertRed)
+            Alert = "Red"
+        elseif(Str2 == "blue") then
+            AlertColChange(ColAlertBlue)
+            Alert = "Blue"
+        elseif(Str2 == "intruder") then
+            AlertColChange(ColAlertIntruder)
+            Alert = "Intruder"
+        elseif(Str2 == "???") then
+
+        elseif(Str2 == "secret") then
+            RGB = 0
+
+            if(not timer.exists("secretalert")) then
+                timer.create("secretalert",0.015,0,function()
+                    RGB = RGB+1/360
+
+                    if(RGB >= 1) then
+                        RGB = 0
+                    end
+
+                    ColMain = Color.fromHSV(RGB,1,1)
+
+                    if(OwnerLockdown == false) then
+                        ColOwnerLockdown = ColMain
+                    end
+                end)
+            end
+        end
+    end
+end)
+
+
+hook("buttonpressed", "Button Pressed", function(index,player)
+    if(OwnerLockdown == true and player ~= ents.owner()) then
+        net.start()
+        net.writeString("denybutton")
+        net.sendToServer()
+
+        return
+    end
+
+    if(index == "OwnerLockdown" and player == ents.owner()) then
+        net.start()
+        net.writeString("ownerlockdown")
+        net.sendToServer()
+    elseif(index == "TopLeftAlert") then --no alert
+        if(Alert ~= "Green") then
+            Alert = "Green"
+
+            net.start()
+            net.writeString("alert")
+            net.writeString("green")
+            net.sendToServer()
+        end
+    elseif(index == "TopMidAlert") then --yellow alert
+        if(Alert ~= "Yellow") then
+            Alert = "Yellow"
+
+            net.start()
+            net.writeString("alert")
+            net.writeString("yellow")
+            net.sendToServer()
+        end
+    elseif(index == "TopRightAlert") then --red alert
+        if(Alert ~= "Red") then
+            Alert = "Red"
+
+            net.start()
+            net.writeString("alert")
+            net.writeString("red")
+            net.sendToServer()
+        end
+    elseif(index == "BottomLeftAlert") then --blue alert
+        if(Alert ~= "Blue") then
+            Alert = "Blue"
+
+            net.start()
+            net.writeString("alert")
+            net.writeString("blue")
+            net.sendToServer()
+        end
+    elseif(index == "BottomMidAlert") then --intruder alert
+        if(Alert ~= "Intruder") then
+            Alert = "Intruder"
+
+            net.start()
+            net.writeString("alert")
+            net.writeString("intruder")
+            net.sendToServer()
+        end
+    elseif(index == "BottomRightAlert") then -- ??? alert
+        if(Alert ~= "???") then
+            Alert = "???"
+            net.start()
+            net.writeString("alert")
+            net.writeString("???")
+            net.sendToServer()
+        end
+    elseif(index == "SecretAlert") then --rainbow mode :3
+        if(Alert ~= "Secret") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("secret")
+            net.sendToServer()
+
+            Alert = "Secret"
+        end
+    end
+end)
+
+hook("starfall_used", "Button Deteccccc", function(player, repeater)
+    if ents.player() ~= player then return end --Button presses should probably just act on the client that pressed.
+    local x, y = render.cursorPos(player, repeater)
+    buttons.defaultPress(player, x, y)
+end)
+else--end client | start server
+
+hook("net", "net", function()
+    local Str1 = net.readString()
+    local Str2 = net.readString()
+
+    if(Str1 == "ownerlockdown") then
+        net.start()
+        net.writeString("ownerlockdown")
+        net.broadcast()
+
+        sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_work.mp3")
+    elseif(Str1 == "denybutton") then
+        sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_error.mp3")
+    elseif(Str1 == "alert") then
+        if(Str2 == "green") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("green")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_work2.mp3")
+        elseif(Str2 == "yellow") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("yellow")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/yellowalert.wav")
+        elseif(Str2 == "red") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("red")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/alert_critical.mp3")
+        elseif(Str2 == "blue") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("blue")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_respond.mp3")
+        elseif(Str2 == "intruder") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("intruder")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_respond.mp3")
+        elseif(Str2 == "???") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("???")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_respond.mp3")
+        elseif(Str2 == "secret") then
+            net.start()
+            net.writeString("alert")
+            net.writeString("secret")
+            net.broadcast()
+
+            sounds.emitEntity(ents.self(),"st/shuttlecraft/computer_respond.mp3")
+        end
+    end
+end)
+
+end --end server

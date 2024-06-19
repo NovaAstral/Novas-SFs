@@ -32,9 +32,9 @@ function dupefinished()
         return groups
     end
 
-    groupy = table.split(Ents,math.ceil(#Ents/5))
+    groupy = table.split(Ents,math.ceil(#Ents/3))
 
-    EntGroup1, EntGroup2, EntGroup3, EntGroup4, EntGroup5 = unpack(groupy)
+    EntGroup1, EntGroup2, EntGroup3 = unpack(groupy)
 
     --print(#EntGroup1 .." ".. #EntGroup2)
 
@@ -108,6 +108,10 @@ function dupefinished()
                 ent:setAlpha(Parent:color().a)
             end
         end
+
+        timer.create("setalpha2",0.05,1,function()
+            setboxalpha2()
+        end)
     end
 
     function setboxalpha2()
@@ -117,6 +121,10 @@ function dupefinished()
                 ent:setAlpha(Parent:color().a)
             end
         end
+
+        timer.create("setalpha3",0.05,1,function()
+            setboxalpha3()
+        end)
     end
 
     function setboxalpha3()
@@ -126,27 +134,16 @@ function dupefinished()
                 ent:setAlpha(Parent:color().a)
             end
         end
-    end
 
-    function setboxalpha4()
-        for i=1,#EntGroup4 do
-            local ent = EntGroup4[i]
-            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
-                ent:setAlpha(Parent:color().a)
-            end
-        end
-    end
-
-    function setboxalpha5()
-        for i=1,#EntGroup5 do
-            local ent = EntGroup5[i]
-            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
-                ent:setAlpha(Parent:color().a)
-            end
-        end
+        timer.create("setalpha",0.05,1,function()
+            setboxalpha()
+        end)
     end
 
     function setfullalpha()
+        timer.remove("setalpha")
+        timer.remove("setalpha2")
+        timer.remove("setalpha3")
         for i=1,#Ents do
             local ent = Ents[i]
             if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
@@ -164,33 +161,12 @@ function dupefinished()
             if(value >= 1) then
                 parent()
 
-                timer.create("setalpha",0.1,0,function()
+                timer.create("setalpha",0.1,1,function()
                     setboxalpha()
-                end)
-
-                timer.create("setalpha2",0.15,0,function()
-                    setboxalpha2()
-                end)
-
-                timer.create("setalpha3",0.20,0,function()
-                    setboxalpha3()
-                end)
-
-                timer.create("setalpha4",0.25,0,function()
-                    setboxalpha4()
-                end)
-
-                timer.create("setalpha5",0.30,0,function()
-                    setboxalpha5()
                 end)
             elseif(value <= 0) then
                 if(timer.exists("setalpha")) then
-                    timer.remove("setalpha")
                     setfullalpha()
-                end
-
-                if(timer.exists("setalpha2")) then
-                    timer.remove("setalpha2")
                 end
                 --deparent()
             end

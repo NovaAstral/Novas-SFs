@@ -25,7 +25,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.3.6"
+    local AIVers = "2.3.9"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -88,7 +88,11 @@ TransportLoc = {
     ["lava"] = Vector(-11241,753,-4656),
     ["lavabase"] = Vector(-9416,-1104,-5376),
     ["hell"] = Vector(-8235,-970,-4815),
-    ["space"] = Vector(-707,-2889,-5946)
+    ["space"] = Vector(-707,-2889,-5946),
+    ["build1"] = Vector(5372,1228,-16092),
+    ["build2"] = Vector(5372,4095,-16092),
+    ["build3"] = Vector(5372,-4096,-16092),
+    ["build4"] = Vector(5372,-12287,-16092)
 }
 
 TarType = { --Sorted alphabetically
@@ -457,7 +461,7 @@ function AITalky(name) -- if LSAU and Vethian are both spawned, they will say he
     if(name == "Vethian") then
         for k,v in pairs(find.byClass("starfall_emitter")) do
             if(starfall.getName(v) == "LSAU AI") then
-                timer.simple(1,function() channels.send("VethianHello","Vethian Hello") end)
+                timer.simple(2,function() channels.send("VethianHello","Vethian Hello") end)
             end
         end
     end
@@ -465,7 +469,7 @@ function AITalky(name) -- if LSAU and Vethian are both spawned, they will say he
     if(name == "LSAU") then
         for k,v in pairs(find.byClass("starfall_emitter")) do
             if(starfall.getName(v) == "Vethian AI") then
-                timer.simple(1,function() channels.send("VethianHello","LSAU Hello") end)
+                timer.simple(2,function() channels.send("VethianHello","LSAU Hello") end)
             end
         end
     end
@@ -491,9 +495,9 @@ end --end server
 
 function aiSay(player,...) --Function by The17thDoctor
     if player == ents.owner() then
-        printColor(ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
+        printColor(ColPink," [",AIName,"] ",ColOng,...)
     else
-        chat.tell(player, ColTeam,"[AI]",ColPink," [",AIName,"] ",ColOng,...)
+        chat.tell(player,ColPink," [",AIName,"] ",ColOng,...)
     end
 end
 
