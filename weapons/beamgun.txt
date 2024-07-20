@@ -155,7 +155,7 @@ else --client
         end)
     end
 
-    local soundurl = "https://cloud.the17thdoctor.fr/s/HftWDscw7Rs77Lk/download"
+    local soundurl = "https://cloud.luna-code.net/s/HftWDscw7Rs77Lk/download"
     SoundPlaying = 0
 
     function playSound()

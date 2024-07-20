@@ -136,6 +136,8 @@ function RenderMainMenu()
     brabutton:draw()
 end
 
+ShowCursorPos = false
+
 hook("render","drawscreen",function()
     render.clear()
     render.setTexture()
@@ -144,7 +146,7 @@ hook("render","drawscreen",function()
 
     local x,y = render.cursorPos(ents.player())
 
-    if(x and y) then
+    if(x and y and ShowCursorPos == true) then
         render.drawText(lcarsfont,x,y,math.round(x,0)..","..math.round(y,0))
     end
 

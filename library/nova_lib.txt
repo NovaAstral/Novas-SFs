@@ -5,6 +5,7 @@
 --@autoupdate
 --@shared
 ColTeam = ents.owner():getTeamColor()
+ColOwner = ents.owner():getTeamColor() --alias
 ColPink = Color(255,95,215,255)
 ColOng = Color(230,110,0,255)
 ColRed = Color(255,0,0,255)
@@ -25,7 +26,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.3.9"
+    local AIVers = "2.3.10"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -557,4 +558,18 @@ function Hologram:setModelScale(scale, deltaTime) --function by The17thDoctor
             return
         end
     end)
+end
+
+function filterList(list, criterion)
+    local index = 1
+    while index <= #list do
+        if not criterion(list[index]) then
+            list[index] = list[#list]
+            table.remove(list)
+        else
+            index = index + 1
+        end
+    end
+
+    return list
 end

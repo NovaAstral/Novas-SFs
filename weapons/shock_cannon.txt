@@ -304,14 +304,14 @@ else --client
             local randomsnd = math.random(1,2)
 
             if(randomsnd == 1) then
-                soundurl = "https://cloud.the17thdoctor.fr/s/wGKlTLSW01yOOTj/download"
+                soundurl = "https://cloud.luna-code.net/s/wGKlTLSW01yOOTj/download"
             elseif(randomsnd == 2) then
-                soundurl = "https://cloud.the17thdoctor.fr/s/zzW5rVUNwOPb6iS/download"
+                soundurl = "https://cloud.luna-code.net/s/zzW5rVUNwOPb6iS/download"
             end
         elseif(GarmillasBeam == true and Type3 == false) then --garmillas beam
-            soundurl = "https://cloud.the17thdoctor.fr/s/fb0HneRoQ7hu9do/download"
+            soundurl = "https://cloud.luna-code.net/s/fb0HneRoQ7hu9do/download"
         elseif(GarmillasBeam == false and Type3 == true) then --typ3 physical cannon shells
-            soundurl = "https://cloud.the17thdoctor.fr/s/IUGCgdUln6RZ2mg/download"
+            soundurl = "https://cloud.luna-code.net/s/IUGCgdUln6RZ2mg/download"
         end
 
         snd = sounds.playURL(soundurl,"3d",function(channel,a,callback)

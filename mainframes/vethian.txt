@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.3.9" -- Don't touch this
+AIVersion = "2.3.10" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -2588,9 +2588,7 @@ chat.listen(function(message, player)
                         aiSay(sfowner,"Warping to vector: [",ColGrn,X,",",Y,",",Z,ColOng,"]")
                     end
                 end
-            end
-
-            if(OLS[2] == "angle" or OLS[2] == "ang") then
+            elseif(OLS[2] == "angle" or OLS[2] == "ang") then
                 if(OLS[3] == nil) then
                     aiSay(sfowner,"Cannot rotate the ship to nothing")
                 else
@@ -2622,9 +2620,7 @@ chat.listen(function(message, player)
                         end
                     end
                 end
-            end
-
-            if(OLS[2] == "forward" or OLS[2] == "back" or OLS[2] == "left" or OLS[2] == "right" or OLS[2] == "up" or OLS[2] == "down") then
+            elseif(OLS[2] == "forward" or OLS[2] == "back" or OLS[2] == "left" or OLS[2] == "right" or OLS[2] == "up" or OLS[2] == "down") then
                 if(OLS[3] == nil and OLS[2] ~= "back") then
                     LWarp = 1
 
@@ -2697,9 +2693,16 @@ chat.listen(function(message, player)
                         end
                     end)
                 end
-            end
+            elseif(OLS[2] == "me" or OLS[2] == "here") then
+                WarpF = 1
 
-            if(WarpF == 0) then
+                local Dest = sfowner:pos()
+                local AngleOffset = Angle(0,0,0)
+
+                warp(Dest,AngleOffset)
+
+                aiSay(sfowner,"Warping to ",ColTeam,"Your",ColOng," Location.")
+            elseif(WarpF == 0) then
                 if(OLS[2] == nil) then
                     aiSay(sfowner,"Cannot warp to noone or nowhere")
                 else

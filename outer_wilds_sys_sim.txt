@@ -400,7 +400,7 @@ if CLIENT then
 
         if(type == "Int" and index == 3 and new == 1) then
             if(IsValid(Sun)) then
-                snd = sounds.playURL("https://cloud.the17thdoctor.fr/s/GZBMdwYxysjsoZh/download","3d",function(channel,a,callback)
+                snd = sounds.playURL("https://cloud.luna-code.net/s/GZBMdwYxysjsoZh/download","3d",function(channel,a,callback)
                     audio = channel
 
                     audio:setVolume(1.5)
@@ -412,7 +412,9 @@ if CLIENT then
         end
 
         if(type == "Int" and index == 4 and new == 1) then
-            sunHalo.Color = Color(0,0,0)
+            if(sunHalo) then
+                sunHalo.Color = Color(0,0,0)
+            end
         end
     end)
 end
