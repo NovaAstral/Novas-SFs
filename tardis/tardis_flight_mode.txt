@@ -1,0 +1,136 @@
+--@name TARDIS Flight Mode
+--@author
+
+wire.createInputs({"Activate","Power","Pilot","BoxParent","CamCont"},{"normal","normal","entity","entity","wirelink"})
+
+function ActivateFlight()
+    hook.add("think","FlightThink",function()
+        if(wire.ports.Power >= 1 and wire.ports.Activate >= 1 and IsValid(TARDIS)) then
+            local phm = time.frameTime()*66
+
+            local up = TARDIS:up()
+            local ri2 = TARDIS:right()
+            local left = ri2*-1
+            local fwd2 = TARDIS:forward()
+            local ang = TARDIS:ang()
+            local angvel = TARDISPhys:getAngleVelocity()
+            local vel = TARDISPhys:getVelocity()
+            local vell = TARDISPhys:getVelocity():Length()
+            local cen = TARDISPhys:getMassCenter()
+            local mass = TARDISPhys:getMass()
+            local lev = TARDISPhys:getInertia():Length()
+            local force = 15
+            local vforce = 5
+            local rforce = 2
+            local tforce = 400
+            local tilt = 0
+
+            if(IsValid(Pilot) and IsValid(wire.ports.CamCont)) then
+                local eye = wire.ports.CamCont["CamAng"]
+                local fwd = eye:Forward()
+                local ri = eye:Right()
+
+                if(Pilot:keyDown(input.IN_SPEED)) then
+                    force = force*2.5
+                    tilt = 5
+                end
+
+                if(Pilot:keyDown(input.IN_FORWARD)) then
+                    vel = vel+fwd*force*phm
+                    --TARDISPhys:setVelocity(vel+fwd*force*phm)
+                    tilt = tilt+5
+                end
+
+                if(Pilot:keyDown(input.IN_BACK)) then
+                    vel = vel + -fwd*force*phm
+                    --TARDISPhys:setVelocity(vel + -fwd*force*phm)
+                    tilt = tilt+5
+                end
+
+                if(Pilot:keyDown(input.IN_MOVERIGHT)) then
+                    if(Pilot:keyDown(input.IN_WALK)) then
+                        TARDISPhys:addAngleVelocity(Vector(0,0,-rforce))
+                    else
+                        vel = vel+ri*force*phm
+                        --TARDISPhys:setVelocity(vel+ri*force*phm)
+                    end
+
+                end
+
+                if(Pilot:keyDown(input.IN_MOVELEFT)) then
+                    if(Pilot:keyDown(input.IN_WALK)) then
+                        TARDISPhys:addAngleVelocity(Vector(0,0,rforce))
+                    else
+                        vel = vel+ -ri*force*phm
+                        --TARDISPhys:setVelocity(vel+ -ri*force*phm)
+                    end
+
+                end
+
+                if(Pilot:keyDown(input.IN_DUCK)) then
+                    vel = vel+ -up*vforce*phm
+                    --TARDISPhys:setVelocity(vel+ -up*vforce*phm)
+                elseif(Pilot:keyDown(input.IN_JUMP)) then
+                    vel = vel+up*vforce*phm
+                    --TARDISPhys:setVelocity(vel+up*vforce*phm)
+                end
+            end
+
+            TARDISPhys:applyForceOffset( up*-ang.p,cen-fwd2*lev)
+            TARDISPhys:applyForceOffset(-up*-ang.p,cen+fwd2*lev)
+
+            TARDISPhys:applyForceOffset( up*-(ang.r-tilt),cen-ri2*lev)
+            TARDISPhys:applyForceOffset(-up*-(ang.r-tilt),cen+ri2*lev)
+
+            local twist = Vector(0,0,vell/tforce)
+            TARDISPhys:addAngleVelocity(twist)
+
+            local angbrake=angvel*-0.015
+            TARDISPhys:addAngleVelocity(angbrake)
+
+            local brake = vel*-0.01
+            vel = vel+brake
+            --TARDISPhys:setVelocity(vel+brake)
+
+            if(TARDISPhys:isGravityEnabled()) then
+                vel = vel+Vector(0,0,9.015)
+                --TARDISPhys:setVelocity(vel+Vector(0,0,9.015))
+            end
+
+            TARDISPhys:setVelocity(vel)
+        end
+    end)
+end
+
+
+timer.simple(2,function() --wait for e2 to activate so it doesnt error
+    if(IsValid(wire.ports.BoxParent)) then
+        TARDIS = wire.ports.BoxParent
+        TARDISPhys = TARDIS:getPhysicsObject()
+    end
+
+    hook.add("input","wiredetect",function(name,value)
+        if(name == "Activate") then
+            if(value >= 1 and wire.ports.Power >= 1) then
+                ActivateFlight()
+            elseif(value <= 0 or wire.ports.Power <= 0) then
+                hook.remove("think","FlightThink")
+            end
+        elseif(name == "Power") then
+            if(value >= 1 and wire.ports.Activate >= 1) then
+                ActivateFlight()
+            elseif(value <= 0 or wire.ports.Activate <= 0) then
+                hook.remove("think","FlightThink")
+            end
+        elseif(name == "BoxParent") then
+            if(IsValid(value)) then
+                TARDIS = value
+                TARDISPhys = TARDIS:getPhysicsObject()
+            end
+        elseif(name == "Pilot") then
+            if(IsValid(value) and value:isPlayer()) then
+                Pilot = value
+            end
+        end
+    end)
+end)

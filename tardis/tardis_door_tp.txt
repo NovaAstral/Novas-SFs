@@ -1,0 +1,77 @@
+--@name Door Teleport
+--@author Nova Astral
+
+permissions.register(permissions.SET_PLAYER_POSITION)
+
+wire.createInputs({"BackupTransporter","InteriorDoor","ExteriorDoorParent","Lock","ForceTransporter"},{"wirelink","entity","entity","normal","normal"})
+
+hook.add("playerattempteduse","TARDISDoorUse",function(ply,ent)
+    if(ent == wire.ports.InteriorDoor) then
+        if(wire.ports.Lock == 0) then
+            SetPlyPos(ply,false)
+
+            timer.simple(0.05,function()
+                sounds.emitEntity(wire.ports.InteriorDoor,"doors/door1_move.wav",75,100)
+                sounds.emitEntity(wire.ports.ExteriorDoorParent,"doors/door1_move.wav",75,100)
+            end)
+        else
+            sounds.emitEntity(wire.ports.InteriorDoor,"doors/default_locked.wav",75,100)
+        end
+    elseif(ent == wire.ports.ExteriorDoorParent or ent:getParent() == wire.ports.ExteriorDoorParent) then
+        if(wire.ports.Lock == 0) then
+            SetPlyPos(ply,true)
+
+            timer.simple(0.05,function()
+                sounds.emitEntity(wire.ports.ExteriorDoorParent,"doors/door1_move.wav",75,100)
+                sounds.emitEntity(wire.ports.InteriorDoor,"doors/door1_move.wav",75,100)
+            end)
+        else
+            sounds.emitEntity(wire.ports.ExteriorDoorParent,"doors/default_locked.wav",75,100)
+        end
+    end
+end)
+
+function padteleport(Ent,Pos)
+    if(wire.ports.BackupTransporter:entity():class() == "transporter_pad") then
+        PadTarget = "Target1"
+        PadDest = "TargetLocation"
+        PadBeam = "Beam to vector"
+    end
+    if(wire.ports.BackupTransporter:entity():class() == "asgard_transporter") then
+        PadTarget = "Target"
+        PadDest = "Destination"
+        PadBeam = "Send"
+    end
+
+    wire.ports.BackupTransporter[PadTarget] = Ent
+    wire.ports.BackupTransporter[PadDest] = Pos
+
+    --Beam
+    timer.simple(0.01,function()
+        wire.ports.BackupTransporter[PadBeam] = 1
+    end)
+    --Reset Beam
+    timer.simple(1,function()
+        wire.ports.BackupTransporter[PadTarget] = ents.NULL_ENTITY
+        wire.ports.BackupTransporter[PadDest] = Vector(0,0,0)
+        wire.ports.BackupTransporter[PadBeam] = 0
+    end)
+end
+
+function SetPlyPos(ply,GoingInside)
+    if(GoingInside == true) then
+        Pos = wire.ports.InteriorDoor:pos()+Vector(0,0,-20) + wire.ports.InteriorDoor:up()*-100
+    else
+        Pos = wire.ports.ExteriorDoorParent:pos()+Vector(0,0,20) + wire.ports.ExteriorDoorParent:forward()*80
+    end
+
+    if(wire.ports.ForceTransporter == 1) then
+        padteleport(ply,Pos)
+    else
+        if(permissions.canPerformAction(permissions.SET_PLAYER_POSITION,ply)) then
+            ply:setPos(Pos)
+        else
+            padteleport(ply,Pos)
+        end
+    end
+end

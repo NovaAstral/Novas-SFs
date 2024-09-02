@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.3.10" -- Don't touch this
+AIVersion = "2.3.12" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -86,6 +86,9 @@ function nameCheck()
     else
         LSCoreW["Name"] = Shipname
     end
+
+    aiSay(sfowner,ColGrn,"v2.3.11",ColOng," Changed the name of the ",ColGrn,"Drive",ColOng," Wire input, you will have to re-wire it.")
+    --remove this when sufficient time has passed I suppose
 end
 
 function functionSetup()
@@ -129,26 +132,26 @@ function functionSetup()
             if(stargate.locationJammed(WarpVec)) then
                 aiSay(sfowner,"Destination Jammed! Cannot warp.")
             else
-                PrevPos = wire.ports.Drive:entity():pos()
-                PrevAng = wire.ports.Drive:entity():ang()
+                PrevPos = wire.ports.WarpDrive:entity():pos()
+                PrevAng = wire.ports.WarpDrive:entity():ang()
 
-                wire.ports.Drive[DestInput] = WarpVec
-                wire.ports.Drive[AngInput] = Ang
+                wire.ports.WarpDrive[DestInput] = WarpVec
+                wire.ports.WarpDrive[AngInput] = Ang
                 wire.ports.Destination = WarpVec
                 wire.ports.AngleOffset = Ang
 
                 --Warp
                 timer.simple(0.2,function()
                     wire.ports.Warp = 1
-                    wire.ports.Drive[WarpInput] = 1
+                    wire.ports.WarpDrive[WarpInput] = 1
                 end)
 
                 --Reset Warp
                 timer.simple(2,function()
                     wire.ports.Warp = 0
                     wire.ports.Destination = Vector(0,0,0)
-                    wire.ports.Drive[WarpInput] = 0
-                    wire.ports.Drive[DestInput] = Vector(0,0,0)
+                    wire.ports.WarpDrive[WarpInput] = 0
+                    wire.ports.WarpDrive[DestInput] = Vector(0,0,0)
                     wire.ports.AngOffset = Angle(0,0,0)
 
                     WarpF = 0
@@ -250,10 +253,10 @@ function functionSetup()
 
 
     hook.add("input","DriveChange", function(input)
-        if(input == "Drive" and DCWait == 0) then
-            if(IsValid(wire.ports.Drive)) then
-                DriveType = wire.ports.Drive:entity():class()
-                DriveOffset = wire.ports.Drive:entity():ang()
+        if(input == "WarpDrive" and DCWait == 0) then
+            if(IsValid(wire.ports.WarpDrive)) then
+                DriveType = wire.ports.WarpDrive:entity():class()
+                DriveOffset = wire.ports.WarpDrive:entity():ang()
 
                 if(DriveType == "ship_drive" or DriveType == "bsg_drive" or DriveType == "st_warp_drive" or DriveType == "sg_hyperdrive" or DriveType == "spore_drive" or DriveType == "quantum_slipstream_drive") then
                     DestInput = "Destination"
@@ -771,7 +774,7 @@ function dupefinished()
         timer.simple(1,function()
             DCWait = 0
 
-            hook.run("input", "Drive")
+            hook.run("input", "WarpDrive")
         end)
     end)
 end
@@ -784,7 +787,7 @@ end
 
 wire.adjust(function(input, output)
     --Inputs
-    input({"Stargate","Rings","Drive","Transporter"},"WIRELINK")
+    input({"Stargate","Rings","WarpDrive","Transporter"},"WIRELINK")
     input({"BrigEnt"},"ENTITY")
 
     --Outputs
@@ -2554,7 +2557,7 @@ chat.listen(function(message, player)
     ---Warp---
     ----------
     if(OLS[1] == WarpPrefix) then
-        if(IsValid(wire.ports.Drive) ~= true) then
+        if(IsValid(wire.ports.WarpDrive) ~= true) then
             aiSay(sfowner,ColRed,"Warp Drive not linked!")
         else
             WarpF = 0
@@ -2595,8 +2598,8 @@ chat.listen(function(message, player)
                     if(OLS[3] == "reset") then
                         WarpF = 1
 
-                        local AngOffset = wire.ports.Drive:entity():toLocal(Angle(0,0,0)) + DriveOffset
-                        local Dest = wire.ports.Drive:entity():pos()
+                        local AngOffset = wire.ports.WarpDrive:entity():toLocal(Angle(0,0,0)) + DriveOffset
+                        local Dest = wire.ports.WarpDrive:entity():pos()
 
                         aiSay(sfowner,"Resetting ship angles")
 
@@ -2612,7 +2615,7 @@ chat.listen(function(message, player)
                             local Z = math.round(tonumber(V[3]))
 
                             local AngOffset = Angle(X,Y,Z)
-                            local Dest = wire.ports.Drive:entity():pos()
+                            local Dest = wire.ports.WarpDrive:entity():pos()
 
                             warp(Dest,AngOffset)
 
@@ -2637,7 +2640,7 @@ chat.listen(function(message, player)
 
                         aiSay(sfowner,"Warping Forward by ",ColGrn,tonumber(OLS[3]))
 
-                        Dest = wire.ports.Drive:entity():pos() + Vector(tonumber(OLS[3]),0,0)
+                        Dest = wire.ports.WarpDrive:entity():pos() + Vector(tonumber(OLS[3]),0,0)
                     end
 
                     if(OLS[2] == "back") then
@@ -2650,7 +2653,7 @@ chat.listen(function(message, player)
                         elseif(tonumber(OLS[3]) ~= nil) then
                             aiSay(sfowner,"Warping Back by ",ColGrn,tonumber(OLS[3]))
 
-                            Dest = wire.ports.Drive:entity():pos() - Vector(tonumber(OLS[3]),0,0)
+                            Dest = wire.ports.WarpDrive:entity():pos() - Vector(tonumber(OLS[3]),0,0)
                         end
                     end
 
@@ -2659,7 +2662,7 @@ chat.listen(function(message, player)
 
                         aiSay(sfowner,"Warping Left by ",ColGrn,tonumber(OLS[3]))
 
-                        Dest = wire.ports.Drive:entity():pos() + Vector(0,tonumber(OLS[3]),0)
+                        Dest = wire.ports.WarpDrive:entity():pos() + Vector(0,tonumber(OLS[3]),0)
                     end
 
                     if(OLS[2] == "right" and LWarp == 0) then
@@ -2667,7 +2670,7 @@ chat.listen(function(message, player)
 
                         aiSay(sfowner,"Warping Right by ",ColGrn,tonumber(OLS[3]))
 
-                        Dest = wire.ports.Drive:entity():pos() - Vector(0,tonumber(OLS[3]),0)
+                        Dest = wire.ports.WarpDrive:entity():pos() - Vector(0,tonumber(OLS[3]),0)
                     end
 
                     if(OLS[2] == "up" and LWarp == 0) then
@@ -2675,7 +2678,7 @@ chat.listen(function(message, player)
 
                         aiSay(sfowner,"Warping Up by ",ColGrn,tonumber(OLS[3]))
 
-                        Dest = wire.ports.Drive:entity():pos() + Vector(0,0,tonumber(OLS[3]))
+                        Dest = wire.ports.WarpDrive:entity():pos() + Vector(0,0,tonumber(OLS[3]))
                     end
 
                     if(OLS[2] == "down" and LWarp == 0) then
@@ -2683,7 +2686,7 @@ chat.listen(function(message, player)
 
                         aiSay(sfowner,"Warping Down by ",ColGrn,tonumber(OLS[3]))
 
-                        Dest = wire.ports.Drive:entity():pos() - Vector(0,0,tonumber(OLS[3]))
+                        Dest = wire.ports.WarpDrive:entity():pos() - Vector(0,0,tonumber(OLS[3]))
                     end
 
                     timer.simple(0.2,function()
@@ -2738,7 +2741,7 @@ chat.listen(function(message, player)
 
     if(OLS[1] == Prefix) then
         if(CMD("wspeed")) then
-            if(IsValid(wire.ports.Drive) ~= true) then
+            if(IsValid(wire.ports.WarpDrive) ~= true) then
                 aiSay(sfowner,ColRed,"Warp Drive not linked!")
             else
                 if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
@@ -2792,6 +2795,26 @@ chat.listen(function(message, player)
                     DriveCoreW["Turn Rate Multiplier"] = DCoreTSpeed
 
                     aiSay(sfowner,"Drive Core Turnspeed set to: ",ColGrn,DCoreTSpeed)
+                end
+            end
+        end
+
+        if(CMD("caccel")) then
+            if(IsValid(DriveCore) ~= true) then
+                aiSay(sfowner,ColRed,"Drive Core not linked!")
+            else
+                if(OLS[3] == nil or tonumber(OLS[3]) == nil or tonumber(OLS[3]) < 0) then
+                    aiSay(sfowner,"Invalid number specified. Current Drive Core Acceleration is: ",ColGrn,DCoreAccel)
+                elseif(tonumber(OLS[3]) > 2) then
+                    DCoreAccel = 2
+                    DriveCoreW["Acceleration Multiplier"] = DCoreAccel
+
+                    aiSay(sfowner,"Drive Core Acceleration cannot go above ",ColGrn,"2",ColOng," Setting Drive Core Acceleration to max")
+                else
+                    DCoreAccel = tonumber(OLS[3])
+                    DriveCoreW["Acceleration Multiplier"] = DCoreAccel
+
+                    aiSay(sfowner,"Drive Core Acceleration set to: ",ColGrn,DCoreAccel)
                 end
             end
         end

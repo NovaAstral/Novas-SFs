@@ -1,0 +1,262 @@
+--@name Destiny FTL
+--@author Nova Astral (with help from The17thDoctor)
+--@shared
+--@require effect_wep/lib/effects_library.txt
+
+--make sure your parent is pointing forward (+x) and has nothing infront of it
+
+function math.approachVec(v1, v2, dist)
+    if v1:Distance(v2) <= dist then return v2 end
+    return v1 + (v2 - v1):Normalize() * dist
+end
+
+if SERVER then
+
+EffectOffset = 500 --how far forward the effect will play from the effect parent
+ShipTPOffset = 2000 --this should be infront of the most front part of your ship, so the move anim doesnt remove parts of your ship
+--tp offset should be replaced by the ship size later when i can figure it out
+
+wire.createInputs({"Warp","Destination","Parent","EffectParent"},{"normal","vector","entity","entity"})
+
+function MoveShip()
+    local outtr = trace.traceDirection(wire.ports.Parent:pos(), wire.ports.Parent:forward(),wire.ports.Parent)
+    local intrtest  = trace.traceDirection(MoveDest,-wire.ports.Parent:forward(),wire.ports.Parent)
+    local intr = trace.traceLine(intrtest.HitPos,MoveDest)
+
+    timer.create("moveshipout",0.001,0,function()
+        if(outtr.HitPos:Distance(wire.ports.Parent:pos()) > ShipTPOffset) then
+            wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),outtr.HitPos,300))
+
+            net.setDTVar("Vector",1,wire.ports.Parent:pos())
+        else
+            timer.remove("moveshipout")
+            wire.ports.Parent:setPos(intrtest.HitPos + wire.ports.Parent:forward() * ShipTPOffset)
+            net.setDTVar("Vector",1,wire.ports.Parent:pos())
+
+            timer.simple(0.1,function()
+                net.start()
+                    net.writeString("dropoutsound")
+                    net.writeEntity(wire.ports.EffectParent)
+                    net.writeFloat(EffectOffset)
+                    net.writeBool(false)
+                net.broadcast()
+            end)
+
+            timer.create("moveshipin",0.001,0,function()
+                if(wire.ports.Parent:pos():Distance(intr.HitPos) <= 300) then
+                    timer.remove("moveshipin")
+                    net.setDTVar("Vector",1,wire.ports.Parent:pos())
+
+                    sounds.emitEntity(wire.ports.Parent,"destiny/destiny_ftl_jump_out.wav",100,100)
+
+                    timer.simple(1,function()
+                        net.start()
+                        net.writeString("buh")
+                        net.writeEntity(wire.ports.EffectParent)
+                        net.writeFloat(EffectOffset)
+                        net.writeBool(true) --stop effect
+                        net.broadcast()
+                    end)
+                else
+                    wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),intr.HitPos,300))
+                    net.setDTVar("Vector",1,wire.ports.Parent:pos())
+                end
+            end)
+        end
+    end)
+end
+
+Dest = Vector(0,0,0)
+
+hook.add("input","wiredetect",function(name,value)
+    if(name == "Warp") then
+        if(value >= 1) then
+            if(Dest ~= Vector(0,0,0)) then
+                net.start()
+                net.writeString("activateeffect")
+                net.writeEntity(wire.ports.EffectParent)
+                net.writeFloat(EffectOffset)
+                net.writeBool(false) --stop effect
+                net.broadcast()
+
+                timer.simple(0.1,function()
+                    sounds.emitEntity(wire.ports.Parent,"destiny/destiny_ftl_jump_in.wav",100,100)
+
+                    net.start()
+                        net.writeString("jumpinsound")
+                        net.writeEntity(wire.ports.EffectParent)
+                        net.writeFloat(EffectOffset)
+                        net.writeBool(false)
+                    net.broadcast()
+                end)
+
+                MoveDest = Dest
+
+                timer.simple(2,function()
+                    MoveShip()
+                end)
+            end
+        end
+    elseif(name == "Destination") then
+        Dest = value
+    end
+end)
+
+else --client
+emitter.setDrawEverywhere(false)
+
+StopEffect = false
+
+permissions.register(permissions.PLAY_CLIENT_SOUNDS)
+
+function playsound(sound)
+    if(sound == "jumpout") then
+        SndPath = "sound/destiny/destiny_ftl_jump_in.wav"
+    elseif(sound == "jumpin") then
+        SndPath = "sound/destiny/destiny_ftl_jump_out.wav"
+    end
+
+    snd = sounds.playFile(SndPath,"3d",function(channel,errornum,callback)
+        if(not channel) then
+            if(callback == "BASS_ERROR_NO3D") then
+                printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error "..tostring(errornum)..". Try turning on 'Mono'")
+            elseif(callback == "BASS_ERROR_FILEOPEN") then
+                printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Audio Error "..tostring(errornum)..". Invalid link.")
+            else
+                printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"Unknown Audio Error "..tostring(errornum)..". ",Color(255,0,0,255),callback)
+            end
+        else
+            audio = channel
+
+            audio:setVolume(1)
+            audio:set3DFadeDistance(2000,3200000)
+
+            print(audio:getLength())
+
+            timer.create("setvolpos",0.1,0,function()
+                audio:setPos(net.getDTVar("Vector",1))
+            end)
+
+            timer.simple(audio:getLength(),function()
+                timer.remove("setvolpos")
+            end)
+        end
+    end)
+end
+
+function playeffect()
+    ftlglowsizel = 750
+    ftlglowsizeh = 250
+    fwdglowsize = 0
+
+    glowmat = Material("sprites/physg_glow2")
+
+    ColTbl = {
+        Color(150,150,255),
+        Color(100,100,255),
+        Color(0,0,255),
+    }
+
+    timer.create("glowsize",0.015,500,function()
+        fwdglowsize = math.clamp(fwdglowsize+20,0,1000)
+
+        if(fwdglowsize >= 1000) then
+            timer.remove("glowsize")
+        end
+    end)
+
+    hook.add("render", "drawfwdglow", function()
+        if(StopEffect == true) then
+            if(not timer.exists("makesmol")) then
+                timer.create("makesmol",0.015,500,function()
+                    fwdglowsize = math.clamp(fwdglowsize-40,0,1000)
+
+                    if(fwdglowsize <= 0) then
+                        hook.remove("render","drawfwdglow")
+                        timer.remove("makesmol")
+                    end
+                end)
+            end
+        end
+
+        render.setTexture(glowmat)
+        local dir = 1
+
+        for I=1,5 do
+            dir = -dir
+
+            render.setColor(ColTbl[2])
+            effects.drawSprite(ParentEnt:pos() + ParentEnt:forward() * EffectOffset,fwdglowsize,fwdglowsize,time.curTime()*dir*30*I)
+        end
+    end)
+
+    timer.create("ftleffect",1.5,1,function()
+        local sprites = {}
+        for I=1,100 do
+            if(I <= 50) then
+                sprites[I] = {
+                    pos = ParentEnt:pos() + ParentEnt:forward() * EffectOffset + (ParentEnt:pos() + ParentEnt:forward() * EffectOffset + -ParentEnt:forward() * EffectOffset * math.random(2,4) + ParentEnt:right() * math.random(-500,500) +  ParentEnt:up() * math.random(-500,500)-ParentEnt:pos() + ParentEnt:forward() * EffectOffset) * math.randfloat(0,1), --Current position
+                    goal = ParentEnt:pos() + ParentEnt:forward() * EffectOffset + -ParentEnt:forward() * EffectOffset * math.random(2,4) + ParentEnt:right() * math.random(-500,500) +  ParentEnt:up() * math.random(-500,500) --End position
+                }
+            else
+                sprites[I] = {
+                    pos = ParentEnt:pos() + ParentEnt:forward() * EffectOffset, --Current position
+                    goal = ParentEnt:pos() + ParentEnt:forward() * EffectOffset + -ParentEnt:forward() * EffectOffset * math.random(2,4) + ParentEnt:right() * math.random(-500,500) +  ParentEnt:up() * math.random(-500,500) --End position
+                }
+            end
+        end
+
+        hook.add("render", "drawftlglow", function()
+            render.setTexture(glowmat)
+
+            if(StopEffect == true) then
+                if(not timer.exists("hookremove")) then
+                    timer.create("hookremove",5,1,function()
+                        hook.remove("render","drawftlglow")
+                    end)
+                end
+            end
+
+            for I=1,100 do
+                local sprite = sprites[I]
+
+                sprite.pos = math.approachVec(sprite.pos, sprite.goal, 10)
+
+                render.setColor(ColTbl[math.random(1,3)])
+
+                if(sprite.pos == sprite.goal) then
+                    if(StopEffect == true) then
+                        render.setColor(0,0,0,0)
+                    else
+                        sprite.pos = ParentEnt:pos() + ParentEnt:forward() * EffectOffset
+                        sprite.goal = ParentEnt:pos() + ParentEnt:forward() * EffectOffset + -ParentEnt:forward() * EffectOffset * math.random(2,4) + ParentEnt:right() * math.random(-500,500) +  ParentEnt:up() * math.random(-500,500)
+                    end
+                end
+
+                effects.drawSprite(sprite.pos,ftlglowsizel,ftlglowsizeh,0)
+                effects.drawSprite(sprite.pos,ftlglowsizel,ftlglowsizeh,0)
+                effects.drawSprite(sprite.pos,ftlglowsizel,ftlglowsizeh,0)
+            end
+        end)
+    end)
+end
+
+hook.add("net", "net", function()
+    local Str = net.readString()
+    ParentEnt = net.readEntity()
+    EffectOffset = net.readFloat()
+    StopEffect = net.readBool()
+    SndPos = net.readVector()
+
+    if(Str == "activateeffect") then
+        playeffect()
+
+        timer.remove("hookremove")
+    elseif(Str == "dropoutsound") then
+        --playsound("jumpout")
+    elseif(Str == "jumpinsound") then
+        --playsound("jumpin")
+    end
+end)
+
+end--end client

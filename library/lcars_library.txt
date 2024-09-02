@@ -1,7 +1,7 @@
 --@name LCARS Library
 --@author The17thDoctor for Nowova
 
---like this entire lib was made by The17thDoctor
+--like this entire lib was made by The17thDoctor <3
 
 
 lcars = {

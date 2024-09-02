@@ -1,0 +1,138 @@
+--@name Spore Spinwarp
+--@author
+
+wire.createInputs({"Warp","Destination","Parent","Activate","EffectOrigin"},{"Normal","Vector","Entity","Normal","Entity"})
+wire.createOutputs({"PlaySnd","Active","SpinAmount","SpinOut"},{"Normal","Normal","Normal","Normal"})
+
+Active = 0
+SpinAmount = 1
+SpinOut = 1
+
+wire.ports.SpinAmount = SpinAmount
+wire.ports.Active = Active
+wire.ports.SpinOut = SpinOut
+
+function BubbleAnim(OriginPos,DestPos)
+    OrigBubbleHolo1 = holograms.create(OriginPos,Angle(0),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo2 = holograms.create(OriginPos,Angle(0,90,0),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo3 = holograms.create(OriginPos,Angle(0,180,0),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo4 = holograms.create(OriginPos,Angle(0,280,0),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo5 = holograms.create(OriginPos,Angle(0,90,180),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo6 = holograms.create(OriginPos,Angle(0,180,180),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo7 = holograms.create(OriginPos,Angle(0,280,180),"models/props_phx/construct/metal_dome90.mdl",1)
+    OrigBubbleHolo8 = holograms.create(OriginPos,Angle(0,0,180),"models/props_phx/construct/metal_dome90.mdl",1)
+
+    timer.simple(0.1,function() --wait for ship to move so dest bubble is in the right spot
+        DestBubbleHolo1 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo2 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,90,0),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo3 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,180,0),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo4 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,280,0),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo5 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,90,180),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo6 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,180,180),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo7 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,280,180),"models/props_phx/construct/metal_dome90.mdl",1)
+        DestBubbleHolo8 = holograms.create(wire.ports.EffectOrigin:pos(),Angle(0,0,180),"models/props_phx/construct/metal_dome90.mdl",1)
+
+        BubbleReps = 0
+
+        for I=1,8 do
+            _G["OrigBubbleHolo"..I]:setMaterial("spacebuild/fusion2")
+            _G["OrigBubbleHolo"..I]:setAlpha(50)
+
+            _G["DestBubbleHolo"..I]:setMaterial("spacebuild/fusion2")
+            _G["DestBubbleHolo"..I]:setAlpha(50)
+        end
+
+        timer.create("BubbleAnim",0.05,200,function()
+            BubbleReps = BubbleReps+1
+
+            for I=1,8 do
+                _G["OrigBubbleHolo"..I]:setScale(OrigBubbleHolo1:getScale() + 5)
+                _G["DestBubbleHolo"..I]:setScale(DestBubbleHolo1:getScale() + 5)
+            end
+
+            if(BubbleReps == 30) then
+                timer.create("BubbleFade",0.01,50,function()
+                    for I=1,8 do
+                        _G["OrigBubbleHolo"..I]:setAlpha(OrigBubbleHolo1:color().a - 1)
+                        _G["DestBubbleHolo"..I]:setAlpha(DestBubbleHolo1:color().a - 1)
+                    end
+                end)
+            end
+
+            if(BubbleReps >= 100) then
+                timer.remove("BubbleAnim")
+                timer.remove("BubbleFade")
+
+                timer.simple(0.1,function()
+                    for I=1,8 do
+                        _G["OrigBubbleHolo"..I]:remove()
+                        _G["DestBubbleHolo"..I]:remove()
+                    end
+                end)
+            end
+        end)
+    end)
+end
+
+function ActivateWarp()
+    Active = 1
+    wire.ports.Active = Active
+
+    OriginalAng = wire.ports.Parent:ang()
+
+    AngX = OriginalAng.x
+    AngY = OriginalAng.y
+    AngZ = OriginalAng.z
+
+    timer.create("spin",0.06,0,function()
+        wire.ports.SpinAmount = SpinAmount
+
+        if(SpinOut == 1) then
+            SpinAmount = math.clamp(SpinAmount * 1.1,1,4320)
+
+            wire.ports.Parent:setAng((Angle(1*SpinAmount,AngY,AngZ)))
+
+            if(SpinAmount >= 4320) then
+                SpinOut = 0
+
+                BubbleAnim(wire.ports.EffectOrigin:pos(),WarpDest)
+
+                wire.ports.SpinOut = SpinOut
+                wire.ports.Parent:setPos(WarpDest)
+            end
+        else
+            SpinAmount = math.clamp(SpinAmount / 1.1,1,4320)
+
+            wire.ports.Parent:setAng((Angle(1*SpinAmount,AngY,AngZ)))
+
+            if(SpinAmount == 1) then
+                timer.remove("spin")
+
+                Active = 0
+                SpinOut = 1
+
+                wire.ports.Parent:setAng(OriginalAng)
+                wire.ports.Active = Active
+                wire.ports.SpinOut = SpinOut
+                wire.ports.PlaySnd = 0
+            end
+        end
+    end)
+end
+
+function WireDetect(name,value)
+    if(name == "Warp" and value == 1) then
+        if(Active == 0) then
+            wire.ports.PlaySnd = 1
+        end
+    elseif(name == "Destination") then
+        if(value ~= Vector(0,0,0)) then
+            WarpDest = value
+        end
+    elseif(name == "Activate" and value >= 1) then
+        ActivateWarp()
+        wire.ports.PlaySnd = 0
+    end
+end
+
+hook.add("input","wiredetect",WireDetect)

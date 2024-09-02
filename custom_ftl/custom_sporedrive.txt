@@ -1,7 +1,7 @@
---@name Spore Spinwarp
+--@name Custom Sporedrive
 --@author
 
-wire.createInputs({"Warp","Destination","Parent","Activate"},{"Normal","Vector","Entity","Normal"})
+wire.createInputs({"Warp","Destination","ShipParent","Ring1Parent","Ring2Parent","Activate"},{"Normal","Vector","Entity","Entity","Entity","Normal"})
 wire.createOutputs({"PlaySnd","Active","SpinAmount","SpinOut"},{"Normal","Normal","Normal","Normal"})
 
 Active = 0
@@ -11,6 +11,11 @@ SpinOut = 1
 wire.ports.SpinAmount = SpinAmount
 wire.ports.Active = Active
 wire.ports.SpinOut = SpinOut
+
+--spin the saucer ~2s
+--spin the ship once or twice
+--move the ship down fast and then tp ~1000u above dest
+--move ship down ~1000u while un-spinning the saucer
 
 function BubbleAnim(Holo1pos,Holo2pos)
     BubbleHolo1 = holograms.create(Holo1pos,Angle(0),"models/hunter/misc/sphere025x025.mdl",1)
