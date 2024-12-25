@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.3.12" -- Don't touch this
+AIVersion = "2.4.2" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -25,6 +25,13 @@ https://docs.google.com/document/d/1O2u7H4LFrC73PP-RpSY7yRGR4XEydbntwioRyLWV7Gk/
 
 If you want to make a suggestion/bug report,
 You can ping me on the TSCM Community Discord, or use the github issues section
+
+
+Latest update:
+-- Fixed not being able to target borg (you will still need to target with "/t this"
+-- Fixed chat spam when toggling multiple doors at the same time
+-- Added /v dock <ply> command (doesnt fucking work)
+-- Made lockdown actually lockdown doors
 ]]--
 
 --This is the custom config setup, change these if you'd like
@@ -87,7 +94,7 @@ function nameCheck()
         LSCoreW["Name"] = Shipname
     end
 
-    aiSay(sfowner,ColGrn,"v2.3.11",ColOng," Changed the name of the ",ColGrn,"Drive",ColOng," Wire input, you will have to re-wire it.")
+    aiSay(sfowner,ColGrn,"v2.3.11",ColRed," Changed the name of the ",ColGrn,"Drive",ColRed," Wire input, you will have to re-wire it.")
     --remove this when sufficient time has passed I suppose
 end
 
@@ -335,6 +342,8 @@ function functionSetup()
             end
 
             for k,v in pairs(ShipWeapons) do
+                if(not IsValid(WepW)) then return end
+
                 local WepW = v:getWirelink()
 
                 if(WepW:inputType("Target") ~= nil) then
@@ -348,7 +357,7 @@ function functionSetup()
             end
 
 
-            if(not IsValid(Ent) or not IsValid(Ent:owner())) then
+            if(not IsValid(Ent)) then
                 aiSay(sfowner,"That is not a valid target! (Are you looking at a shield?)")
                 wire.ports.TargetLocked = 0
                 return
@@ -356,9 +365,9 @@ function functionSetup()
 
             local Tar = Ent
 
-            if(Ent:owner():name() == "") then
+            if(not IsValid(Ent:owner())) then
                 wire.ports.TargetOwner = ents.NULL_ENTITY
-                TarColor = Color(255,255,255):ToVector() * 255
+                TarColor = Color(255,255,255)
             else
                 wire.ports.TargetOwner = Ent:owner()
                 TarColor = Ent:owner():getTeamColor()
@@ -368,7 +377,11 @@ function functionSetup()
                 if(Ent:isPlayer()) then
                     aiSay(sfowner,"Targetting ",Ent:owner():getTeamColor(),Ent:owner():name())
                 else
-                    aiSay(sfowner,"Targetting ",ColGrn,Ent:class(),ColOng," Owned by ",TarColor,Ent:owner():name())
+                    if(IsValid(Ent:owner())) then
+                        aiSay(sfowner,"Targetting ",ColGrn,Ent:class(),ColOng," Owned by ",TarColor,Ent:owner():name())
+                    else
+                        aiSay(sfowner,"Targetting ",ColGrn,Ent:class(),ColOng," Owned by ",TarColor,"World")
+                    end
                 end
             end
 
@@ -503,6 +516,8 @@ function AutoLink()
 
     DoorList = ""
     FieldList = ""
+
+    DockingValues = {}
 
     hook.add("input","InputChangedHook",function(iname,val)
         if(iname == "Stargate" and IsValid(val)) then
@@ -697,7 +712,7 @@ function AutoLink()
 
         --Door Linking
         if(v:class() == "gmod_wire_value") then
-            vw = v:getWirelink()
+            local vw = v:getWirelink()
 
             for k,ve in pairs(constraint.getConstrainedEntities(v)) do
                 if(ve:class() == "sbep_base_door_controller" or ve:class() == "cap_doors_frame" or ve:class() == "sci_fi_door") then
@@ -733,6 +748,8 @@ function AutoLink()
                                 ve:getWirelink()["Open_1"] = 0
                             end
                         end
+                    elseif(vw["1"] == "VDocking") then
+                        table.insert(DockingValues,v)
                     end
                 end
             end
@@ -751,6 +768,10 @@ function AutoLink()
                 end
             end
         end
+    end
+
+    if(#DockingValues > 1) then
+        aiSay(sfowner,"Docking currently does not support more than ",ColRed,"1",ColOng," Docking Value, please remove the ",ColRed,tostring(#DockingValues - 1),ColOng," extras to prevent unintended behaviour.")
     end
 end
 
@@ -1403,6 +1424,16 @@ function LockDown(input)
             LSCoreW["Disable Noclip"] = 1
         end
 
+        for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
+            if(v:class() == "sci_fi_door") then
+                v["Lock"] = 1
+            elseif(v:class() == "sbep_base_door_controller") then
+                v["Lock_1"] = 1
+            elseif(v:class() == "cap_doors_frame") then
+                v["Lockdown"] = 1
+            end
+        end
+
         aiSay(sfowner,"Lockdown",ColGrn," Activated")
     else
         ShipCoreW:entity():setEnvironmentSound("st/shuttlecraft/computer_work2.mp3",0.4)
@@ -1414,10 +1445,14 @@ function LockDown(input)
             wire.ports.Rings["UnUsable"] = 0
         end
 
-        if(IsValid(LSCore) ~= true) then
-            aiSay(sfowner,ColRed,"Life Support Core not Linked!")
-        else
-            LSCoreW["Disable Noclip"] = 0
+        for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
+            if(v:class() == "sci_fi_door") then
+                v["Lock"] = 0
+            elseif(v:class() == "sbep_base_door_controller") then
+                v["Lock_1"] = 0
+            elseif(v:class() == "cap_doors_frame") then
+                v["Lockdown"] = 0
+            end
         end
 
         aiSay(sfowner,"Lockdown ",ColGrn,"Disabled")
@@ -1700,34 +1735,8 @@ chat.listen(function(message, player)
                                 for k,v in pairs(constraint.getConstrainedEntities(DoorValues[I])) do
                                     if(#v > 1) then
                                         DoorString = " Doors"
-
-                                        if(I == #DoorValues and OLS[4] == nil) then
-                                            if(OLS[4] == "open") then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
-                                            elseif(OLS[4] == "close") then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
-                                            else
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
-                                            end
-                                        end
                                     else
                                         DoorString = " Door"
-
-                                        if(DoorPrint == 0) then --jank ass shit so it doesnt print twice
-                                            DoorPrint = 1
-
-                                            if(OLS[4] == "open") then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
-                                            elseif(OLS[4] == "close") then
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
-                                            else
-                                                aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
-                                            end
-
-                                            timer.simple(0.1,function()
-                                                DoorPrint = 0
-                                            end)
-                                        end
                                     end
 
                                     if(OLS[4] == nil) then
@@ -1785,6 +1794,14 @@ chat.listen(function(message, player)
                                 end
                             end
                         end
+                    end
+
+                    if(OLS[4] == "open") then
+                        aiSay(sfowner,OLS[3],DoorString,ColGrn," Opened.")
+                    elseif(OLS[4] == "close") then
+                        aiSay(sfowner,OLS[3],DoorString,ColGrn," Closed.")
+                    else
+                        aiSay(sfowner,OLS[3],DoorString,ColGrn," Toggled.")
                     end
                 end
             end
@@ -2030,7 +2047,7 @@ chat.listen(function(message, player)
 
                     if(AimE:class() == "sci_fi_door" or AimE:class() == "sci_fi_door_anim") then
                         DoorFound = 1
-                        TOpenInput = "Open"
+                        OpenInput = "Open"
                         LockInput = "Lock"
                         AimName = "Sci-fi Door"
 
@@ -2064,6 +2081,10 @@ chat.listen(function(message, player)
                     DoorFound = 0
                     DoorFrame[OpenInput] = 1
                     DoorFrame[TOpenInput] = 1
+
+                    timer.simple(1,function()
+                        DoorFrame[TOpenInput] = 0
+                    end)
                 end
             end
 
@@ -2080,6 +2101,10 @@ chat.listen(function(message, player)
                     DoorFound = 0
                     DoorFrame[OpenInput] = 0
                     DoorFrame[TOpenInput] = 1
+
+                    timer.simple(1,function()
+                        DoorFrame[TOpenInput] = 0
+                    end)
                 end
             end
 
@@ -2705,11 +2730,44 @@ chat.listen(function(message, player)
                 warp(Dest,AngleOffset)
 
                 aiSay(sfowner,"Warping to ",ColTeam,"Your",ColOng," Location.")
+            elseif(OLS[2] == "dock") then
+                local Ply = find.playerByName(OLS[3])
+                local PlyCol = Ply:getTeamColor()
+
+                if(Ply == nil) then
+                    aiSay(sfowner,"Cannot dock with no ones ship")
+                else
+                    local values = find.byClass("gmod_wire_value",function(ent)
+                        return ent:owner() == Ply and ent["1"] == "VDocking"
+                    end)
+
+                    local selfvalues = find.byClass("gmod_wire_value",function(ent) --i think this is unused lmao
+                        return ent:owner() == sfowner and ent["1"] == "VDocking"
+                    end)
+
+                    if(values == nil or #values == 0) then
+                        aiSay(sfowner,"There are no Wire Values owned by ",PlyCol,Ply:name(),ColOng,"!")
+                    elseif(#values > 1) then
+                        aiSay(sfowner,"Docking currently does not support more than ",ColRed,"1",ColOng," Docking point, please tell ",PlyCol,Ply:name(),ColOng," about this.")
+                    else
+                        for k,v in pairs(values) do
+                            local vw = v:getWirelink()
+
+                            if(vw["1"] == "VDocking") then
+                                WarpF = 1
+
+                                local Dest = v:pos() + (DockingValues[1]:pos() - WarpDrive:entity():pos())
+                                local AngleOffset = Angle(0,0,0)
+
+                                warp(Dest,AngleOffset)
+                            end
+                        end
+                    end
+                end
             elseif(WarpF == 0) then
                 if(OLS[2] == nil) then
                     aiSay(sfowner,"Cannot warp to noone or nowhere")
                 else
-
                     local Ply = find.playerByName(OLS[2])
 
                     if(IsValid(Ply) and Ply:isPlayer()) then
@@ -3217,9 +3275,11 @@ chat.listen(function(message, player) --Targetting
                 if(not IsValid(v)) then
                     table.remove(ShipWeapons,v) --delete removed weapons from the ship weapons table
                 else
+                    if(not IsValid(v)) then return end
+
                     local WepW = v:getWirelink()
 
-                    if(WepW:inputType("Target") ~= nil) then
+                    if(IsValid(WepW) and WepW:inputType("Target") ~= nil) then
                         WepW["Target"] = Vector(0,0,0)
                     end
                 end
@@ -3253,7 +3313,11 @@ chat.listen(function(message, player) --Targetting
             end
 
             if(OLS[3] ~= nil) then
-                WepTarPly2 = find.playerByName(OLS[3])
+                if(OLS[3] == "world") then
+                    WepTarPly2 = ents.NULL_ENTITY
+                else
+                    WepTarPly2 = find.playerByName(OLS[3])
+                end
             end
 
             if(IsValid(WepTarPly) and WepTarPly:isPlayer()) then
@@ -3288,7 +3352,7 @@ chat.listen(function(message, player) --Targetting
                         aiSay(sfowner,"The Player ",WepTarPly2:getTeamColor(),WepTarPly2:name(),ColOng," Does not own a ",ColRed,OLS[2])
                     end
                 else
-                    aiSay(sfowner,"There is no player by the name ",ColRed,OLS[3])
+                    aiSay(sfowner,"There is no player with the name ",ColRed,OLS[3])
                 end
             end
         end

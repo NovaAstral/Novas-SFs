@@ -35,8 +35,8 @@ hook("net", "net", function()
         wire.ports.SoundPlaying = 0
     elseif(Str == "wep_sd" and sd == 0) then
         sd = 1
-
-        if(propprotection.isAllowedForEntity(Ent,propprotection.ACCESS_TOOLGUN) == true and ents.self():owner():hasDamageEnabled() and Ent:owner():hasDamageEnabled()) then
+        --[[ likes crashing if it hits a shield
+        if(IsValid(Ent) and IsValid(Ent:owner()) and propprotection.isAllowedForEntity(Ent,propprotection.ACCESS_TOOLGUN) == true and ents.self():owner():hasDamageEnabled() and Ent:owner():hasDamageEnabled()) then
             if(Ent:class() == "ship_core" or Ent:class() == "st_shuttle_type9" or Ent:class() == "st_shuttle_type11" or Ent:class() == "st_shuttle_type6" or Ent:class() == "atlantis_puddle_jumper" or Ent:class() == "sci_fi_shuttle") then
                 Ent:getWirelink()["Self Destruct"] = 1
             else
@@ -47,6 +47,7 @@ hook("net", "net", function()
                 end)
             end
         end
+        ]]--
 
         timer.simple(10,function()
             sd = 0

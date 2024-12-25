@@ -2,10 +2,12 @@
 --@author Nova Astral
 --@shared
 --@updater STEAM_0:0:53930685
---@class emitter
-
+--@class emitter, screen
+--@resolution 2048 2048
 if CLIENT then
     permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    fftbl = {}
 
     function playSound()
         if(Pos == Vector(0,0,0)) then
@@ -15,6 +17,10 @@ if CLIENT then
             printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"You did not enter a valid URL ",ColRed,net.getDTVar("String",1))
             return
         else
+            if(audio ~= nil) then
+                audio:stop()
+            end
+
             snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,errornum,callback)
                 if(not channel) then
                     if(callback == "BASS_ERROR_NO3D") then
@@ -42,7 +48,6 @@ if CLIENT then
                     audio:setVolume(net.getDTVar("Float",1))
                     audio:setPos(net.getDTVar("Vector",1))
                     audio:set3DFadeDistance(net.getDTVar("Int",1),net.getDTVar("Int",2))
-
                 end
             end)
         end
@@ -63,17 +68,112 @@ if CLIENT then
             end
         end
     end)
+
+    net.listenForAllDTVarChanges()
+    hook.add("dtvarchanged","VisShit",function(type,index,oldValue,v)
+        if(type == "Bool") then
+            if(index == 1) then
+                EnableVis = v
+            end
+        elseif(type == "Float") then
+            if(index == 2) then
+                VisScale = v
+            end
+        end
+    end)
+
+    if(ents.self():class() == "starfall_screen") then
+        --renderamount = 127
+        renderamount = 254
+    else
+        emitter.setDrawEverywhere(false)
+        renderamount = 1024
+    end
+
+    EnableVis = net.getDTVar("Bool",1) or false
+
+    font = render.createFont("Swiss911 XCm BT",100,100,false,false,false,false,0)
+    font2 = render.createFont("Swiss911 XCm BT",50,100,false,false,false,false,0)
+    mat = Material("gui/center_gradient")
+
+    function formatTime(x)
+        x = math.floor(x)
+
+        local minutes = math.floor(x / 60)
+        local seconds = x % 60
+
+        local secString = tostring(seconds)
+        if seconds < 10 then secString = "0" .. secString end
+
+        return tostring(minutes) .. ":" .. secString
+    end
+
+    hook("render","drawscreen",function()
+        render.clear()
+        render.setTexture()
+
+        if(IsValid(audio)) then
+            audio:fft(fftbl,sounds.FFT_16384)
+        end
+
+        if(fftbl[1] ~= nil) then
+            if(ents.self():class() == "starfall_emitter" and EnableVis == true) then
+                render.start3D2D(ents.self():toWorld(Vector(0,-89.5,2)),ents.self():toWorld(Angle(0, 90, 0)),0.05)
+            end
+
+            if(IsValid(audio)) then
+                local audiopos = math.remap(audio:getTime(),0,audio:getLength(),0,3584)
+
+                render.setColor(Color(255,255,255))
+                render.drawText(font2,audiopos,-55,formatTime(audio:getLength()),1)
+                render.drawText(font2,audiopos,5,formatTime(audio:getTime()),1)
+
+                render.drawLine(0,0,3584,0,6)
+                render.drawFilledCircle(audiopos,0,10,10)
+            end
+
+            local max = 0
+            render.setTexture(mat)
+
+            for I=1,renderamount do
+                if fftbl[I] > max then max = fftbl[I] end
+
+                local h = math.remap(fftbl[I], 0, max, 0.1, 0.95)
+                if h ~= h then h = 0 end
+                render.setColor(Color.fromHSV(h,1,1))
+
+                if(I >= 513) then
+                    barheight = 500
+                    render.drawTexturedRectRotated((I-renderamount/2)*7,barheight,math.clamp(fftbl[I] * 6000,0,1000),8, 90)
+                else
+                    barheight = -500
+                    render.drawTexturedRectRotated(I*7,barheight,math.clamp(fftbl[I] * 6000,0,1000),8, 90)
+                end
+
+            end
+
+            if(ents.self():class() == "starfall_emitter" and EnableVis == true) then
+                render.end3D2D()
+            end
+        end
+    end)
 else -- Server
     net.setDTVar("String",1,"") --url
     net.setDTVar("String",2,"3d") --audio flag
     net.setDTVar("Vector",1,Vector(0,0,0)) --url
     net.setDTVar("Int",1,1000) --fadestart
-    net.setDTVar("Int",2,1000000000) --fadeend
+    net.setDTVar("Int",2,100000000000000) --fadeend
     net.setDTVar("Float",1,1) --volume
     net.setDTVar("Int",3,100) --pitch
 
-    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono","Pitch","Loop"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal","Normal","Normal"},{"","","","","Volume is between 0 and 1","","Don't change this unless you know what you're doing.","","",""})
+    wire.createInputs({"Play","Stop","URL","Pos","Volume","FadeStart","FadeEnd","Mono","Pitch","Loop","Visualizer"},{"Normal","Normal","String","Vector","Normal","Normal","Normal","Normal","Normal","Normal","Normal"},{"","","","","Volume is between 0 and 1","","Don't change this unless you know what you're doing.","","","","Enable in-world visualizer?"})
     wire.createOutputs({"SoundPlaying",},{"Normal"})
+
+    if(wire.ports.Visualizer == 1) then
+        net.setDTVar("Bool",1,true)
+    else
+        net.setDTVar("Bool",1,false)
+    end
 
     function WireDetect(name,value)
         if(name == "Play") then
@@ -111,6 +211,12 @@ else -- Server
             end
         elseif(name == "Pitch") then
             net.setDTVar("Int",3,math.clamp(value,0,255))
+        elseif(name == "Visualizer") then
+            if(value >= 1) then
+                net.setDTVar("Bool",1,true)
+            else
+                net.setDTVar("Bool",1,false)
+            end
         end
     end
 

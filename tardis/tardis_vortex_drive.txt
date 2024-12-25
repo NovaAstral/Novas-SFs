@@ -1,17 +1,19 @@
---@name Tardis Vortex Drive
+--@name Tardis Alpha Drive
 --@author
 
 if SERVER then
 
-wire.createInputs({"CollisionBox","Activate"},{"entity","normal"})
+wire.createInputs({"Activate","CollisionBox","Parent"},{"normal","entity","entity"})
 wire.createOutputs({"Alpha","CollisionBoxEnt"},{"normal","entity"})
 
 function dupefinished()
-    Parent = constraint.findConstraintEntity(ents.self(),"Weld")
+    Parent = wire.ports.Parent
     Ents = constraint.getAllConstrainedEntities(ents.self(),function(ent)
         if(ent == ents.self()) then
             return false
         elseif(ent == wire.ports.CollisionBox) then
+            return false
+        elseif(ent:color().a ~= 255) then
             return false
         else
             return true
@@ -45,6 +47,8 @@ function dupefinished()
                     return false
                 elseif(ent == wire.ports.CollisionBox) then
                     return false
+                elseif(ent:color().a ~= 255) then
+                    return false
                 else
                     return true
                 end
@@ -69,6 +73,8 @@ function dupefinished()
                     return false
                 elseif(ent == wire.ports.CollisionBox) then
                     return false
+                elseif(ent:color().a ~= 255) then
+                    return false
                 else
                     return true
                 end
@@ -90,6 +96,8 @@ function dupefinished()
     end
 
     function setboxalpha()
+        if(wire.ports.Activate <= 0) then return end
+
         if(IsValid(Parent) and wire.ports.Alpha ~= Parent:color().a) then
             wire.ports.Alpha = Parent:color().a
         end
@@ -115,6 +123,8 @@ function dupefinished()
     end
 
     function setboxalpha2()
+        if(wire.ports.Activate <= 0) then return end
+
         for i=1,#EntGroup2 do
             local ent = EntGroup2[i]
             if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
@@ -128,6 +138,8 @@ function dupefinished()
     end
 
     function setboxalpha3()
+        if(wire.ports.Activate <= 0) then return end
+
         for i=1,#EntGroup3 do
             local ent = EntGroup3[i]
             if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
@@ -146,7 +158,7 @@ function dupefinished()
         timer.remove("setalpha3")
         for i=1,#Ents do
             local ent = Ents[i]
-            if(IsValid(ent) and IsValid(Parent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
+            if(IsValid(ent) and ent ~= ents.self() and ent ~= wire.ports.CollisionBox and ent:color().a ~= Parent:color().a) then
                 ent:setAlpha(255)
             end
         end
@@ -164,10 +176,8 @@ function dupefinished()
                 timer.create("setalpha",0.1,1,function()
                     setboxalpha()
                 end)
-            elseif(value <= 0) then
-                if(timer.exists("setalpha")) then
-                    setfullalpha()
-                end
+            else
+                setfullalpha()
                 --deparent()
             end
         end

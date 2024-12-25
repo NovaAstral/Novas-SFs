@@ -1,0 +1,1527 @@
+--@name LCARS Interface 2
+--@author Nova Astral
+--@dependency STEAM_0:0:52002590 public/_libraries/rendering.txt cl
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/lcars_library.txt cl
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/lcars_color_lib.txt sh
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt sh
+--@resolution 2048 1024
+--@shared
+---@model models/cheeze/pcb/pcb5.mdl
+
+--will error if target switches shield types
+
+if CLIENT then
+    ShipName = net.getDTVar("String",1) or "ShipName"
+
+    function getEnv()
+        GalaxyName = ""
+        EnvName = net.getDTVar("String",2)
+        EnvModel = "models/sprops/misc/alphanum/alphanum_qmark.mdl"
+        ModelOffset = 25
+
+        if(EnvName == "Universe" or EnvName == "Milkyway" or EnvName == "Pegasus") then
+            EnvName = "Space"
+            EnvModel = "models/atmospheres/sun.mdl"
+            ModelOffset = 2000
+        elseif(EnvName == "Earth") then
+            EnvModel = "models/kobol/kobol.mdl"
+            ModelOffset = 8000
+        elseif(EnvName == "Moon") then
+            EnvModel = "models/zup/planets/moon_001.mdl"
+            ModelOffset = 3000
+        elseif(EnvName == "Shakuras") then
+            ModelOffset = 9000
+            EnvModel = "models/sb_forlorn/bluemars.mdl"
+        elseif(EnvName == "Hiigara") then
+            EnvModel = "models/hiigara/hiigara.mdl"
+            ModelOffset = 9000
+        elseif(EnvName == "Desert Planet") then
+            EnvName = "Desert"
+            EnvModel = "models/planets/chinook.mdl"
+            ModelOffset = 8000
+        elseif(EnvName == "Lava Planet") then
+            EnvName = "Lava"
+            EnvModel = "models/sb_forlorn/vimana.mdl"
+            ModelOffset = 6000
+        elseif(EnvName == "Build Room 1") then
+            EnvModel = "models/sprops/misc/alphanum/alphanum_1.mdl"
+            ModelOffset = 20
+        elseif(EnvName == "Build Room 2") then
+            EnvModel = "models/sprops/misc/alphanum/alphanum_2.mdl"
+            ModelOffset = 20
+        elseif(EnvName == "Build Room 3") then
+            EnvModel = "models/sprops/misc/alphanum/alphanum_3.mdl"
+            ModelOffset = 20
+        elseif(EnvName == "Build Room 4") then
+            EnvModel = "models/sprops/misc/alphanum/alphanum_4.mdl"
+            ModelOffset = 20
+        else
+            EnvName = net.getDTVar("String",2) or "Unknown"
+            EnvModel = "models/sprops/misc/alphanum/alphanum_qmark.mdl"
+            ModelOffset = 20
+        end
+
+        local currentPos = ents.self():pos()
+
+        if currentPos.z < 0 then
+            GalaxyName = "Universe"
+        elseif currentPos.y < 0 then
+            GalaxyName = "Pegasus"
+        else
+            GalaxyName = "Milkyway"
+        end
+
+        planetmodel:setModel(EnvModel)
+
+        if(IsValid(planetmodel)) then
+            planetmodel:setPos(Vector(ModelOffset, 0, 0))
+        end
+    end
+
+    planetmodel = render.createClientModel("models/sprops/misc/alphanum/alphanum_qmark.mdl", render.RENDERGROUP_OPAQUE)
+
+    timer.create("getenv",1,0,function()
+        getEnv()
+    end)
+
+    ShipFont = render.createFont("Swiss911 XCm BT",80,100,false,false,false,false,0)
+    interfacefont = render.createFont("Swiss911 XCm BT",120,100,false,false,false,false,0)
+    timefont = render.createFont("Swiss911 XCm BT",190,100,false,false,false,false,0)
+    lcarsfont = render.createFont("Swiss911 XCm BT",60,100,false,false,false,false,0)
+    tinyfont = render.createFont("Swiss911 XCm BT",50,100,false,false,false,false,0)
+    tinyerfont = render.createFont("Swiss911 XCm BT",45,100,false,false,false,false,0)
+    verytinyfont = render.createFont("Swiss911 XCm BT",40,100,false,false,false,false,0)
+    tiniestfont = render.createFont("Swiss911 XCm BT",30,100,false,false,false,false,0)
+
+    OwnerLockdown = false
+    ShowCursorPos = false
+
+    InterfaceID = ents.self():index()
+
+    HullPerc = net.getDTVar("Int",1) or 0
+    PlatingPerc = net.getDTVar("Int",2) or 0
+    PowerPerc = net.getDTVar("Int",3) or 0
+    WaterPerc = net.getDTVar("Int",4) or 0
+    DeutPerc = net.getDTVar("Int",5) or 0
+    OxyPerc = net.getDTVar("Int",6) or 0
+    ShieldPerc = net.getDTVar("Int",7) or 0
+    AuxPwrPerc = net.getDTVar("Int",8) or 0
+
+    TargetHullPerc = net.getDTVar("Int",15) or 0
+    TargetPlatingPerc = net.getDTVar("Int",16) or 0
+    TargetShieldPerc = net.getDTVar("Int",17) or 0
+    SensorSubSys = net.getDTVar("Int",18) or 0
+    TargetArmorPerc = net.getDTVar("Int",19) or 0
+
+    ShipShieldUp = net.getDTVar("Int",13) or 0
+    ShipShieldDown = net.getDTVar("Int",14) or 0
+    ShipShieldLeft = net.getDTVar("Int",11) or 0
+    ShipShieldRight = net.getDTVar("Int",12) or 0
+    ShipShieldForward = net.getDTVar("Int",9) or 0
+    ShipShieldBack = net.getDTVar("Int",10) or 0
+
+    ShipShieldActive = net.getDTVar("Bool",1) or false
+    ShipShieldCurEnergy = net.getDTVar("Int",29) or 0
+    ShipShieldMaxEnergy = net.getDTVar("Int",30) or 0
+
+    if(net.getDTVar("Int",26) == 1) then
+        IsSTShield = true
+
+        if(ShipShieldMaxEnergy == 60000) then --covariant (10000)
+            MaxSelfShieldFace = 10000
+        elseif(ShipShieldMaxEnergy == 30000) then --regenerative (5000)
+            MaxSelfShieldFace = 5000
+        elseif(ShipShieldMaxEnergy == 45000) then --resillient (7500)
+            MaxSelfShieldFace = 7500
+        else
+            aiSay(sfowner,"Code1: The Shield's max energy isn't valid, report this to the creator! (Nova Astral)")
+            MaxSelfShieldFace = 60000
+        end
+    else
+        IsSTShield = false
+
+        MaxSelfShieldFace = 100
+    end
+
+    timer.simple(0.01,function()
+        ColShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldUp / MaxSelfShieldFace * 100)))
+        ColShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldDown / MaxSelfShieldFace * 100)))
+        ColShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldLeft / MaxSelfShieldFace * 100)))
+        ColShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldRight / MaxSelfShieldFace * 100)))
+        ColShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldForward / MaxSelfShieldFace * 100)))
+        ColShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShipShieldBack / MaxSelfShieldFace * 100)))
+
+        ColMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(ShieldPerc / MaxSelfShieldFace * 100)))
+
+        TShipShieldUp = net.getDTVar("Int",24) or 0
+        TShipShieldDown = net.getDTVar("Int",25) or 0
+        TShipShieldLeft = net.getDTVar("Int",22) or 0
+        TShipShieldRight = net.getDTVar("Int",23) or 0
+        TShipShieldForward = net.getDTVar("Int",20) or 0
+        TShipShieldBack = net.getDTVar("Int",21) or 0
+
+        TShipShieldActive = net.getDTVar("Bool",2) or false
+        TShipShieldCurEnergy = net.getDTVar("Int",31) or 0
+        TShipShieldMaxEnergy = net.getDTVar("Int",32) or 0
+
+        if(net.getDTVar("Int",27) == 1) then
+            TIsSTShield = true
+
+            if(TShipShieldMaxEnergy == 60000) then --covariant (10000)
+                MaxTarShieldFace = 10000
+            elseif(TShipShieldMaxEnergy == 30000) then --regenerative (5000)
+                MaxTarShieldFace = 5000
+            elseif(TShipShieldMaxEnergy == 45000) then --resillient (7500)
+                MaxTarShieldFace = 7500
+            else
+                aiSay(sfowner,"Code2: The Shield's max energy isn't valid, report this to the creator (Nova Astral)!")
+                MaxTarShieldFace = 60000
+            end
+        else
+            TIsSTShield = false
+
+            MaxTarShieldFace = 100
+        end
+
+        ColTShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldUp / MaxTarShieldFace * 100)))
+        ColTShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldDown / MaxTarShieldFace * 100)))
+        ColTShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldLeft / MaxTarShieldFace * 100)))
+        ColTShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldRight / MaxTarShieldFace * 100)))
+        ColTShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldForward / MaxTarShieldFace * 100)))
+        ColTShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldBack / MaxTarShieldFace * 100)))
+
+        ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TargetShieldPerc / MaxTarShieldFace * 100)))
+
+        IsTargetting = net.getDTVar("Bool",3) or false
+
+        ColPwrButton = Col50
+    end)
+
+
+    net.listenForAllDTVarChanges()
+    hook.add("dtvarchanged","RecieveShipInfo",function(type,index,oldValue,v)
+        if(type == "String") then
+            if(index == 1) then
+                ShipName = v
+            end
+        end
+
+        if(type == "Int") then
+            if(index == 1) then --Hull
+                HullPerc = v
+            elseif(index == 2) then --Plating
+                PlatingPerc = v
+            elseif(index == 3) then --Energy
+                PowerPerc = v
+            elseif(index == 4) then --Water
+                WaterPerc = v
+            elseif(index == 5) then --Deut
+                DeutPerc = v
+            elseif(index == 6) then --Oxygen
+                OxyPerc = v
+            elseif(index == 7) then --Shield
+                ShieldPerc = v
+                ColMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 8) then --Aux Power
+                AuxPwrPerc = v
+            elseif(index == 9) then
+                ShipShieldForward = v
+                ColShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 10) then
+                ShipShieldBack = v
+                ColShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 11) then
+                ShipShieldLeft = v
+                ColShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 12) then
+                ShipShieldRight = v
+                ColShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 13) then
+                ShipShieldUp = v
+                ColShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 14) then
+                ShipShieldDown = v
+                ColShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+            elseif(index == 15) then --target hull
+                TargetHullPerc = v
+            elseif(index == 16) then --target plating
+                TargetPlatingPerc = v
+            elseif(index == 17) then --target shield
+                TargetShieldPerc = v
+                ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 18) then --sensor subsys
+                SensorSubSys = v
+            elseif(index == 19) then --target armor
+                TargetArmorPerc = v
+            elseif(index == 20) then
+                TShipShieldForward = v
+                ColTShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 21) then
+                TShipShieldBack = v
+                ColTShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 22) then
+                TShipShieldLeft = v
+                ColTShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 23) then
+                TShipShieldRight = v
+                ColTShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 24) then
+                TShipShieldUp = v
+                ColTShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 25) then
+                TShipShieldDown = v
+                ColTShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+            elseif(index == 26) then --is self st shield
+                if(v == 1) then
+                    IsSTShield = true
+                else
+                    IsSTShield = false
+                end
+            elseif(index == 27) then --is target st shield
+                if(v == 1) then
+                    TIsSTShield = true
+                else
+                    TIsSTShield = false
+                end
+            elseif(index == 29) then
+                ShipShieldCurEnergy = v
+            elseif(index == 30) then
+                ShipShieldMaxEnergy = v
+
+                if(IsSTShield) then
+                    if(v == 60000) then --covariant (10000)
+                        MaxSelfShieldFace = 10000
+                    elseif(v == 30000) then --regenerative (5000)
+                        MaxSelfShieldFace = 5000
+                    elseif(v == 45000) then --resillient (7500)
+                        MaxSelfShieldFace = 7500
+                    else
+                        aiSay(sfowner,"Code3: The Shield's max energy isn't valid, report this to the creator (Nova Astral)!")
+                        MaxSelfShieldFace = 60000
+                    end
+                else
+                    MaxSelfShieldFace = 60000
+                end
+            elseif(index == 31) then
+                TShipShieldCurEnergy = v
+            elseif(index == 32) then
+                TShipShieldMaxEnergy = v
+
+                if(TIsSTShield) then
+                    if(v == 60000) then --covariant (10000)
+                        MaxTarShieldFace = 10000
+                    elseif(v == 30000) then --regenerative (5000)
+                        MaxTarShieldFace = 5000
+                    elseif(v == 45000) then --resillient (7500)
+                        MaxTarShieldFace = 7500
+                    else
+                        aiSay(sfowner,"Code4: The Shield's max energy isn't valid, report this to the creator (Nova Astral)!")
+                        MaxTarShieldFace = 60000
+                    end
+                else
+                    MaxTarShieldFace = 60000
+                end
+            end
+        end
+
+        if(type == "Bool") then
+            if(index == 1) then
+                ShipShieldActive = v
+            elseif(index == 2) then
+                TShipShieldActive = v
+            elseif(index == 3) then
+                IsTargetting = v
+            end
+        end
+    end)
+
+    --plamet model stuff
+
+    local a = 0
+
+    getEnv()
+
+    permissions.register(permissions.PLAY_CLIENT_SOUNDS)
+
+    function RenderMainMenu()
+        local topleft = {
+            x = 180, y = 140,
+            orientation = "TR",
+            hWidth = 810, hHeight = 88,
+            vWidth = 360, vHeight = 80,
+            outArcWidth = 60, outArcHeight = 60,
+            inArcWidth = 40, inArcHeight = 40,
+            cache = true
+        }
+
+        local bottomleft = {
+            x = 180, y = 884,
+            orientation = "BR",
+            hWidth = 160, hHeight = 88,
+            vWidth = 360, vHeight = 80,
+            outArcWidth = 60, outArcHeight = 60,
+            inArcWidth = 40, inArcHeight = 40,
+            cache = true
+        }
+
+        local leftmid_top = {
+            x = 346, y = 690,
+            orientation = "TL",
+            hWidth = 40, hHeight = 100,
+            vWidth = 30, vHeight = 140,
+            outArcWidth = 30, outArcHeight = 30,
+            inArcWidth = 20, inArcHeight = 20,
+            cache = true
+        }
+
+        local leftmid_bottom = {
+            x = 346, y = 690,
+            orientation = "BL",
+            hWidth = 40, hHeight = 100,
+            vWidth = 30, vHeight = 140,
+            outArcWidth = 30, outArcHeight = 30,
+            inArcWidth = 20, inArcHeight = 20,
+            cache = true
+        }
+
+        local resource_top = {
+            x = 530, y = 330,
+            orientation = "TR",
+            hWidth = 100, hHeight = 50,
+            vWidth = 200, vHeight = 140,
+            outArcWidth = 80, outArcHeight = 80,
+            inArcWidth = 30, inArcHeight = 30,
+            cache = true
+        }
+
+        local resource_bottom = {
+            x = 530, y = 340,
+            orientation = "BR",
+            hWidth = 100, hHeight = 50,
+            vWidth = 200, vHeight = 50,
+            outArcWidth = 80, outArcHeight = 80,
+            inArcWidth = 30, inArcHeight = 30,
+            cache = true
+        }
+
+        local shipstats_top = {
+            x = 530, y = 700,
+            orientation = "TR",
+            hWidth = 100, hHeight = 50,
+            vWidth = 200, vHeight = 140,
+            outArcWidth = 80, outArcHeight = 80,
+            inArcWidth = 30, inArcHeight = 30,
+            cache = true
+        }
+
+        local shipstats_bottom = {
+            x = 530, y = 710,
+            orientation = "BR",
+            hWidth = 100, hHeight = 50,
+            vWidth = 200, vHeight = 50,
+            outArcWidth = 80, outArcHeight = 80,
+            inArcWidth = 30, inArcHeight = 30,
+            cache = true
+        }
+
+        local ship_shield_bottomleft = {
+            x = 1260, y = 400,
+            orientation = "BR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local ship_shield_topleft = {
+            x = 1260, y = 180,
+            orientation = "TR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local ship_shield_bottomright = {
+            x = 1540, y = 400,
+            orientation = "BL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local ship_shield_topright = {
+            x = 1540, y = 180,
+            orientation = "TL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local target_shield_bottomleft = {
+            x = 1260, y = 770,
+            orientation = "BR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local target_shield_topleft = {
+            x = 1260, y = 550,
+            orientation = "TR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local target_shield_bottomright = {
+            x = 1540, y = 770,
+            orientation = "BL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local target_shield_topright = {
+            x = 1540, y = 550,
+            orientation = "TL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local env_bottomleft = {
+            x = 1740, y = 400,
+            orientation = "BR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local env_topleft = {
+            x = 1740, y = 180,
+            orientation = "TR",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local env_bottomright = {
+            x = 2020, y = 400,
+            orientation = "BL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        local env_topright = {
+            x = 2020, y = 180,
+            orientation = "TL",
+            hWidth = 20, hHeight = 20,
+            vWidth = 20, vHeight = 20,
+            outArcWidth = 20, outArcHeight = 20,
+            inArcWidth = 10, inArcHeight = 10,
+            cache = true
+        }
+
+        render.setColor(ColButterscotch)
+        lcars.drawCorner(topleft)
+        lcars.drawCorner(bottomleft)
+
+        render.setColor(ColOrange)
+        lcars.drawCorner(leftmid_top)
+        lcars.drawCorner(leftmid_bottom)
+
+        render.setColor(ColIce)
+        lcars.drawCorner(resource_top)
+        lcars.drawCorner(shipstats_bottom)
+        lcars.drawCorner(env_topleft)
+        lcars.drawCorner(env_topright)
+        lcars.drawCorner(ship_shield_topleft)
+        lcars.drawCorner(ship_shield_topright)
+        lcars.drawCorner(target_shield_bottomleft)
+        lcars.drawCorner(target_shield_bottomright)
+
+        render.setColor(ColCool)
+        lcars.drawCorner(resource_bottom)
+        lcars.drawCorner(shipstats_top)
+        lcars.drawCorner(env_bottomleft)
+        lcars.drawCorner(env_bottomright)
+
+        lcars.drawCorner(ship_shield_bottomleft)
+        lcars.drawCorner(ship_shield_bottomright)
+        lcars.drawCorner(target_shield_topleft)
+        lcars.drawCorner(target_shield_topright)
+
+        HTimeText = os.date("%I") --12 hours
+        MTimeText = os.date("%M") --minutes
+        STimeText = os.date("%S") --seconds
+        APMTimeText = os.date("%p") --am/pm
+        DTimeText = os.date("%a") --day
+        MnTimeText = os.date("%B") -- month
+        DNTimeText = os.date("%d") -- day number
+        SDTimeText = os.date("%Y")-1900 .."0"..os.date("%m").."."..os.date("%d") --Stardate
+
+        if(ents.player():steamID() == "STEAM_0:0:52002590") then --doc
+            HTimeText = os.date("%H")
+            APMTimeText = "hi :3"
+        end
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(timefont,5,130,HTimeText..":")
+        render.drawText(timefont,165,130,MTimeText)
+
+        render.setColor(ColRoseblush)
+        render.drawText(lcarsfont,360,150,APMTimeText,2)
+        render.drawText(lcarsfont,360,196,DTimeText,2)
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(lcarsfont,360,244,STimeText,2)
+
+        render.setColor(ColRoseblush)
+        lcars.halfCircle(340,328,20,"r")
+        render.drawRect(310,308,30,40)
+        render.drawText(lcarsfont,300,300,MnTimeText.."."..DNTimeText,2)
+        render.drawRect(0,308,290-render.getTextSize(lcarsfont,MnTimeText.."."..DNTimeText),40)
+
+        render.setColor(ColBlack)
+        render.drawText(lcarsfont,360,90,"Stardate "..SDTimeText,2)
+
+        render.setColor(ColBlack)
+        render.drawText(verytinyfont,330,308,"Cal",1)
+
+        render.setColor(ColIce)--interface name
+        render.drawText(interfacefont,1180,-10,"LCARS INTERFACE "..InterfaceID)
+
+        render.setColor(ColButterscotch)
+        render.drawRect(1190+render.getTextSize(interfacefont,"LCARS INTERFACE "..InterfaceID),0,2005 - (1190 + render.getTextSize(interfacefont,"LCARS INTERFACE "..InterfaceID)),88)
+        lcars.halfCircle(2005,44,44,"r")
+
+        render.setColor(ColIce)
+        render.drawRectOutline(0,390,360,100,8)
+        render.drawRect(240,378,120,20)
+        render.drawRect(0,482,120,20)
+
+        render.setColor(ColYellow)
+        lcars.halfCircle(50,570,50,"l") --leftside top circle
+        render.drawRect(265,520,20,100) --leftside top rect
+
+        render.setColor(ColOrange)
+        lcars.halfCircle(50,690,50,"l") --leftside mid circle
+
+        render.setColor(ColGold)
+        lcars.halfCircle(50,810,50,"l") --leftside bottom circle
+        render.drawRect(265,760,20,100) --leftside bottom rect
+
+        render.setColor(ColCool)--comms button
+        render.drawRect(55,520,205,100)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,250,575,"Comms",2)
+
+        render.setColor(ColEvening) --utilities button
+        render.drawRect(55,640,205,100)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,250,695,"Utilities",2)
+
+        render.setColor(ColNemesisText) --media button
+        render.drawRect(55,760,205,100)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,250,815,"Media",2)
+
+        render.setColor(ColAlmond)
+        render.drawRect(530,936,210,90) --LED Button
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,735,975,"",2)
+
+        render.setColor(ColButterscotch) -- dynamic bar after LED bar/button
+        render.drawRect(750,936,1245 - render.getTextSize(ShipFont,ShipName),90)
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(ShipFont,2000,940,ShipName,2) --ship name
+
+        render.setColor(ColButterscotch)
+        lcars.halfCircle(2005,980,44,"r") --bottom right circle
+        --render.drawRect(1186+render.getTextSize(ShipFont,ShipName),936,2005 - (1180 + render.getTextSize(ShipFont,ShipName)),90) --dynamic shipname bar
+
+
+        ----Resources
+        render.setColor(ColGold) --resources top rect
+        render.drawRect(740,110,50,50)
+        render.drawRect(740,420,50,50) --resources bottom rect
+
+        render.setColor(ColIce) --resources top bar
+        render.drawRect(800,110,490,25)
+
+        render.setColor(ColCool) --resources bottom bar
+        render.drawRect(800,445,490,25)
+
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,620,285,"Ship Status",2)
+        render.drawText(tinyfont,620,335,"Ship Shield",2)
+
+        --Power Bar
+        PwrBarHeight = PowerPerc / 100 * 194--pixelheight
+        render.setColor(ColGold)
+        render.drawRect(1739,810 - PwrBarHeight,62,PwrBarHeight) --Dynamic Bar
+
+        render.setColor(ColOrange)
+        render.drawRect(1735,818,70,45) -- Power Text Bar
+        render.drawRect(1735,563,70,45) -- Power% Text Bar
+        render.drawRectOutline(1735,615,70,200,4) --Bar
+        render.drawLine(1735,663,1805,663,2) --segment lines
+        render.drawLine(1735,713,1805,713,2)
+        render.drawLine(1735,763,1805,763,2)
+        render.setColor(ColBlack)
+        render.drawText(verytinyfont,1770,820,"Power",1)
+        render.drawText(tinyerfont,1770,563,PowerPerc.."%",1)
+
+        --Water Bar
+        WaterBarHeight = WaterPerc / 100 * 194--pixelheight
+        render.setColor(ColEvening)
+        render.drawRect(1814,810 - WaterBarHeight,62,WaterBarHeight) --Dynamic Bar
+
+        render.setColor(ColBlue)
+        render.drawRect(1810,818,70,45) -- Water Text Bar
+        render.drawRect(1810,563,70,45) -- Water% Bar
+        render.drawRectOutline(1810,613,70,200,4) -- Bar
+        render.drawLine(1810,663,1870,663,2) --segment lines
+        render.drawLine(1810,713,1870,713,2)
+        render.drawLine(1810,763,1870,763,2)
+        render.setColor(ColBlack)
+        render.drawText(verytinyfont,1845,820,"Water",1)
+        render.drawText(tinyerfont,1845,563,WaterPerc.."%",1)
+
+        --Deut Bar
+        DeutBarHeight = DeutPerc / 100 * 194--pixelheight
+        render.setColor(ColTomato)
+        render.drawRect(1889,810 - DeutBarHeight,62,DeutBarHeight) --Dynamic Bar
+
+        render.setColor(ColRed)
+        render.drawRect(1885,818,70,45) -- Deut Text Bar
+        render.drawRect(1885,563,70,45) -- Deut% Bar
+        render.drawRectOutline(1885,613,70,200,4) -- Bar
+        render.drawLine(1885,663,1955,663,2) --segment lines
+        render.drawLine(1885,713,1955,713,2)
+        render.drawLine(1885,763,1955,763,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyerfont,1920,818,"Deut",1)
+        render.drawText(tinyerfont,1920,563,DeutPerc.."%",1)
+
+        --Oxy Bar
+        OxyBarHeight = OxyPerc / 100 * 194--pixelheight
+        render.setColor(ColIce)
+        render.drawRect(1964,810 - OxyBarHeight,62,OxyBarHeight) --Dynamic Bar
+
+        render.setColor(Col48)
+        render.drawRect(1960,818,70,45) -- Oxy Text Bar
+        render.drawRect(1960,563,70,45) -- Oxy% Bar
+        render.drawRectOutline(1960,613,70,200,4) -- Bar
+        render.drawLine(1960,663,2030,663,2) --segment lines
+        render.drawLine(1960,713,2030,713,2)
+        render.drawLine(1960,763,2030,763,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyerfont,1995,818,"Oxy",1)
+        render.drawText(tinyerfont,1995,563,OxyPerc.."%",1)
+
+        ----Ship Stats
+        render.setColor(ColGold) --shipstats top rect
+        render.drawRect(740,480,50,50)
+        render.drawRect(740,790,50,50) --shipstats bottom rect
+
+        render.setColor(ColCool) --shipstats top bar
+        render.drawRect(800,480,490,25)
+
+        render.setColor(ColIce) --shipstats bottom bar
+        render.drawRect(800,815,490,25)
+
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,620,650,"Target Status",2)
+        render.drawText(tinyfont,620,705,"Target Shield",2)
+
+        --Self ship stuff
+        --Hull Bar
+        HullBarHeight = HullPerc / 100 * 194--pixelheight
+        render.setColor(ColGalaxy)
+        render.drawRect(804,386 - HullBarHeight,92,HullBarHeight) --Dynamic Bar
+
+        render.setColor(ColGray)
+        render.drawRect(800,395,100,45) -- Hull Text Bar
+        render.drawRect(800,140,100,45) -- Hull% Bar
+        render.drawRectOutline(800,190,100,200,4) --Bar
+        render.drawLine(800,245,900,245,2) --segment lines
+        render.drawLine(800,295,900,295,2)
+        render.drawLine(800,345,900,345,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,850,390,"Hull",1)
+        render.drawText(tinyfont,850,140,HullPerc.."%",1)
+
+        --Plating Bar
+        PlatingBarHeight = PlatingPerc / 100 * 194--pixelheight
+        render.setColor(Col48)
+        render.drawRect(914,386 - PlatingBarHeight,92,PlatingBarHeight) --Dynamic Bar
+
+        render.setColor(Col44)
+        render.drawRect(910,395,100,45) -- Plating Text Bar
+        render.drawRect(910,140,100,45) -- Plating% Bar
+        render.drawRectOutline(910,190,100,200,4) -- Bar
+        render.drawLine(910,245,1010,245,2) --segment lines
+        render.drawLine(910,295,1010,295,2)
+        render.drawLine(910,345,1010,345,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,960,390,"Plating",1)
+        render.drawText(tinyfont,960,140,PlatingPerc.."%",1)
+
+        --Shield Bar
+        ShieldBarHeight = ShieldPerc / 100 * 194--pixelheight
+        render.setColor(ColMidnight)
+        render.drawRect(1024,386 - ShieldBarHeight,92,ShieldBarHeight) --Dynamic Bar
+
+        render.setColor(ColEvening)
+        render.drawRect(1020,395,100,45) -- Shield Text Bar
+        render.drawRect(1020,140,100,45) -- Shield% Bar
+        render.drawRectOutline(1020,190,100,200,4) -- Bar
+        render.drawLine(1020,245,1120,245,2) --segment lines
+        render.drawLine(1020,295,1120,295,2)
+        render.drawLine(1020,345,1120,345,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,1070,390,"Shield",1)
+        render.drawText(tinyfont,1070,140,ShieldPerc.."%",1)
+
+        --Aux Power Bar
+        AuxBarHeight = AuxPwrPerc / 100 * 194--pixelheight
+        render.setColor(ColPumpkinshade)
+        render.drawRect(1134,386 - AuxBarHeight,92,AuxBarHeight) --Dynamic Bar
+
+        render.setColor(ColTangerine)
+        render.drawRect(1130,395,100,45) -- Aux Text Bar
+        render.drawRect(1130,140,100,45) -- Aux% Bar
+        render.drawRectOutline(1130,190,100,200,4) -- Bar
+        render.drawLine(1130,245,1230,245,2) --segment lines
+        render.drawLine(1130,295,1230,295,2)
+        render.drawLine(1130,345,1230,345,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,1180,390,"Aux",1)
+        render.drawText(tinyfont,1180,140,AuxPwrPerc.."%",1)
+
+        --Self Shield Faces Box
+        --Left Side
+        render.setColor(ColCool)
+        render.drawRect(1742,360,8,40) --bottom left right
+        render.drawRect(1730,336,8,60) --bottom left left
+
+        render.setColor(ColIce)
+        render.drawRect(1742,180,8,40) --top left right
+        render.drawRect(1730,184,8,60) --top left left
+
+        render.setColor(ColGold)
+        render.drawRect(1742,225,8,130) --left middle right
+        render.drawRect(1730,250,8,80) --left middle left
+
+        --Right side
+        render.setColor(ColCool)
+        render.drawRect(2010,360,8,40) --bottom right right
+        render.drawRect(2022,336,8,60) --bottom right left
+
+        render.setColor(ColIce)
+        render.drawRect(2010,180,8,40) --top right right
+        render.drawRect(2022,184,8,60) --top right left
+
+        render.setColor(ColGold)
+        render.drawRect(2010,225,8,130) --right middle right
+        render.drawRect(2022,250,8,80) --right middle left
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(lcarsfont,1400,120,"Ship",1)
+        render.drawText(lcarsfont,1400,400,"Shield Faces",1)
+
+
+        if(ShipShieldActive == true) then
+            if(IsSTShield == true) then
+                --visual shield faces
+                render.setColor(ColShieldForward)
+                lcars.wedge(1400,295,100,-40,40) --forward shield
+                render.setColor(ColShieldBack)
+                lcars.wedge(1400,295,100,140,220) --rear shield
+                render.setColor(ColShieldLeft)
+                lcars.wedge(1400,295,100,230,310) --left shield
+                render.setColor(ColShieldRight)
+                lcars.wedge(1400,295,100,50,130) --right shield
+
+                render.setColor(ColBlack)
+                render.drawFilledCircle(1400,295,80,80)
+
+                render.setColor(ColShieldUp)
+                lcars.wedge(1400,295,60,-90,90) --up shield
+                render.setColor(ColShieldDown)
+                lcars.wedge(1400,295,60,90,270) --down shield
+
+                render.setColor(ColBlack)
+                render.drawFilledCircle(1400,295,40,40)
+                render.drawLine(1340,295,1460,295,10)
+
+                render.setColor(ColSpaceWhite)
+                render.drawText(tiniestfont,1400,230,tostring(ShipShieldUp),1) --up
+                render.drawText(tiniestfont,1400,330,tostring(ShipShieldDown),1) --down
+                render.drawText(tiniestfont,1310,280,tostring(ShipShieldLeft),1) --left
+                render.drawText(tiniestfont,1490,280,tostring(ShipShieldRight),1) --right
+                render.drawText(tiniestfont,1400,190,tostring(ShipShieldForward),1) --forward
+                render.drawText(tiniestfont,1400,370,tostring(ShipShieldBack),1) --back
+
+                render.drawText(tiniestfont,1400,265,tostring(ShipShieldCurEnergy),1)
+                render.drawLine(1365,295,1435,295,5)
+                render.drawText(tiniestfont,1400,295,tostring(ShipShieldMaxEnergy),1)
+            else --if atlantis shield
+                render.setColor(ColMainShield)
+                render.drawFilledCircle(1400,295,100,100)
+                --lcars.wedge(1400,295,100,0,360) --more performance friendly than a circle outline with a big width
+                render.setColor(ColBlack)
+                render.drawFilledCircle(1400,295,80,80)
+
+                render.setColor(ColSpaceWhite)
+                render.drawText(tinyfont,1400,245,tostring(ShipShieldCurEnergy),1)
+                render.drawLine(1350,295,1450,295,5)
+                render.drawText(tinyfont,1400,295,tostring(ShipShieldMaxEnergy),1)
+            end
+        else
+            render.setColor(ColMars)
+            render.drawText(ShipFont,1400,200,"Shield",1)
+            render.drawText(ShipFont,1400,300,"Offline",1)
+        end
+
+        --Target stuff
+        --Hull Bar
+        TarHullBarHeight = TargetHullPerc / 100 * 194--pixelheight
+        render.setColor(ColGalaxy)
+        render.drawRect(804,756 - TarHullBarHeight,92,TarHullBarHeight) --Dynamic Bar
+
+        render.setColor(ColGray)
+        render.drawRect(800,765,100,45) -- Hull Text Bar
+        render.drawRect(800,510,100,45) -- Hull% Bar
+        render.drawRectOutline(800,560,100,200,4) --Bar
+        render.drawLine(800,610,900,610,2) --segment lines
+        render.drawLine(800,660,900,660,2)
+        render.drawLine(800,710,900,710,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,850,765,"Hull",1)
+        render.drawText(tinyfont,850,510,TargetHullPerc.."%",1)
+
+        --Plating Bar
+        TarPlatingBarHeight = TargetPlatingPerc / 100 * 194--pixelheight
+        render.setColor(Col48)
+        render.drawRect(914,757 - TarPlatingBarHeight,92,TarPlatingBarHeight) --Dynamic Bar
+
+        render.setColor(Col44)
+        render.drawRect(910,765,100,45) -- Plating Text Bar
+        render.drawRect(910,510,100,45) -- Plating% Bar
+        render.drawRectOutline(910,560,100,200,4) -- Bar
+        render.drawLine(910,610,1010,610,2) --segment lines
+        render.drawLine(910,660,1010,660,2)
+        render.drawLine(910,710,1010,710,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,960,765,"Plating",1)
+        render.drawText(tinyfont,960,510,TargetPlatingPerc.."%",1)
+
+        --Shield Bar
+        TarShieldBarHeight = TargetShieldPerc / 100 * 194--pixelheight
+        render.setColor(ColMidnight)
+        render.drawRect(1024,756 - TarShieldBarHeight,92,TarShieldBarHeight) --Dynamic Bar
+
+        render.setColor(ColEvening)
+        render.drawRect(1020,765,100,45) -- Shield Text Bar
+        render.drawRect(1020,510,100,45) -- Shield% Bar
+        render.drawRectOutline(1020,560,100,200,4) -- Bar
+        render.drawLine(1020,610,1120,610,2) --segment lines
+        render.drawLine(1020,660,1120,660,2)
+        render.drawLine(1020,710,1120,710,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,1070,765,"Shield",1)
+        render.drawText(tinyfont,1070,510,TargetShieldPerc.."%",1)
+
+        --Subsys Power Bar
+        SensSysBarHeight = SensorSubSys / 100 * 194--pixelheight
+        render.setColor(ColPumpkinshade)
+        render.drawRect(1134,756 - SensSysBarHeight,92,SensSysBarHeight) --Dynamic Bar
+
+        render.setColor(ColTangerine)
+        render.drawRect(1130,765,100,45) -- Aux Text Bar
+        render.drawRect(1130,510,100,45) -- Aux% Bar
+        render.drawRectOutline(1130,560,100,200,4) -- Bar
+        render.drawLine(1130,610,1230,610,2) --segment lines
+        render.drawLine(1130,660,1230,660,2)
+        render.drawLine(1130,710,1230,710,2)
+        render.setColor(ColBlack)
+        render.drawText(tinyfont,1180,765,"Sensor",1)
+        render.drawText(tinyfont,1180,510,SensorSubSys.."%",1)
+
+        --Target Shield Faces Box
+        --Left Side
+        render.setColor(ColCool)
+        render.drawRect(1262,730,8,40) --bottom left right
+        render.drawRect(1250,706,8,60) --bottom left left
+
+        render.setColor(ColIce)
+        render.drawRect(1262,550,8,40) --top left right
+        render.drawRect(1250,554,8,60) --top left left
+
+        render.setColor(ColGold)
+        render.drawRect(1262,594,8,130) --left middle right
+        render.drawRect(1250,620,8,80) --left middle left
+
+        --Right side
+        render.setColor(ColCool)
+        render.drawRect(1530,730,8,40) --bottom right right
+        render.drawRect(1542,706,8,60) --bottom right left
+
+        render.setColor(ColIce)
+        render.drawRect(1530,550,8,40) --top right right
+        render.drawRect(1542,554,8,60) --top right left
+
+        render.setColor(ColGold)
+        render.drawRect(1530,594,8,130) --right middle right
+        render.drawRect(1542,620,8,80) --right middle left
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(lcarsfont,1400,490,"Target",1)
+        render.drawText(lcarsfont,1400,770,"Shield Faces",1)
+
+        --visual shield faces
+        if(IsTargetting == true) then
+            if(TShipShieldActive == true) then
+                if(TIsSTShield == true) then
+                    render.setColor(ColTShieldForward)
+                    lcars.wedge(1400,660,100,-40,40) --forward shield
+                    render.setColor(ColTShieldBack)
+                    lcars.wedge(1400,660,100,140,220) --rear shield
+                    render.setColor(ColTShieldLeft)
+                    lcars.wedge(1400,660,100,230,310) --left shield
+                    render.setColor(ColTShieldRight)
+                    lcars.wedge(1400,660,100,50,130) --right shield
+
+                    render.setColor(ColBlack)
+                    render.drawFilledCircle(1400,660,80,80)
+
+                    render.setColor(ColTShieldUp)
+                    lcars.wedge(1400,660,60,-90,90) --up shield
+                    render.setColor(ColTShieldDown)
+                    lcars.wedge(1400,660,60,90,270) --down shield
+
+                    render.setColor(ColBlack)
+                    render.drawFilledCircle(1400,660,40,40)
+                    render.drawLine(1340,660,1460,660,10)
+
+                    render.setColor(ColSpaceWhite)
+                    render.drawText(tiniestfont,1400,595,tostring(TShipShieldUp),1) --up
+                    render.drawText(tiniestfont,1400,695,tostring(TShipShieldDown),1) --down
+                    render.drawText(tiniestfont,1310,645,tostring(TShipShieldLeft),1) --left
+                    render.drawText(tiniestfont,1490,645,tostring(TShipShieldRight),1) --right
+                    render.drawText(tiniestfont,1400,555,tostring(TShipShieldForward),1) --forward
+                    render.drawText(tiniestfont,1400,735,tostring(TShipShieldBack),1) --back
+
+                    render.drawText(tiniestfont,1400,630,tostring(TShipShieldCurEnergy),1)
+                    render.drawLine(1365,660,1435,660,5)
+                    render.drawText(tiniestfont,1400,660,tostring(TShipShieldMaxEnergy),1)
+                else --if atlantis shield
+                    render.setColor(ColTMainShield)
+                    render.drawFilledCircle(1400,660,100,100)
+                    render.setColor(ColBlack)
+                    render.drawFilledCircle(1400,660,80,80)
+
+                    render.setColor(ColSpaceWhite)
+                    render.drawText(tinyfont,1400,610,tostring(TShipShieldCurEnergy),1)
+                    render.drawLine(1350,660,1450,660,5)
+                    render.drawText(tinyfont,1400,660,tostring(TShipShieldMaxEnergy),1)
+                end
+            else
+                render.setColor(ColMars)
+                render.drawText(ShipFont,1400,565,"Shield",1)
+                render.drawText(ShipFont,1400,665,"Offline",1)
+            end
+        else
+            render.setColor(ColMars)
+            render.drawText(ShipFont,1400,565,"No",1)
+            render.drawText(ShipFont,1400,665,"Target",1)
+        end
+
+        --Environment Box
+        --Left Side
+        render.setColor(ColCool)
+        render.drawRect(1262,360,8,40) --bottom left right
+        render.drawRect(1250,336,8,60) --bottom left left
+
+        render.setColor(ColIce)
+        render.drawRect(1262,180,8,40) --top left right
+        render.drawRect(1250,184,8,60) --top left left
+
+        render.setColor(ColGold)
+        render.drawRect(1262,225,8,130) --left middle right
+        render.drawRect(1250,250,8,80) --left middle left
+
+        --Right side
+        render.setColor(ColCool)
+        render.drawRect(1530,360,8,40) --bottom right right
+        render.drawRect(1542,336,8,60) --bottom right left
+
+        render.setColor(ColIce)
+        render.drawRect(1530,180,8,40) --top right right
+        render.drawRect(1542,184,8,60) --top right left
+
+        render.setColor(ColGold)
+        render.drawRect(1530,225,8,130) --right middle right
+        render.drawRect(1542,250,8,80) --right middle left
+
+        if(IsValid(planetmodel)) then
+            a = time.curTime() * 15 --rendr for the environment
+            render.clearDepth() -- Important ! Else the model freaks out
+            render.start3D(Vector(), Angle(), 90, 1730, 140, 300, 300, 10, 10000)
+            planetmodel:setAng(Angle(0, a, 0)) --You can modify the model's pos / ang / anything at all times !
+            render.suppressEngineLighting(true)
+            planetmodel:drawModel()
+            render.end3D()
+        end
+
+        render.setColor(ColSpaceWhite)
+        render.drawText(lcarsfont,1880,120,GalaxyName,1)
+        render.drawText(lcarsfont,1880,400,EnvName,1)
+
+        --pwrbutton:draw()
+    end
+
+    hook("render","drawscreen",function()
+        render.clear()
+        render.setTexture()
+
+        RenderMainMenu()
+
+        local x,y = render.cursorPos(ents.player())
+        if(x and y and ShowCursorPos == true) then
+            render.setColor(ColSpaceWhite)
+            render.drawText(lcarsfont,x,y,math.round(x,0)..","..math.round(y,0))
+        end
+    end)
+
+    --Buttons
+    pwrbutton = lcars.toggleButton("PowerToggle",690,196,100,40,0,ColPwrButton,Col60,"st/console/beep06.wav","st/console/beep03.wav")
+
+    hook("buttonpressed", "Button Pressed", function(index,player)
+        if(index == "PowerToggle") then
+            --print(pwrbutton:pressed())
+        end
+    end)
+
+    hook("starfall_used", "Button Detect", function(player, repeater)
+        if ents.player() ~= player then return end --Button presses should probably just act on the client that pressed.
+        local x, y = render.cursorPos(player, repeater)
+        buttons.defaultPress(player, x, y)
+    end)
+
+    hook.add("net","LCARSNet",function(length,player)
+        ECoreOn = net.readInt(1)
+        WCoreOn = net.readInt(1)
+        RCoreOn = net.readInt(1)
+        LScoreOn = net.readInt(1)
+
+        if(ECoreOn == 1 and pwrbutton:pressed() == false) then
+            print("setpress true")
+            pwrbutton:setPress(true)
+        elseif(ECoreOn == 0 and pwrbutton:pressed() == true) then
+            print("setpress false")
+            pwrbutton:setPress(false)
+        end
+    end)
+
+else --end client
+    wire.createInputs({"Registry"},{"String"})
+
+    function aiSay(player,...) --Function by The17thDoctor
+        if player == ents.owner() then
+            printColor(ColGold," [LCARS] ",ColIce,...)
+        else
+            chat.tell(player,ColGold," [LCARS] ",ColIce,...)
+        end
+    end
+
+    function AutoLink()
+        TorpLaunchers = {}
+        BeamEmitters = {}
+        ShipTurrets = {}
+        ShipWeapons = {}
+        Tractors = {}
+        Jammers = {}
+        AlertLights = {}
+        DoorValues = {}
+        FieldValues = {}
+        Stargates = {}
+        RingPlats = {}
+        Transporters = {}
+
+        TorpFire = 0
+        BeamFire = 0
+        TurFire = 0
+        TractorFire = 0
+        JamActive = 0
+
+        DoorList = ""
+        FieldList = ""
+
+        hook.add("input","InputChangedHook",function(iname,val)
+            if(iname == "Stargate" and IsValid(val)) then
+                local v = val:entity()
+
+                if(v:class() == "stargate_atlantis" or
+                v:class() == "stargate_infinity" or
+                v:class() == "stargate_movie" or
+                v:class() == "stargate_sg1" or
+                v:class() == "stargate_tollan" or
+                v:class() == "stargate_universe") then
+                    Stargate = v
+                    StargateW = v:getWirelink()
+                end
+            end
+
+            if(iname == "Rings" and IsValid(val)) then
+                local v = val:entity()
+
+                if(v:class() == "ring_base_ancient" or
+                v:class() == "ring_base_goauld" or
+                v:class() == "ring_base_ori") then
+                    RingPlat = v
+                    RingPlatW = v:getWirelink()
+                end
+            end
+
+            if(iname == "Transporter" and IsValid(val)) then
+                local v = val:entity()
+
+                if(v:class() == "asgard_transporter" or
+                v:class() == "transporter_pad") then
+                    Transporter = v
+                    TransporterW = v:getWirelink()
+                end
+            end
+        end)
+
+        ShipCore = ents.self():getCore()
+        ShipCoreW = ents.self():getCore():getWirelink()
+
+        if(IsValid(ShipCore) and ShipCore:class() == "ship_core") then
+            Shield = ShipCore:getShield()
+            if(IsValid(Shield)) then
+                ShieldW = ShipCore:getShield():getWirelink()
+            end
+        else
+            aiSay(sfowner,"There is no Shield on this ship!")
+        end
+
+        for k,v in pairs(constraint.getAllConstrainedEntities(ents.self())) do
+            if(v:class() == "stargazer_energy_core") then
+                EnergyCore = v
+                EnergyCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Energy Core on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_refinement_core") then
+                Refinery = v
+                RefineryW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Refinery on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_water_core") then
+                WaterCore = v
+                WaterCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Water Core on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_ls_core") then
+                LSCore = v
+                LSCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Life Support Core on this ship!")
+                end
+            end
+
+            if(v:class() == "stargazer_node") then
+                ResourceCore = v
+                ResourceCoreW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aisay(sfowner,"There is no Resource Node on this ship!")
+                end
+            end
+
+            if(v:class() == "st_cloaking_device") then
+                CloakDevice = v
+                CloakDeviceW = v:getWirelink()
+            else
+                if(ALinkWarn == 1) then
+                    aiSay(sfowner,"There is no Cloaking Device on this ship!")
+                end
+            end
+
+            if(v:class() == "drive_core") then
+                DriveCore = v
+                DriveCoreW = v:getWirelink()
+            end
+
+            if(v:class() == "computer_core") then
+                CompCore = v
+                CompCoreW = v:getWirelink()
+            end
+
+            if(v:class() == "torpedo_launcher") then
+                table.insert(TorpLaunchers,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "beam_emitter") then
+                table.insert(BeamEmitters,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "ship_turret_base") then
+                table.insert(ShipTurrets,v)
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "cruise_missile_launcher" or
+            v:class() == "sam_missile_launcher" or
+            v:class() == "heavy_missile_pod" or
+            v:class() == "ship_laser" or
+            v:class() == "keeper_emitter" or
+            v:class() == "pulsar_emitter" or
+            v:class() == "pulse_phaser_emitter" or
+            v:class() == "phaser_emitter" or
+            v:class() == "ship_cannon" or
+            v:class() == "sg_beam_emitter") then
+                table.insert(ShipWeapons,v)
+            end
+
+            if(v:class() == "tractor_emitter") then
+                table.insert(Tractors,v)
+            end
+
+            if(v:class() == "sensor_array") then
+                SensorArray = v
+                SensorArrayW = v:getWirelink()
+            end
+        end
+    end
+
+    function GetInfo()
+        if(IsValid(ShipCore)) then
+            local HP = math.round(ShipCoreW["Health"] / ShipCoreW["Max Health"] * 100)
+            if(HP ~= HP) then HP = 0 end --so the bitch doesnt become nan and break everything :v
+
+            if(HP ~= HP) then
+                net.setDTVar("Int",1,0)
+            else
+                net.setDTVar("Int",1,HP) --Hull
+            end
+
+            net.setDTVar("Int",2,ShipCoreW["Plating"]) --Plating
+
+            net.setDTVar("String",2,getCurrentEnvironment(ShipCore))
+        end
+
+        if(IsValid(ResourceCore)) then
+            local EC = math.round(ResourceCoreW["Energy"] / ResourceCoreW["Max Energy"] * 100)
+            local WC = math.round(ResourceCoreW["Water"] / ResourceCoreW["Max Water"] * 100)
+            local DT = math.round(ResourceCoreW["Deuterium"] / ResourceCoreW["Max Deuterium"] * 100)
+            local OX = math.round(ResourceCoreW["Oxygen"] / ResourceCoreW["Max Oxygen"] * 100)
+
+            if(EC ~= EC) then EC = 0 end
+            if(WC ~= WC) then WC = 0 end
+            if(DT ~= DT) then DT = 0 end
+            if(OX ~= OX) then OX = 0 end
+
+            net.setDTVar("Int",3,EC) --Energy
+            net.setDTVar("Int",4,WC) --Water
+            net.setDTVar("Int",5,DT) --Deut
+            net.setDTVar("Int",6,OX) --Oxygen
+        end
+
+        if(IsValid(Shield)) then
+            local SH = math.round(Shield:getTotalCharge() / Shield:getMaxCharge() * 100)
+            if(SH ~= SH) then SH = 0 end
+
+            net.setDTVar("Int",7,SH) --Shield
+
+            if(Shield:hasFaces()) then
+                net.setDTVar("Int",26,1) --is self st shield
+                net.setDTVar("Int",9,Shield:getFaceCharge(1)) --front
+                net.setDTVar("Int",10,Shield:getFaceCharge(2)) --back
+                net.setDTVar("Int",11,Shield:getFaceCharge(3)) --left
+                net.setDTVar("Int",12,Shield:getFaceCharge(4)) --right
+                net.setDTVar("Int",13,Shield:getFaceCharge(5)) --up
+                net.setDTVar("Int",14,Shield:getFaceCharge(6)) --down
+            else
+                net.setDTVar("Int",26,0) --is self st shield
+            end
+
+            net.setDTVar("Bool",1,Shield:isActive())
+
+            net.setDTVar("Int",29,Shield:getTotalCharge())
+            net.setDTVar("Int",30,Shield:getMaxCharge())
+        end
+
+        if(IsValid(CompCore)) then
+            net.setDTVar("Int",8,CompCoreW["Aux Power"])
+        end
+
+        ECoreOn = 0
+        WCoreOn = 0
+        RCoreOn = 0
+        LSCoreOn = 0
+
+        if(IsValid(EnergyCore)) then
+            ECoreOn = EnergyCoreW["Active"]
+        end
+
+        if(IsValid(WaterCore) and IsValid(WaterCoreW["Collector"])) then
+            WCollect = WaterCoreW["Collector"]:getWirelink()
+            WCoreOn = WCollect["Active"]
+        end
+
+        if(IsValid(Refinery)) then
+            RCoreOn = RefineryW["Active"]
+        end
+
+        if(IsValid(LSCore)) then
+            LSCoreOn = LSCoreW["Active"]
+        end
+
+        if(IsValid(SensorArray)) then
+            if(SensorArrayW["Health"] == 0) then
+                net.setDTVar("Int",15,0)
+
+                net.setDTVar("Bool",3,false) --no target
+            else
+                local THP = math.round(SensorArrayW["Health"] / SensorArrayW["Max Health"] * 100) --target hp%
+                if(THP ~= THP) then THP = 0 end
+
+                net.setDTVar("Int",15,THP) --Hull
+                net.setDTVar("Bool",3,true) --yes target
+            end
+
+            if(SensorArrayW["Plating"] ~= nil) then
+                net.setDTVar("Int",16,SensorArrayW["Plating"]) --target plating%
+            else
+                net.setDTVar("Int",16,0)
+            end
+
+            if(SensorArrayW["Shield Emitter"] ~= nil) then
+                if(SensorArrayW["Shield Emitter"] == 0) then
+                    net.setDTVar("Int",17,0)
+                else
+                    local TSH = math.round(SensorArrayW["Shield Emitter"] / SensorArrayW["Max Shields"] * 100) --target shield%
+                    if(TSH ~= TSH) then TSH = 0 end
+                    net.setDTVar("Int",17,TSH) --shield
+                end
+
+                if(SensorArrayW["Front"] ~= nil) then
+                    net.setDTVar("Int",27,1) --is target ST Shield
+                    net.setDTVar("Int",20,SensorArrayW["Front"])
+                    net.setDTVar("Int",21,SensorArrayW["Back"])
+                    net.setDTVar("Int",22,SensorArrayW["Left"])
+                    net.setDTVar("Int",23,SensorArrayW["Right"])
+                    net.setDTVar("Int",24,SensorArrayW["Up"])
+                    net.setDTVar("Int",25,SensorArrayW["Down"])
+                else
+                    net.setDTVar("Int",27,0) --atlantis shield
+                end
+
+                net.setDTVar("Int",31,SensorArrayW["Shield Emitter"])
+                net.setDTVar("Int",32,SensorArrayW["Max Shields"])
+
+                if(SensorArrayW["Shield Active"] ~= nil) then
+                    if(SensorArrayW["Shield Active"] == 1) then
+                        net.setDTVar("Bool",2,true)
+                    else
+                        net.setDTVar("Bool",2,false)
+                    end
+                end
+            else
+                net.setDTVar("Int",17,0) -- shield 0
+            end
+
+            net.setDTVar("Int",18,SensorArrayW["Subsystem Health"])
+
+            if(SensorArrayW["Armour"] ~= nil) then
+                if(SensorArrayW["Armour"] == 0) then
+                    net.setDTVar("Int",19,0)
+                else
+                    local TAR = math.round(SensorArrayW["Armour"] / SensorArrayW["Max Health"] * 100) --target armor%
+                    if(TAR ~= TAR) then TAR = 0 end
+
+                    net.setDTVar("Int",19,TAR) --armor
+                end
+            end
+        end
+
+        net.start()
+            net.writeInt(ECoreOn,1)
+            net.writeInt(WCoreOn,1)
+            net.writeInt(RCoreOn,1)
+            net.writeInt(LSCoreOn,1)
+        net.broadcast()
+    end
+
+    function dupefinished()
+        if(ents.self():getCore() == nil) then
+            aiSay(sfowner,"There is no core on this ship! Cannot use autolink system!")
+        else
+            AutoLink()
+
+            timer.create("getInfoLoop",1,0,function()
+                GetInfo()
+            end)
+
+            timer.create("relinkLoop",60,0,function()
+                AutoLink()
+            end)
+
+            if(IsValid(LSCore)) then
+                if(wire.ports.Registry ~= nil and wire.ports.Registry ~= "") then
+                    net.setDTVar("String",1,LSCoreW["Environment Name"].." - "..wire.ports.Registry)
+                else
+                    net.setDTVar("String",1,LSCoreW["Environment Name"])
+                end
+            end
+        end
+    end
+
+    if starfall.isSpawnedFromDuplicator() then
+        hook.add('postduplicationpaste', 'dupefinished', dupefinished)
+    else
+        dupefinished()
+    end
+end

@@ -4,8 +4,15 @@
 --@updater STEAM_0:0:53930685
 --@autoupdate
 --@shared
-ColTeam = ents.owner():getTeamColor()
-ColOwner = ents.owner():getTeamColor() --alias
+
+if(IsValid(ents.owner())) then --this has errored with invalid ent before
+    ColTeam = ents.owner():getTeamColor()
+    ColOwner = ents.owner():getTeamColor() --alias
+else
+    ColTeam = Color(255,255,255,255)
+    ColOwner = Color(255,255,255,255)
+end
+
 ColPink = Color(255,95,215,255)
 ColOng = Color(230,110,0,255)
 ColRed = Color(255,0,0,255)
@@ -26,7 +33,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.3.12"
+    local AIVers = "2.4.2"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -60,6 +67,7 @@ WarpLoc = {
     ["pegasus"] = Vector(1703,-8593,9143),
     ["universe"] = Vector(111,-2874,-3954),
     ["unicorner"] = Vector(-7179,-7562,-10663),
+    ["unicorner2"] = Vector(-6303,-3060,-8635),
     ["hangar"] = Vector(-7576,-7152,5560),
     ["moon"] = Vector(-4938,13441,10444),
     ["members"] = Vector(13,-94,-15202),
@@ -404,6 +412,7 @@ function getCurrentEnvironment(entity)
     end
 end
 
+
 --Get Closest Environment function made by The17thDoctor
 function getClosestEnvironment(entity, water)
     local distances = {}
@@ -465,9 +474,7 @@ function AITalky(name) -- if LSAU and Vethian are both spawned, they will say he
                 timer.simple(2,function() channels.send("VethianHello","Vethian Hello") end)
             end
         end
-    end
-
-    if(name == "LSAU") then
+    elseif(name == "LSAU") then
         for k,v in pairs(find.byClass("starfall_emitter")) do
             if(starfall.getName(v) == "Vethian AI") then
                 timer.simple(2,function() channels.send("VethianHello","LSAU Hello") end)

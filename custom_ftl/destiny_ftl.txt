@@ -16,7 +16,9 @@ EffectOffset = 500 --how far forward the effect will play from the effect parent
 ShipTPOffset = 2000 --this should be infront of the most front part of your ship, so the move anim doesnt remove parts of your ship
 --tp offset should be replaced by the ship size later when i can figure it out
 
-wire.createInputs({"Warp","Destination","Parent","EffectParent"},{"normal","vector","entity","entity"})
+FTLSpeed = 300 --default 300, how many units the ship will tp every step
+
+wire.createInputs({"Warp","Destination","Parent","EffectParent","Speed"},{"normal","vector","entity","entity","normal"})
 
 function MoveShip()
     local outtr = trace.traceDirection(wire.ports.Parent:pos(), wire.ports.Parent:forward(),wire.ports.Parent)
@@ -25,7 +27,9 @@ function MoveShip()
 
     timer.create("moveshipout",0.001,0,function()
         if(outtr.HitPos:Distance(wire.ports.Parent:pos()) > ShipTPOffset) then
-            wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),outtr.HitPos,300))
+            if(FTLSpeed ~= 0) then
+                wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),outtr.HitPos,FTLSpeed))
+            end
 
             net.setDTVar("Vector",1,wire.ports.Parent:pos())
         else
@@ -58,7 +62,10 @@ function MoveShip()
                         net.broadcast()
                     end)
                 else
-                    wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),intr.HitPos,300))
+                    if(FTLSpeed ~= 0) then
+                        wire.ports.Parent:setPos(math.approachVec(wire.ports.Parent:pos(),intr.HitPos,FTLSpeed))
+                    end
+
                     net.setDTVar("Vector",1,wire.ports.Parent:pos())
                 end
             end)
@@ -99,6 +106,8 @@ hook.add("input","wiredetect",function(name,value)
         end
     elseif(name == "Destination") then
         Dest = value
+    elseif(name == "Speed") then
+        FTLSpeed = value
     end
 end)
 
@@ -220,7 +229,7 @@ function playeffect()
             for I=1,100 do
                 local sprite = sprites[I]
 
-                sprite.pos = math.approachVec(sprite.pos, sprite.goal, 10)
+                sprite.pos = math.approachVec(sprite.pos, sprite.goal, 20)
 
                 render.setColor(ColTbl[math.random(1,3)])
 

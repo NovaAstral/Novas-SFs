@@ -1,0 +1,115 @@
+--@name LCARS Color Lib
+--@author Nova Astral
+--All colors and names taken from https://www.thelcars.com/colors.php
+--Dashes in the names on the site aren't here, but it means the next letter is uppercase
+--eg: instead of space-white, its SpaceWhite
+--Everything past the lower decks theme is just numbers
+
+ColBlack = Color(0,0,0) --because text on stuff like buttons is black in LCARs
+
+--LCARS Classic Theme
+ColSpaceWhite = Color(245,246,250)
+ColVioletCreme = Color(221,187,255)
+ColGreen = Color(51,204,153)
+ColMagenta = Color(204,68,153)
+ColBlue = Color(68,85,255)
+ColYellow = Color(255,204,51)
+ColViolet = Color(153,68,255)
+ColOrange = Color(255,119,0)
+ColAfricanViolet = Color(204,136,255)
+ColClassicText = Color(204,119,255)
+ColRed = Color(221,68,68)
+ColAlmond = Color(255,170,144)
+ColAlmondCreme = Color(255,187,170)
+ColSunflower = Color(255,204,102)
+ColBluey = Color(119,136,255)
+ColGray = Color(102,102,136)
+ColSky = Color(170,170,255)
+ColIce = Color(136,204,255)
+ColGold = Color(255,170,0)
+ColMars = Color(255,34,0)
+ColPeach = Color(255,136,102)
+ColButterscotch = Color(255,153,102)
+ColTomato = Color(255,85,85)
+ColLilac = Color(204,51,255)
+
+
+--Nemesis Blue Theme
+ColEvening = Color(34,85,255)
+ColMidnight = Color(17,17,238)
+ColGhost = Color(136,187,255)
+ColWheat = Color(204,170,136)
+ColRoseblush = Color(204,102,102)
+ColHoney = Color(255,204,153)
+ColCardinal = Color(204,34,51)
+ColPumpkinshade = Color(255,119,68)
+ColTangerine = Color(255,136,51)
+ColMartian = Color(153,221,102)
+ColNemesisText = Color(34,102,255)
+ColMoonbeam = Color(204,222,255)
+ColCool = Color(85,136,255)
+ColGalaxy = Color(68,74,119)
+ColMoonshine = Color(221,238,255)
+
+
+--Lower Decks Theme
+ColOctoberSunset = Color(255,68,0)
+ColHarvestgold = Color(255,170,68)
+--ColOrange already exists
+--ColHoney already exists
+ColButter = Color(255,238,204)
+
+
+--Lower Decks PADD Theme
+Col43 = Color(85,136,238)
+Col44 = Color(136,255,255)
+Col45 = Color(52,68,112)
+Col46 = Color(69,85,128)
+Col47 = Color(119,153,221)
+Col48 = Color(102,204,255)
+Col49 = Color(153,204,255)
+Col50 = Color(255,53,0)
+
+
+--TNG Legacy Series
+--ColGold already exists
+Col51 = Color(85,34,85)
+Col52 = Color(102,51,102)
+Col53 = Color(119,68,119)
+Col54 = Color(136,85,136)
+Col55 = Color(153,102,153)
+Col56 = Color(255,136,0)
+Col57 = Color(208,176,160)
+Col58 = Color(187,187,255)
+Col59 = Color(153,170,102)
+Col60 = Color(0,187,0)
+Col61 = Color(51,255,51)
+Col62 = Color(221,255,221)
+Col63 = Color(255,235,222)
+Col64 = Color(204,153,204)
+Col65 = Color(246,238,246)
+Col66 = Color(170,102,170)
+Col67 = Color(221,136,221)
+
+
+--Red Alert
+Col68 = Color(255,0,0)
+Col69 = Color(204,0,0)
+Col70 = Color(238,0,0)
+Col71 = Color(233,233,233)
+Col72 = Color(247,247,247)
+
+function Color.lerp(a, b, t)
+    t = t / 100
+    local ra, rb = a.r^2, b.r^2
+    local ga, gb = a.g^2, b.g^2
+    local ba, bb = a.b^2, b.b^2
+    local aa, ab = a.a^2, b.a^2
+
+    return Color(
+        math.sqrt(ra + (rb - ra) * t),
+        math.sqrt(ga + (gb - ga) * t),
+        math.sqrt(ba + (bb - ba) * t),
+        math.sqrt(aa + (ab - aa) * t)
+    )
+end

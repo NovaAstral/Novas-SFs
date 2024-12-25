@@ -3,6 +3,11 @@
 
 --like this entire lib was made by The17thDoctor <3
 
+function toRad(ang)
+    return ang * math.pi/180
+end
+
+num_vertices = 432
 
 lcars = {
     cachedCorners = {},
@@ -158,7 +163,7 @@ function lcars.cornerFunctions.BL(cornerParams)
     local outArcSegments, inArcSegments = cornerParams.outArcSegments or 5, cornerParams.inArcSegments or 5
 
     local poly = {
-        { x = x, y = y + vHeight + outArcHeight },
+        { x = x - vWidth / 2, y = y + vHeight + outArcHeight },
         { x = x - vWidth / 2 - hWidth, y = y + vHeight + outArcHeight },
         { x = x - vWidth / 2 - hWidth, y = y + vHeight + outArcHeight - hHeight }
     }
@@ -222,6 +227,41 @@ function lcars.drawCorner(cornerParams)
     render.drawPoly(poly)
 end
 
+function lcars.drawCornerDebug(cornerParams)
+    local cache = cornerParams.cache
+    if cache == nil then cache = true end
+
+    local id = cid(cornerParams)
+    if cache and lcars.cachedCorners[id] then
+        render.drawPoly(lcars.cachedCorners[id])
+
+        for i = 2, #lcars.cachedCorners[id] do
+            local x,y,z,w = render.getColor()
+            local a = lcars.cachedCorners[id][1]
+            local b = lcars.cachedCorners[id][i]
+
+            render.setColor(255 - x, 255 - y, 255 - z, 255)
+            render.drawLine(a.x, a.y, b.x, b.y)
+            render.setColor(x,y,z,w)
+        end
+        return
+    end
+
+    local poly = lcars.cornerFunctions[cornerParams.orientation](cornerParams)
+    if cache then lcars.cachedCorners[id] = poly end
+
+    for i = 2, #poly do
+        local x,y,z,w = render.getColor()
+        local a = poly[1]
+        local b = poly[i]
+
+        render.setColor(255 - x, 255 - y, 255 - z, 255)
+        render.drawLine(a.x, a.y, b.x, b.y)
+        render.setColor(x,y,z,w)
+    end
+    render.drawPoly(poly)
+end
+
 function lcars.halfCircle(x, y, r, s)
     if s == "l" then
         render.enableScissorRect(x - r, y - r, x, y + r)
@@ -236,6 +276,25 @@ function lcars.halfCircle(x, y, r, s)
     render.drawFilledCircle(x, y, r)
     render.disableScissorRect()
 end
+
+function lcars.wedge(wx,wy,r,angle_start,angle_end)
+    if angle_end == angle_start then return end
+    local ang = angle_start
+
+    local vertices = {}
+
+    vertices[1] = { x = wx, y = wy, u = 0, v = 0 }
+    while ang < angle_end do
+        if ang >= angle_end then
+            ang = angle_end
+        end
+        vertices[ #vertices+1 ] = { x = r*math.sin(toRad(ang))+wx, y = -r*math.cos(toRad(ang))+wy, u = 0, v = 0 }
+        ang = ang + 360/num_vertices
+    end
+
+    render.drawPoly(vertices)
+end
+
 
 function lcars.button(index, x, y, w, h, r, idleColor, pressedColor, pressedSound, pressDelay)
     local meta = buttons.simpleRect(index, x, y, w, h)
@@ -279,4 +338,68 @@ function lcars.button(index, x, y, w, h, r, idleColor, pressedColor, pressedSoun
 
     buttons.list[button.index] = button
     return button
+end
+
+function lcars.toggleButton(index, x, y, w, h, r, idleColor, pressedColor, pressedSound, unpressedSound)
+    local meta = buttons.simpleRect(index, x, y, w, h)
+    meta.__index = meta
+    meta.__metatable = "LCARS Button"
+    meta.__tostring = meta.__tostring
+    meta.__concat = meta.__concat
+    meta.metatable = meta
+
+    ---- We override the draw call to draw what we want for LCARS buttons
+    function meta:draw()
+        local shape = self.shape
+        local r, g, b, a = render.getColor()
+        render.setColor(self.state.color)
+        render.drawRoundedRect(shape.r, shape.x, shape.y, shape.w, shape.h)
+        render.setColor(r, g, b, a)
+    end
+
+    function meta:onPress(x, y, player)
+        self.state.pressed = not self.state.pressed
+
+        if self.state.pressed then
+            self.state.color = self.state.pressedColor
+        else
+            self.state.color = self.state.idleColor
+        end
+
+        if self.state.pressed and self.state.pressedSound ~= nil then
+            sounds.emitEntity(ents.self(), self.state.pressedSound)
+        elseif not self.state.pressed and self.state.unpressedSound ~= nil then
+            sounds.emitEntity(ents.self(), self.state.unpressedSound)
+        end
+    end
+
+    function meta:pressed()
+        return self.state.pressed
+    end
+
+    function meta:setPress(pressed)
+        self.state.pressed = pressed
+    end
+
+    local button = setmetatable({}, meta)
+    button.shape.r = r --We add radius, simpleRect doesnt ask for it
+    button.state = {
+        pressed = false,
+        color = idleColor,
+        idleColor = idleColor,
+        pressedColor = pressedColor,
+        pressedSound = pressedSound,
+        unpressedSound = unpressedSound or pressedSound
+    }
+
+    buttons.list[button.index] = button
+    return button
+end
+
+function fuckOffNaN(numbr)
+    if(numbr ~= numbr) then
+        return 0
+    else
+        return numbr
+    end
 end

@@ -102,6 +102,18 @@ function ActivateFlight()
     end)
 end
 
+hook.add("keypress", "tardis_toggle_freeze",function(ply,key)
+    if(ply == Pilot) then
+        if(key == input.IN_ZOOM) then
+            if(TARDISPhys:isMotionEnabled()) then
+                TARDISPhys:enableMotion(false)
+            else
+                TARDISPhys:enableMotion(true)
+            end
+        end
+    end
+end)
+
 
 timer.simple(2,function() --wait for e2 to activate so it doesnt error
     if(IsValid(wire.ports.BoxParent)) then
@@ -130,6 +142,8 @@ timer.simple(2,function() --wait for e2 to activate so it doesnt error
         elseif(name == "Pilot") then
             if(IsValid(value) and value:isPlayer()) then
                 Pilot = value
+            else
+                Pilot = nil
             end
         end
     end)
