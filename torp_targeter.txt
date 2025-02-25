@@ -1,0 +1,29 @@
+--@name Torp Targetter
+--@author
+
+wire.createInputs({"Weapon"},{"Wirelink"})
+
+Fire = 0
+
+hook.add("think","thinkies",function()
+    Ents = find.byClass("tricobalt_torpedo")
+
+    if(IsValid(Ents[1])) then
+        if(IsValid(wire.ports.Weapon)) then
+            wire.ports.Weapon["Target"] = Ents[1]:pos()
+
+            if(Fire == 0) then
+                Fire = 1
+                wire.ports.Weapon["Fire"] = 1
+            end
+        end
+
+    else
+        if(IsValid(wire.ports.Weapon)) then
+            if(Fire == 1) then
+                Fire = 0
+                wire.ports.Weapon["Fire"] = 0
+            end
+        end
+    end
+end)

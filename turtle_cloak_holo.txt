@@ -1,0 +1,44 @@
+--@name
+--@author
+--@model models/madman07/supergate_dhd/supergate_dhd.mdl
+--@shared
+
+if SERVER then
+    ShipHolo = holograms.create(ents.self():pos() + Vector(0,0,25),ents.self():ang(),"models/SmallBridge/Ships/hysteria_galapagos.mdl",0.1)
+    ShipHolo:setParent(ents.self())
+
+    --[[
+    CloakBubble = holograms.create(ents.self():pos() + Vector(50,0,-70),ents.self():ang(),"models/hunter/misc/sphere025x025.mdl",Vector(125,80,45))
+    CloakBubble:setParent(ents.self())
+
+    SmolCloakBubble = holograms.create(ents.self():pos() + Vector(-5,0,30),ents.self():ang(),"models/hunter/misc/sphere025x025.mdl",Vector(11,8,4))
+    SmolCloakBubble:setParent(ents.self())
+    SmolCloakBubble:setDrawTranslucent(true)
+
+    net.setDTVar("Entity",1,CloakBubble)
+    net.setDTVar("Entity",2,SmolCloakBubble)
+    ]]--
+
+else --client
+    --[[
+    timer.create("matoverride",5,0,function()
+        local Ent = net.getDTVar("Entity",1)
+        local Ent2 = net.getDTVar("Entity",2)
+        local Mat = Material("spacebuild/dirtyplate2")
+        --models/effects/muzzleflash/blurmuzzle
+        --vgui/screens/transparent
+        if(Ent ~= nil and IsValid(Ent)) then
+            --A,B = Ent:setMaterialOverride(Mat)
+            A,B = Ent:setMaterialOverride(Mat)
+            print(A) --"
+            print(B)
+        end
+
+        if(Ent2 ~= nil and IsValid(Ent2)) then
+            C,D = Ent2:setMaterialOverride(Mat)
+            --print(C)
+            --print(D)
+        end
+    end)
+    ]]--
+end

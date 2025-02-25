@@ -1,0 +1,42 @@
+--@name snowy
+--@author
+--@shared
+--@require effect_wep/lib/effects_library.txt
+
+function math.approachVec(v1, v2, dist)
+    if v1:Distance(v2) <= dist then return v2 end
+    return v1 + (v2 - v1):Normalize() * dist
+end
+
+if CLIENT then
+    emitter.setDrawEverywhere(false)
+
+    local sprites = {}
+    for I=1,200 do
+        Vec = Vector(math.random(-200,200),math.random(-200,200),math.random(-200,200))
+
+        sprites[I] = {
+            pos = ents.self():pos()+Vec, --Current position
+            --goal = ents.self():pos()+Vector(0,0,-201)-- charging beam thing
+            goal = ents.self():pos()+Vec+Vector(0,0,-201)--End position
+        }
+    end
+
+    hook.add("render", "drawftlglow", function()
+        render.setTexture(Material("sprites/physg_glow2"))
+        render.setColor(Color(255,255,255))
+
+        for I=1,200 do
+            local sprite = sprites[I]
+
+            sprite.pos = math.approachVec(sprite.pos,sprite.goal,2)
+
+            if(sprite.pos == sprite.goal) then
+                sprite.pos = sprite.pos+Vector(0,0,400)
+                sprite.goal = sprite.pos+Vector(0,0,-400)
+            end
+
+            effects.drawSprite(sprite.pos,20,20,0)
+        end
+    end)
+end

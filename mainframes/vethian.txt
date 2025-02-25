@@ -9,7 +9,7 @@
 
 if SERVER then --really, don't touch this
 
-AIVersion = "2.4.2" -- Don't touch this
+AIVersion = "2.4.3" -- Don't touch this
 require("Novas-SFs/library/nova_lib.txt") -- Don't touch this 2: electric boogaloo.
 
 --[[
@@ -28,10 +28,7 @@ You can ping me on the TSCM Community Discord, or use the github issues section
 
 
 Latest update:
--- Fixed not being able to target borg (you will still need to target with "/t this"
--- Fixed chat spam when toggling multiple doors at the same time
--- Added /v dock <ply> command (doesnt fucking work)
--- Made lockdown actually lockdown doors
+-- Added the ability to "/t ship <player>" instead of just "/t core <player>"
 ]]--
 
 --This is the custom config setup, change these if you'd like
@@ -90,7 +87,7 @@ function nameCheck()
 
     if(IsValid(LSCore) ~= true) then
         aiSay(sfowner,ColRed,"Life Support Core not linked, cannot set ship name!")
-    else
+    elseif(Shipname ~= "Shipname") then
         LSCoreW["Name"] = Shipname
     end
 
@@ -1906,7 +1903,7 @@ chat.listen(function(message, player)
         ----------
         if(CMD("sugged")) then
              chat.sayAlliance(ColPink,"[",AIName,"] ",ColOng,"sugged xd")
-             playSound(sfowner:pos(),"mono",1000,4,100,"https://cdn.discordapp.com/attachments/915811722646925312/1153013386121068695/sugged.wav")
+             playSound(sfowner:pos(),"mono",1000,4,100,"https://cloud.luna-code.net/s/yDaEZZicaOanVDu/download")
         end
 
         if(CMD("asay")) then
@@ -2547,7 +2544,7 @@ chat.listen(function(message, player)
 
                         ShipCoreW:entity():addTarget(Ply:steamID())
 
-                        aiSay(sfowner,"Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
+                        aiSay(sfowner,"Targetting ",Ply:getTeamColor(),Ply:name(),ColOng," with the Pulsar Emitters")
                     else
                         aiSay(sfowner,ColRed,OLS[3]," Is not a player.")
                     end
@@ -2569,7 +2566,7 @@ chat.listen(function(message, player)
 
                         ShipCoreW:entity():removeTarget(Ply:steamID())
 
-                        aiSay(sfowner,"Un-Targetting ",PlyCol,Ply:name(),ColOng," with the Pulsar Emitters")
+                        aiSay(sfowner,"Un-Targetting ",Ply:getTeamColor(),Ply:name(),ColOng," with the Pulsar Emitters")
                     else
                         aiSay(sfowner,ColRed,OLS[3]," Is not a player.")
                     end
@@ -2738,17 +2735,17 @@ chat.listen(function(message, player)
                     aiSay(sfowner,"Cannot dock with no ones ship")
                 else
                     local values = find.byClass("gmod_wire_value",function(ent)
-                        return ent:owner() == Ply and ent["1"] == "VDocking"
+                        return ent:owner() == Ply and ent:getWirelink()["1"] == "VDocking"
                     end)
 
-                    local selfvalues = find.byClass("gmod_wire_value",function(ent) --i think this is unused lmao
-                        return ent:owner() == sfowner and ent["1"] == "VDocking"
+                    local selfvalues = find.byClass("gmod_wire_value",function(ent)
+                        return ent:owner() == sfowner and ent:getWirelink()["1"] == "VDocking"
                     end)
 
                     if(values == nil or #values == 0) then
-                        aiSay(sfowner,"There are no Wire Values owned by ",PlyCol,Ply:name(),ColOng,"!")
+                        aiSay(sfowner,"There are no Wire Values owned by ",Ply:getTeamColor(),Ply:name(),ColOng,"!")
                     elseif(#values > 1) then
-                        aiSay(sfowner,"Docking currently does not support more than ",ColRed,"1",ColOng," Docking point, please tell ",PlyCol,Ply:name(),ColOng," about this.")
+                        aiSay(sfowner,"Docking currently does not support more than ",ColRed,"1",ColOng," Docking point, please tell ",Ply:getTeamColor(),Ply:name(),ColOng," about this.")
                     else
                         for k,v in pairs(values) do
                             local vw = v:getWirelink()
@@ -2756,10 +2753,12 @@ chat.listen(function(message, player)
                             if(vw["1"] == "VDocking") then
                                 WarpF = 1
 
-                                local Dest = v:pos() + (DockingValues[1]:pos() - WarpDrive:entity():pos())
+                                local Dest = v:pos() + (wire.ports.WarpDrive:entity():pos() - selfvalues[1]:pos())
                                 local AngleOffset = Angle(0,0,0)
 
                                 warp(Dest,AngleOffset)
+
+                                aiSay(sfowner,"Docking with ",Ply:getTeamColor(),getShipName(v),ColOng," Owned By ",Ply:getTeamColor(),Ply:name())
                             end
                         end
                     end
@@ -2779,7 +2778,7 @@ chat.listen(function(message, player)
 
                         warp(Dest,AngleOffset)
 
-                        aiSay(sfowner,"Warping to Player: ",PlyCol,Ply:name())
+                        aiSay(sfowner,"Warping to Player: ",Ply:getTeamColor(),Ply:name())
                     elseif(WarpLoc[OLS[2]] ~= nil) then
                         WarpF = 1
 
@@ -2789,6 +2788,26 @@ chat.listen(function(message, player)
                         warp(Dest,AngleOffset)
 
                         aiSay(sfowner,"Warping to location: ",ColGrn,OLS[2])
+                    elseif(OLS[2] == "1123" and OLS[3] == "6536" and OLS[4] == "5321") then
+                        WarpF = 1
+
+                        local Dest = Vector(-4493,13810,12074)
+                        local AngleOffset = Angle(0,0,0)
+
+                        warp(Dest,AngleOffset)
+
+                        aiSay(sfowner,"There must be some kind of way out of here")
+                        playSound(sfowner:pos(),"mono",1000,4,100,"https://cloud.luna-code.net/s/LAmleB3j74l7tAs/download")
+                    elseif(OLS[2] == "ttyupoupouyt") then
+                        WarpF = 1
+
+                        local Dest = Vector(-4493,13810,12074)
+                        local AngleOffset = Angle(0,0,0)
+
+                        warp(Dest,AngleOffset)
+
+                        aiSay(sfowner,"There must be some kind of way out of here")
+                        playSound(sfowner:pos(),"mono",1000,4,100,"https://cloud.luna-code.net/s/LAmleB3j74l7tAs/download")
                     else
                         aiSay(sfowner,"Cannot warp to: ",ColRed,OLS[2])
                     end
@@ -3028,7 +3047,7 @@ chat.listen(function(message, player)
                     end
                 end
 
-                if(OLS[3] == "core") then
+                if(OLS[3] == "core" or OLS[3] == "ship") then
                     if(OLS[4] == nil) then
                         aiSay(sfowner,ColRed,"You must put a player's core to target")
                     else
@@ -3086,7 +3105,7 @@ chat.listen(function(message, player)
                     end
                 end
 
-                if(OLS[3] ~= nil and OLS[3] ~= "me" and OLS[3] ~= "core" and OLS[3] ~= "pad") then
+                if(OLS[3] ~= nil and OLS[3] ~= "me" and OLS[3] ~= "core" and OLS[3] == "ship" and OLS[3] ~= "pad") then
                     local Ply = find.playerByName(OLS[3])
 
                     if(IsValid(Ply)) then
@@ -3134,7 +3153,7 @@ chat.listen(function(message, player)
                             end
                         end --I would really like a player valid check here, but it would print if you used any of the other beams
 
-                        if(OLS[4] == "core") then
+                        if(OLS[4] == "core" or OLS[4] == "ship") then
                             if(OLS[5] == nil) then
                                 aiSay(sfowner,ColRed,"You must put a player's core to target")
                             else

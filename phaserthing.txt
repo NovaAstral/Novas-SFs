@@ -1,0 +1,20 @@
+--@name
+--@author
+
+wire.createInputs({"Awawa"},{"Wirelink"})
+
+A = -400
+
+if(IsValid(wire.ports.Awawa)) then
+    timer.create("a",0,0,function()
+        if(wire.ports.Awawa["Firing"] == 1) then
+            A = A+6
+
+            wire.ports.Awawa["Target"] = ents.self():pos() + Vector(0,A,1000)
+        else
+            A = -400
+
+            wire.ports.Awawa["Target"] = ents.self():pos() + Vector(0,A,1000)
+        end
+    end)
+end

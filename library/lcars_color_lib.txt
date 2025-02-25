@@ -61,14 +61,14 @@ ColButter = Color(255,238,204)
 
 
 --Lower Decks PADD Theme
-Col43 = Color(85,136,238)
-Col44 = Color(136,255,255)
-Col45 = Color(52,68,112)
-Col46 = Color(69,85,128)
-Col47 = Color(119,153,221)
-Col48 = Color(102,204,255)
-Col49 = Color(153,204,255)
-Col50 = Color(255,53,0)
+ColAlphaBlue = Color(85,136,238) --Col43
+ColRadioactive = Color(136,255,255) --Col44
+ColNightCloud = Color(52,68,112) --Col45
+ColNightRain = Color(69,85,128) --Col46
+ColBetaBlue = Color(119,153,221) --Col47
+ColArcticIce = Color(102,204,255) --Col48
+ColArcticSnow = Color(153,204,255) --Col49
+ColSunsetRed = Color(255,53,0) --Col50
 
 
 --TNG Legacy Series
@@ -100,16 +100,20 @@ Col71 = Color(233,233,233)
 Col72 = Color(247,247,247)
 
 function Color.lerp(a, b, t)
-    t = t / 100
+    if t ~= t then t = 0 end
+    t = math.clamp(t / 100, 0, 1)
+
     local ra, rb = a.r^2, b.r^2
     local ga, gb = a.g^2, b.g^2
     local ba, bb = a.b^2, b.b^2
     local aa, ab = a.a^2, b.a^2
 
-    return Color(
+    local c = Color(
         math.sqrt(ra + (rb - ra) * t),
         math.sqrt(ga + (gb - ga) * t),
         math.sqrt(ba + (bb - ba) * t),
         math.sqrt(aa + (ab - aa) * t)
     )
+
+    return c
 end

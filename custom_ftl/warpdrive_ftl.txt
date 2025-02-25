@@ -1,0 +1,86 @@
+--@name WarpDrive FTL
+--@author Nova Astral
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/webaudio_lib.txt sh
+--@shared
+
+if SERVER then
+    wire.createInputs({"Warp","Destination","EngineEnts","Parent"},{"normal","vector","array","entity"})
+
+    WarpDest = Vector(0,0,0)
+    HyperDrive = false
+
+    function ActivateWarp()
+        for k,v in pairs(wire.ports.EngineEnts) do
+            if(IsValid(v)) then
+                v:spriteTrail(Color(127,0,255),128,0,10,"trails/physbeam")
+
+                timer.simple(8,function()
+                    if(IsValid(v)) then
+                        v:removeTrail()
+                    end
+                end)
+            end
+        end
+
+        timer.simple(0.1,function()
+            wire.ports.Parent:setPos(WarpDest)
+            setSndPos(WarpDest)
+        end)
+    end
+
+    hook.add("input","wiredetect",function(name,value)
+        if(name == "Warp" and value >= 1) then
+            if(not IsValid(wire.ports.Parent)) then
+                sounds.emitEntity(ents.self(),"buttons/button8.wav")
+            elseif(WarpDest == Vector(0,0,0)) then
+                sounds.emitEntity(wire.ports.Parent,"buttons/button8.wav")
+            else
+                if wire.ports.Parent:pos().z < 0 then
+                    CurGalaxy = "Universe"
+                elseif wire.ports.Parent:pos().y < 0 then
+                    CurGalaxy = "Pegasus"
+                else
+                    CurGalaxy = "Milkyway"
+                end
+
+                if WarpDest.z < 0 then
+                    DestGalaxy = "Universe"
+                elseif WarpDest.y < 0 then
+                    DestGalaxy = "Pegasus"
+                else
+                    DestGalaxy = "Milkyway"
+                end
+
+                if(DestGalaxy ~= CurGalaxy) then
+                    HyperDrive = true
+                    playSound(wire.ports.Parent:pos(),"3d",2000,1,100,"https://cloud.luna-code.net/s/a1jDyQsrf6hhnRl/download")
+                else
+                    HyperDrive = false
+                    playSound(wire.ports.Parent:pos(),"3d",2000,1,100,"https://cloud.luna-code.net/s/52MF9I1Swe6BQjh/download")
+                end
+            end
+        elseif(name == "Destination") then
+            if(value ~= Vector(0,0,0)) then
+                WarpDest = value
+            end
+        end
+    end)
+
+    hook("net", "net", function()
+        local Str = net.readString()
+
+        if(Str == "wlib_playingsnd") then
+            if(HyperDrive == true) then
+                timer.simple(29,function()
+                    ActivateWarp()
+                end)
+            else
+                timer.simple(9.5,function()
+                    ActivateWarp()
+                end)
+            end
+        end
+    end)
+else --client
+
+end

@@ -1,0 +1,31 @@
+--@name Type 11 Shuttle Door
+--@author Nova Astral
+--@shared
+
+if SERVER then
+    wire.createInputs({"Button","DoorRotator","MainHull"},{"normal","entity","entity"})
+
+    Ang = 0
+
+    hook.add("input","hookname",function(input,value)
+        if(input == "Button" and IsValid(wire.ports.MainHull) and IsValid(wire.ports.DoorRotator)) then
+            if(value >= 1 and Ang == 0) then
+                opensnd = sounds.create(wire.ports.DoorRotator,"st/shuttlecraft/shuttle_door_open.wav")
+                opensnd:play()
+
+                timer.create("open",0.015,127,function()
+                    Ang = math.clamp(Ang+0.15,0,19)
+                    wire.ports.DoorRotator:setAng(wire.ports.MainHull:ang()+Angle(Ang,0,0))
+                end)
+            elseif(value <= 0 and Ang == 19) then
+                closesnd = sounds.create(wire.ports.DoorRotator,"st/shuttlecraft/shuttle_door_close.wav")
+                closesnd:play()
+
+                timer.create("close",0.015,127,function()
+                    Ang = math.clamp(Ang-0.15,0,19)
+                    wire.ports.DoorRotator:setAng(wire.ports.MainHull:ang()+Angle(Ang,0,0))
+                end)
+            end
+        end
+    end)
+end

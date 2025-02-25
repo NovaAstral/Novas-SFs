@@ -1,0 +1,45 @@
+--@name Torp Targetter cannon
+--@author
+
+wire.createInputs({"Weapon"},{"Wirelink"})
+
+Fire = 0
+
+function calcTOF(lpos, lvel, projspeed) --Function by Princess Nova
+    local a = lvel:LengthSqr() - projspeed ^ 2
+    local b = 2 * lpos:Dot(lvel)
+    local c = lpos:LengthSqr()
+
+    return (-b - math.sqrt(b ^ 2 - 4 * a * c)) / (2 * a)
+end
+
+function gvintercept(cannonpos, cannonvel, targetpos, targetvel, projspeed) --Function by Princess Nova
+    return targetpos + targetvel * calcTOF(targetpos - cannonpos,targetvel - cannonvel,projspeed)
+end
+
+hook.add("think","thinkies",function()
+    Ents = find.byClass("tricobalt_torpedo")
+
+    if(IsValid(Ents[1])) then
+        if(IsValid(wire.ports.Weapon)) then
+            v = wire.ports.Weapon:entity()
+
+            Tar = gvintercept(v:pos(), v:vel(), Ents[1]:pos(), Ents[1]:vel(), 4000) --3000
+
+            v:setAng((Tar - v:pos()):Angle())
+
+            if(Fire == 0) then
+                Fire = 1
+                wire.ports.Weapon["Fire"] = 1
+            end
+        end
+
+    else
+        if(IsValid(wire.ports.Weapon)) then
+            if(Fire == 1) then
+                Fire = 0
+                wire.ports.Weapon["Fire"] = 0
+            end
+        end
+    end
+end)

@@ -1,0 +1,22 @@
+--@name Render Ship Sizes
+--@author Nova Astral
+--@shared
+
+
+if CLIENT then
+    timer.create("find ships",10,0,function()
+        Ships = find.byClass("ship_core")
+
+        if(Ships ~= nil) then
+            for k,v in pairs Ships do
+
+            end
+
+            hook.add("render","rendershipbox",function()
+
+            end)
+        end
+    end)
+else --server
+
+end

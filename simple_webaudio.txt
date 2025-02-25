@@ -17,7 +17,7 @@ if CLIENT then
             printColor(Color(255,95,215,255),"[SWeb] ",Color(230,110,0,255),"You did not enter a valid URL ",ColRed,net.getDTVar("String",1))
             return
         else
-            if(audio ~= nil) then
+            if(audio ~= nil and IsValid(audio)) then
                 audio:stop()
             end
 

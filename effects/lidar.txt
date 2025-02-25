@@ -1,0 +1,56 @@
+--@name LIDAR
+--@author
+--@shared
+--@require effect_wep/lib/effects_library.txt
+
+if CLIENT then
+    emitter.setDrawEverywhere(false)
+
+    PosTbl = {}
+
+    for I=1,200 do
+        table.insert(PosTbl,I,ents.self():pos())
+    end
+
+    hook.add("playerbuttondown","pew :3",function(ply,key)
+        if(ply ~= ents.owner()) then return end
+
+        if(key == 111) then
+            net.start()
+                net.writeString("dolidarsv")
+            net.sendToServer()
+        end
+    end)
+
+    hook.add("render", "drawlidar", function()
+        render.setTexture(Material("sprites/physg_glow2"))
+        render.setColor(Color(255,255,255))
+
+        for I=1,200 do
+            effects.drawSprite(PosTbl[I],20,20,0)
+        end
+    end)
+
+    hook.add("net","lidarnetcl",function(length,ply)
+        msg = net.readString()
+
+        if(msg == "dolidarcl") then
+            for I=1,200 do
+                local Ang = ents.owner():eyeAngles()+Angle(math.random(-15,15),math.random(-15,15),math.random(-15,15))
+                tr = trace.traceDirection(ents.owner():eyePos(),Ang:Forward(),ents.owner())
+
+                table.insert(PosTbl,I,tr.HitPos)
+            end
+        end
+    end)
+else
+    hook.add("net","lidarnet",function(length,ply)
+        msg = net.readString()
+
+        if(ply == ents.self():owner() and msg == "dolidarsv") then
+            net.start()
+                net.writeString("dolidarcl")
+            net.broadcast()
+        end
+    end)
+end

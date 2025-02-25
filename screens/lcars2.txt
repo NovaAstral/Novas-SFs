@@ -4,11 +4,15 @@
 --@dependency STEAM_0:0:53930685 Novas-SFs/library/lcars_library.txt cl
 --@dependency STEAM_0:0:53930685 Novas-SFs/library/lcars_color_lib.txt sh
 --@dependency STEAM_0:0:53930685 Novas-SFs/library/nova_lib.txt sh
+--@autoupdate Novas-SFs/screens/lcars2.txt
+--@updater STEAM_0:0:53930685
 --@resolution 2048 1024
 --@shared
+
 ---@model models/cheeze/pcb/pcb5.mdl
 
---will error if target switches shield types
+
+--if target switches shield type, shield gradient wont update properly
 
 if CLIENT then
     ShipName = net.getDTVar("String",1) or "ShipName"
@@ -71,9 +75,8 @@ if CLIENT then
             GalaxyName = "Milkyway"
         end
 
-        planetmodel:setModel(EnvModel)
-
         if(IsValid(planetmodel)) then
+            planetmodel:setModel(EnvModel)
             planetmodel:setPos(Vector(ModelOffset, 0, 0))
         end
     end
@@ -106,12 +109,15 @@ if CLIENT then
     OxyPerc = net.getDTVar("Int",6) or 0
     ShieldPerc = net.getDTVar("Int",7) or 0
     AuxPwrPerc = net.getDTVar("Int",8) or 0
+    ArmorActive = net.getDTVar("Bool",5) or 0
+    ArmorPerc = tonumber(net.getDTVar("String",3)) or 0
 
     TargetHullPerc = net.getDTVar("Int",15) or 0
     TargetPlatingPerc = net.getDTVar("Int",16) or 0
     TargetShieldPerc = net.getDTVar("Int",17) or 0
     SensorSubSys = net.getDTVar("Int",18) or 0
-    TargetArmorPerc = net.getDTVar("Int",19) or 0
+    TArmorPerc = net.getDTVar("Int",19) or 0
+    TArmorActive = net.getDTVar("Bool",4) or false
 
     ShipShieldUp = net.getDTVar("Int",13) or 0
     ShipShieldDown = net.getDTVar("Int",14) or 0
@@ -123,6 +129,11 @@ if CLIENT then
     ShipShieldActive = net.getDTVar("Bool",1) or false
     ShipShieldCurEnergy = net.getDTVar("Int",29) or 0
     ShipShieldMaxEnergy = net.getDTVar("Int",30) or 0
+
+    DTString4 = net.getDTVar("String",4) or ""
+    TarShipName = string.explode(DTString4,"|||")[1] or ""
+
+    TarShipClass = string.explode(DTString4,"|||")[2] or ""
 
     if(net.getDTVar("Int",26) == 1) then
         IsSTShield = true
@@ -180,7 +191,7 @@ if CLIENT then
         else
             TIsSTShield = false
 
-            MaxTarShieldFace = 100
+            MaxTarShieldFace = TShipShieldMaxEnergy
         end
 
         ColTShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldUp / MaxTarShieldFace * 100)))
@@ -190,11 +201,11 @@ if CLIENT then
         ColTShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldForward / MaxTarShieldFace * 100)))
         ColTShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldBack / MaxTarShieldFace * 100)))
 
-        ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TargetShieldPerc / MaxTarShieldFace * 100)))
+        ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(TShipShieldCurEnergy / TShipShieldMaxEnergy * 100)))
 
         IsTargetting = net.getDTVar("Bool",3) or false
 
-        ColPwrButton = Col50
+        ColPwrButton = ColSunsetReda
     end)
 
 
@@ -202,7 +213,10 @@ if CLIENT then
     hook.add("dtvarchanged","RecieveShipInfo",function(type,index,oldValue,v)
         if(type == "String") then
             if(index == 1) then
-                ShipName = v
+                ShipName = v or ""
+            elseif(index == 4) then
+                TarShipName = string.explode(v,"|||")[1] or ""
+                TarShipClass = string.explode(v,"|||")[2] or ""
             end
         end
 
@@ -221,56 +235,56 @@ if CLIENT then
                 OxyPerc = v
             elseif(index == 7) then --Shield
                 ShieldPerc = v
-                ColMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 8) then --Aux Power
                 AuxPwrPerc = v
             elseif(index == 9) then
                 ShipShieldForward = v
-                ColShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 10) then
                 ShipShieldBack = v
-                ColShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 11) then
                 ShipShieldLeft = v
-                ColShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 12) then
                 ShipShieldRight = v
-                ColShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 13) then
                 ShipShieldUp = v
-                ColShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 14) then
                 ShipShieldDown = v
-                ColShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxSelfShieldFace * 100)))
+                ColShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxSelfShieldFace * 100))
             elseif(index == 15) then --target hull
                 TargetHullPerc = v
             elseif(index == 16) then --target plating
                 TargetPlatingPerc = v
             elseif(index == 17) then --target shield
                 TargetShieldPerc = v
-                ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTMainShield = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(TShipShieldCurEnergy / TShipShieldMaxEnergy * 100))
             elseif(index == 18) then --sensor subsys
                 SensorSubSys = v
             elseif(index == 19) then --target armor
-                TargetArmorPerc = v
+                TArmorPerc = v
             elseif(index == 20) then
                 TShipShieldForward = v
-                ColTShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldForward = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 21) then
                 TShipShieldBack = v
-                ColTShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldBack = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 22) then
                 TShipShieldLeft = v
-                ColTShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldLeft = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 23) then
                 TShipShieldRight = v
-                ColTShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldRight = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 24) then
                 TShipShieldUp = v
-                ColTShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldUp = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 25) then
                 TShipShieldDown = v
-                ColTShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),fuckOffNaN(math.round(v / MaxTarShieldFace * 100)))
+                ColTShieldDown = Color.lerp(Color(255,0,0),Color(0,255,0),math.round(v / MaxTarShieldFace * 100))
             elseif(index == 26) then --is self st shield
                 if(v == 1) then
                     IsSTShield = true
@@ -300,7 +314,7 @@ if CLIENT then
                         MaxSelfShieldFace = 60000
                     end
                 else
-                    MaxSelfShieldFace = 60000
+                    MaxSelfShieldFace = ShipShieldMaxEnergy
                 end
             elseif(index == 31) then
                 TShipShieldCurEnergy = v
@@ -319,7 +333,7 @@ if CLIENT then
                         MaxTarShieldFace = 60000
                     end
                 else
-                    MaxTarShieldFace = 60000
+                    MaxTarShieldFace = TShipShieldMaxEnergy
                 end
             end
         end
@@ -331,6 +345,10 @@ if CLIENT then
                 TShipShieldActive = v
             elseif(index == 3) then
                 IsTargetting = v
+            elseif(index == 4) then
+                TArmorActive = v
+            elseif(index == 5) then
+                ArmorActive = v
             end
         end
     end)
@@ -582,7 +600,7 @@ if CLIENT then
         DNTimeText = os.date("%d") -- day number
         SDTimeText = os.date("%Y")-1900 .."0"..os.date("%m").."."..os.date("%d") --Stardate
 
-        if(ents.player():steamID() == "STEAM_0:0:52002590") then --doc
+        if(ents.player():steamID() == "STEAM_0:0:52002590" or ents.player():steamID() == "STEAM_0:1:90224840" or ents.player():steamID() == "STEAM_0:1:180222680") then --doc / arkailz / stella --24hr time
             HTimeText = os.date("%H")
             APMTimeText = "hi :3"
         end
@@ -636,14 +654,14 @@ if CLIENT then
         render.setColor(ColCool)--comms button
         render.drawRect(55,520,205,100)
         render.setColor(ColBlack)
-        render.drawText(tinyfont,250,575,"Comms",2)
+        render.drawText(tinyfont,250,575,"Ship Status",2)
 
         render.setColor(ColEvening) --utilities button
         render.drawRect(55,640,205,100)
         render.setColor(ColBlack)
-        render.drawText(tinyfont,250,695,"Utilities",2)
+        render.drawText(tinyfont,250,695,"Transporter",2)
 
-        render.setColor(ColNemesisText) --media button
+        render.setColor(ColEvening) --media button
         render.drawRect(55,760,205,100)
         render.setColor(ColBlack)
         render.drawText(tinyfont,250,815,"Media",2)
@@ -732,7 +750,7 @@ if CLIENT then
         render.setColor(ColIce)
         render.drawRect(1964,810 - OxyBarHeight,62,OxyBarHeight) --Dynamic Bar
 
-        render.setColor(Col48)
+        render.setColor(ColArcticIce)
         render.drawRect(1960,818,70,45) -- Oxy Text Bar
         render.drawRect(1960,563,70,45) -- Oxy% Bar
         render.drawRectOutline(1960,613,70,200,4) -- Bar
@@ -760,27 +778,45 @@ if CLIENT then
 
         --Self ship stuff
         --Hull Bar
-        HullBarHeight = HullPerc / 100 * 194--pixelheight
-        render.setColor(ColGalaxy)
+
+        if(ArmorActive == true) then
+            HullBarHeight = ArmorPerc / 100 * 194--pixelheight
+            render.setColor(Color(50,50,50))
+        else
+            HullBarHeight = HullPerc / 100 * 194--pixelheight
+            render.setColor(ColGalaxy)
+        end
+
         render.drawRect(804,386 - HullBarHeight,92,HullBarHeight) --Dynamic Bar
 
-        render.setColor(ColGray)
+        if(ArmorActive == true) then
+            render.setColor(Color(100,100,100))
+        else
+            render.setColor(ColGray)
+        end
         render.drawRect(800,395,100,45) -- Hull Text Bar
         render.drawRect(800,140,100,45) -- Hull% Bar
         render.drawRectOutline(800,190,100,200,4) --Bar
         render.drawLine(800,245,900,245,2) --segment lines
         render.drawLine(800,295,900,295,2)
         render.drawLine(800,345,900,345,2)
+
         render.setColor(ColBlack)
-        render.drawText(tinyfont,850,390,"Hull",1)
-        render.drawText(tinyfont,850,140,HullPerc.."%",1)
+
+        if(ArmorActive == true) then
+            render.drawText(tinyfont,850,390,"Armor",1)
+            render.drawText(tinyfont,850,140,ArmorPerc.."%",1)
+        else
+            render.drawText(tinyfont,850,390,"Hull",1)
+            render.drawText(tinyfont,850,140,HullPerc.."%",1)
+        end
 
         --Plating Bar
         PlatingBarHeight = PlatingPerc / 100 * 194--pixelheight
-        render.setColor(Col48)
+        render.setColor(ColArcticIce)
         render.drawRect(914,386 - PlatingBarHeight,92,PlatingBarHeight) --Dynamic Bar
 
-        render.setColor(Col44)
+        render.setColor(ColRadioactive)
         render.drawRect(910,395,100,45) -- Plating Text Bar
         render.drawRect(910,140,100,45) -- Plating% Bar
         render.drawRectOutline(910,190,100,200,4) -- Bar
@@ -910,27 +946,46 @@ if CLIENT then
 
         --Target stuff
         --Hull Bar
-        TarHullBarHeight = TargetHullPerc / 100 * 194--pixelheight
-        render.setColor(ColGalaxy)
+
+        if(TArmorActive == true) then
+            TarHullBarHeight = TArmorPerc / 100 * 194--pixelheight
+            render.setColor(Color(50,50,50))
+        else
+            TarHullBarHeight = TargetHullPerc / 100 * 194--pixelheight
+            render.setColor(ColGalaxy)
+        end
+
         render.drawRect(804,756 - TarHullBarHeight,92,TarHullBarHeight) --Dynamic Bar
 
-        render.setColor(ColGray)
+        if(TArmorActive == true) then
+            render.setColor(Color(100,100,100))
+        else
+            render.setColor(ColGray)
+        end
+
         render.drawRect(800,765,100,45) -- Hull Text Bar
         render.drawRect(800,510,100,45) -- Hull% Bar
         render.drawRectOutline(800,560,100,200,4) --Bar
         render.drawLine(800,610,900,610,2) --segment lines
         render.drawLine(800,660,900,660,2)
         render.drawLine(800,710,900,710,2)
+
         render.setColor(ColBlack)
-        render.drawText(tinyfont,850,765,"Hull",1)
-        render.drawText(tinyfont,850,510,TargetHullPerc.."%",1)
+
+        if(TArmorActive == true) then
+            render.drawText(tinyfont,850,760,"Armor",1)
+            render.drawText(tinyfont,850,510,TArmorPerc.."%",1)
+        else
+            render.drawText(tinyfont,850,760,"Hull",1)
+            render.drawText(tinyfont,850,510,TargetHullPerc.."%",1)
+        end
 
         --Plating Bar
         TarPlatingBarHeight = TargetPlatingPerc / 100 * 194--pixelheight
-        render.setColor(Col48)
+        render.setColor(ColArcticIce)
         render.drawRect(914,757 - TarPlatingBarHeight,92,TarPlatingBarHeight) --Dynamic Bar
 
-        render.setColor(Col44)
+        render.setColor(ColRadioactive)
         render.drawRect(910,765,100,45) -- Plating Text Bar
         render.drawRect(910,510,100,45) -- Plating% Bar
         render.drawRectOutline(910,560,100,200,4) -- Bar
@@ -938,7 +993,7 @@ if CLIENT then
         render.drawLine(910,660,1010,660,2)
         render.drawLine(910,710,1010,710,2)
         render.setColor(ColBlack)
-        render.drawText(tinyfont,960,765,"Plating",1)
+        render.drawText(tinyfont,960,760,"Plating",1)
         render.drawText(tinyfont,960,510,TargetPlatingPerc.."%",1)
 
         --Shield Bar
@@ -954,7 +1009,7 @@ if CLIENT then
         render.drawLine(1020,660,1120,660,2)
         render.drawLine(1020,710,1120,710,2)
         render.setColor(ColBlack)
-        render.drawText(tinyfont,1070,765,"Shield",1)
+        render.drawText(tinyfont,1070,760,"Shield",1)
         render.drawText(tinyfont,1070,510,TargetShieldPerc.."%",1)
 
         --Subsys Power Bar
@@ -970,7 +1025,7 @@ if CLIENT then
         render.drawLine(1130,660,1230,660,2)
         render.drawLine(1130,710,1230,710,2)
         render.setColor(ColBlack)
-        render.drawText(tinyfont,1180,765,"Sensor",1)
+        render.drawText(tinyfont,1180,760,"Sensor",1)
         render.drawText(tinyfont,1180,510,SensorSubSys.."%",1)
 
         --Target Shield Faces Box
@@ -1101,7 +1156,36 @@ if CLIENT then
 
         render.setColor(ColSpaceWhite)
         render.drawText(lcarsfont,1880,120,GalaxyName,1)
+
+        if(EnvName == "No Ship Core!") then
+            render.setColor(ColRed)
+        end
+
         render.drawText(lcarsfont,1880,400,EnvName,1)
+
+        if(TarShipName ~= "") then
+            local tarname = "Target Name: "..TarShipName
+
+            render.setColor(ColBlack)
+            render.drawRect(810,450,6+render.getTextSize(tinyfont,tarname),50)
+
+            render.setColor(ColSpaceWhite)
+            render.drawText(tinyfont,812,450,tarname,-1)
+        end
+
+        if(TarShipClass ~= "") then
+            if(getShipClassName(TarShipClass) ~= "") then
+                tarclass = "Target Class: "..getShipClassName(TarShipClass)
+            else
+                tarclass = "Target Class: "..TarShipClass
+            end
+
+            render.setColor(ColBlack)
+            render.drawRect(809,811,6+render.getTextSize(tiniestfont,tarclass),50)
+
+            render.setColor(ColSpaceWhite)
+            render.drawText(tiniestfont,812,811,tarclass,-1)
+        end
 
         --pwrbutton:draw()
     end
@@ -1150,7 +1234,7 @@ if CLIENT then
     end)
 
 else --end client
-    wire.createInputs({"Registry"},{"String"})
+    wire.createInputs({"Registry","Target"},{"String","Entity"})
 
     function aiSay(player,...) --Function by The17thDoctor
         if player == ents.owner() then
@@ -1337,7 +1421,7 @@ else --end client
     end
 
     function GetInfo()
-        if(IsValid(ShipCore)) then
+        if(IsValid(ShipCore) and IsValid(ShipCoreW) and ShipCoreW["Health"] ~= nil) then
             local HP = math.round(ShipCoreW["Health"] / ShipCoreW["Max Health"] * 100)
             if(HP ~= HP) then HP = 0 end --so the bitch doesnt become nan and break everything :v
 
@@ -1350,6 +1434,27 @@ else --end client
             net.setDTVar("Int",2,ShipCoreW["Plating"]) --Plating
 
             net.setDTVar("String",2,getCurrentEnvironment(ShipCore))
+
+            if(ShipCoreW["Armour Deployed"] ~= nil) then
+                if(ShipCoreW["Armour Deployed"] == 1) then
+                    net.setDTVar("Bool",5,true)
+                else
+                    net.setDTVar("Bool",5,false)
+                end
+            end
+
+            if(ShipCoreW["Armour"] ~= nil) then
+                if(ShipCoreW["Max Health"] < 500000) then
+                    SARM = 500000
+                else
+                    SARM = ShipCoreW["Max Health"]
+                end
+
+                local ARM = math.round(ShipCoreW["Armour"] / SARM * 100)
+                net.setDTVar("String",3,tostring(ARM))
+            end
+        else
+            net.setDTVar("String",2,"No Ship Core!")
         end
 
         if(IsValid(ResourceCore)) then
@@ -1456,7 +1561,7 @@ else --end client
                     net.setDTVar("Int",24,SensorArrayW["Up"])
                     net.setDTVar("Int",25,SensorArrayW["Down"])
                 else
-                    net.setDTVar("Int",27,0) --atlantis shield
+                    net.setDTVar("Int",27,0) --shuttle/atlantis shield
                 end
 
                 net.setDTVar("Int",31,SensorArrayW["Shield Emitter"])
@@ -1470,7 +1575,23 @@ else --end client
                     end
                 end
             else
-                net.setDTVar("Int",17,0) -- shield 0
+                if(isShuttle(wire.ports.Target) == true) then
+                    local shuttle = wire.ports.Target
+                    net.setDTVar("Int",17,SensorArrayW["Shields"])
+
+                    net.setDTVar("Int",27,0) -- shuttle/atlantis shield
+
+                    net.setDTVar("Int",31,shuttle:getTotalShieldCharge())
+                    net.setDTVar("Int",32,shuttle:getMaxShieldCharge())
+
+                    if(shuttle:isShieldActive() == true) then
+                        net.setDTVar("Bool",2,true)
+                    else
+                        net.setDTVar("Bool",2,false)
+                    end
+                else
+                    net.setDTVar("Int",17,0) -- shield 0
+                end
             end
 
             net.setDTVar("Int",18,SensorArrayW["Subsystem Health"])
@@ -1479,11 +1600,47 @@ else --end client
                 if(SensorArrayW["Armour"] == 0) then
                     net.setDTVar("Int",19,0)
                 else
-                    local TAR = math.round(SensorArrayW["Armour"] / SensorArrayW["Max Health"] * 100) --target armor%
-                    if(TAR ~= TAR) then TAR = 0 end
+                    if(wire.ports.Target ~= nil) then
+                        if(wire.ports.Target:class() == "st_shuttle_type11") then
+                            TArmorMax = 200000
+                        elseif(wire.ports.Target:class() == "st_shuttle_type9") then
+                            TArmorMax = 100000
+                        elseif(wire.ports.Target:class() == "ship_core") then
+                            if(SensorArrayW["Health"] ~= nil) then
+                                if(SensorArrayW["Health"] < 500000) then
+                                    TArmorMax = 500000
+                                else
+                                    TArmorMax = SensorArrayW["Max Health"]
+                                end
+                            else
+                                TArmorMax = 0
+                            end
+                        else
+                            TArmorMax = 0
+                        end
 
-                    net.setDTVar("Int",19,TAR) --armor
+                        TARM = math.round(SensorArrayW["Armour"] / TArmorMax * 100) --target armor%
+                        if(TARM ~= TARM) then TARM = 0 end
+                    else
+                        TARM = 0
+                    end
+
+                    net.setDTVar("Int",19,TARM) --armor
                 end
+            end
+
+            if(SensorArrayW["Armour Deployed"] ~= nil) then
+                if(SensorArrayW["Armour Deployed"] == 1) then
+                    net.setDTVar("Bool",4,true)
+                else
+                    net.setDTVar("Bool",4,false)
+                end
+            end
+
+            if(SensorArrayW["Target Name"] ~= nil and wire.ports.Target ~= nil and IsValid(wire.ports.Target)) then
+                net.setDTVar("String",4,SensorArrayW["Target Name"].."|||"..wire.ports.Target:class()) --explode by |||
+            else
+                net.setDTVar("String",4,"")
             end
         end
 
@@ -1509,13 +1666,15 @@ else --end client
                 AutoLink()
             end)
 
-            if(IsValid(LSCore)) then
-                if(wire.ports.Registry ~= nil and wire.ports.Registry ~= "") then
-                    net.setDTVar("String",1,LSCoreW["Environment Name"].." - "..wire.ports.Registry)
-                else
-                    net.setDTVar("String",1,LSCoreW["Environment Name"])
+            timer.simple(0.1,function()
+                if(IsValid(LSCore)) then
+                    if(wire.ports.Registry ~= nil and wire.ports.Registry ~= "") then
+                        net.setDTVar("String",1,LSCoreW["Environment Name"].." - "..wire.ports.Registry)
+                    else
+                        net.setDTVar("String",1,LSCoreW["Environment Name"])
+                    end
                 end
-            end
+            end)
         end
     end
 

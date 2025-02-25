@@ -1,0 +1,34 @@
+--@name Find Connected Ents
+--@author
+
+wire.createInputs({"Activate","Tar"},{"Normal","Entity"})
+wire.createOutputs({"EntCount"},{"Normal"})
+
+Ents = {}
+
+hook.add("input","in",function(iname,value)
+    if(iname == "Activate") then
+        if(value >= 1 and IsValid(wire.ports.Tar)) then
+            Ents = find.all(function(ent)
+                if(ent:owner() == wire.ports.Tar:owner()) then
+                    if(IsValid(ent:getCore()) and ent:getCore() == wire.ports.Tar or IsValid(ent:getCore()) and ent:getCore() == wire.ports.Tar:getCore()) then
+                        return true
+                    else
+                        return false
+                    end
+                end
+            end)
+
+            timer.simple(0.1,function()
+                if(Ents ~= nil) then
+                    print("Ent Amount: "..#Ents)
+                    wire.ports.EntCount = #Ents
+                else
+                    print("not valid")
+                end
+            end)
+        else
+
+        end
+    end
+end)

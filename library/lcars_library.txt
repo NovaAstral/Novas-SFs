@@ -32,7 +32,7 @@ function lcars.cornerFunctions.TR(cornerParams)
     local outArcWidth, outArcHeight = cornerParams.outArcWidth, cornerParams.outArcHeight
     local inArcWidth, inArcHeight = cornerParams.inArcWidth, cornerParams.inArcHeight
 
-    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 5, cornerParams.inArcSegments or 5
+    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 20, cornerParams.inArcSegments or 20
 
     local poly = {
         { x = x - vWidth / 2 + outArcWidth, y = y - vHeight - outArcHeight },
@@ -75,7 +75,7 @@ function lcars.cornerFunctions.TL(cornerParams)
     local outArcWidth, outArcHeight = cornerParams.outArcWidth, cornerParams.outArcHeight
     local inArcWidth, inArcHeight = cornerParams.inArcWidth, cornerParams.inArcHeight
 
-    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 5, cornerParams.inArcSegments or 5
+    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 20, cornerParams.inArcSegments or 20
 
     local poly = {}
 
@@ -117,7 +117,7 @@ function lcars.cornerFunctions.BR(cornerParams)
     local outArcWidth, outArcHeight = cornerParams.outArcWidth, cornerParams.outArcHeight
     local inArcWidth, inArcHeight = cornerParams.inArcWidth, cornerParams.inArcHeight
 
-    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 5, cornerParams.inArcSegments or 5
+    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 20, cornerParams.inArcSegments or 20
 
     local poly = {
         { x = x - vWidth / 2 + outArcWidth, y = y + vHeight + outArcHeight }
@@ -160,7 +160,7 @@ function lcars.cornerFunctions.BL(cornerParams)
     local outArcWidth, outArcHeight = cornerParams.outArcWidth, cornerParams.outArcHeight
     local inArcWidth, inArcHeight = cornerParams.inArcWidth, cornerParams.inArcHeight
 
-    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 5, cornerParams.inArcSegments or 5
+    local outArcSegments, inArcSegments = cornerParams.outArcSegments or 20, cornerParams.inArcSegments or 20
 
     local poly = {
         { x = x - vWidth / 2, y = y + vHeight + outArcHeight },

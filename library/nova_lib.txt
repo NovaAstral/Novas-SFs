@@ -33,7 +33,7 @@ if SERVER then
 
 --Version checking for Vethian because of non-file based config.
 function AIVersCheck()
-    local AIVers = "2.4.2"
+    local AIVers = "2.4.3"
     if(AIVersion ~= AIVers) then
         printColor(ColPink,"[NovaLib] ",ColOng,"Your version of",ColPink," [",AIName,"] ",ColOng,"is ",ColRed,"outdated",ColOng,". The current version is: ",ColGrn,AIVers,ColOng," Your version is: ",ColRed,AIVersion)
     end
@@ -151,6 +151,7 @@ TarType = { --Sorted alphabetically
     ["sbnode"] = "resource_node",
     ["sgshield"] = "shield_generator",
     ["shield"] = "st_shield_emitter",
+    ["ship"] = "ship_core",
     ["shuttle"] = "*shuttle*",
     ["spacemine"] = "sf-spacemine",
     ["sphere"] = "box_sphere",
@@ -579,4 +580,66 @@ function filterList(list, criterion)
     end
 
     return list
+end
+
+if SERVER then
+    function getShipName(ent)
+        if(IsValid(ent) and IsValid(ent:getCore())) then
+            local Name = ent:getCore():getShipName()
+
+            if(Name == nil) then
+                return "Unnamed Ship"
+            else
+                return Name
+            end
+        else
+            return ""
+        end
+    end
+end
+
+function isShuttle(ent)
+    if(not IsValid(ent)) then return false end
+
+    if(ent:class() == "st_shuttle_type11" or ent:class() == "st_shuttle_type9" or ent:class() == "st_shuttle_type6" or ent:class() == "atlantis_puddle_jumper" or ent:class() == "sci_fi_shuttle") then
+        return true
+    else
+        return false
+    end
+end
+
+function getShipClassName(string)
+    if(string == "st_shuttle_type11") then
+        return "Type 11 Shuttle"
+    elseif(string == "st_shuttle_type9") then
+        return "Type 9 Shuttle"
+    elseif(string == "st_shuttle_type6") then
+        return "Type 6 Shuttle"
+    elseif(string == "atlantis_puddle_jumper") then
+        return "Puddle Jumper"
+    elseif(string == "sci_fi_shuttle") then
+        return "Sci-Fi Shuttle"
+    elseif(string == "ship_core") then
+        return "Ship Core"
+    elseif(string == "sg_vehicle_glider") then
+        return "Death Glider"
+    elseif(string == "sg_vehicle_shuttle") then
+        return "Destiny Shuttle"
+    elseif(string == "sg_vehicle_f302") then
+        return "F-302"
+    elseif(string == "sg_vehicle_gate_glider") then
+        return "Gate Glider"
+    elseif(string == "puddle_jumper") then
+        return "Puddle Jumper"
+    elseif(string == "sg_vehicle_teltac") then
+        return "TelTak"
+    elseif(string == "box_sphere") then
+        return "Borg Sphere"
+    elseif(string == "box_cube") then
+        return "Borg Cube"
+    elseif(string == "box_cube_tactical") then
+        return "Borg Tactical Cube"
+    else
+        return ""
+    end
 end

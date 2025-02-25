@@ -1,0 +1,74 @@
+--@name Webaudio lib
+--@author Nova Astral
+--@shared
+--for playing webaudio from server easily
+
+if SERVER then
+    function playSound(Pos,Flag,Dist,Volume,Pitch,URL)
+        net.setDTVar("Vector",1,Pos) --pos
+        net.setDTVar("String",2,Flag) --audio flag
+        net.setDTVar("Int",1,Dist) --fadestart
+        net.setDTVar("Float",1,Volume) --volume
+        net.setDTVar("Int",3,Pitch) --pitch
+        net.setDTVar("String",1,URL) --url
+
+        timer.simple(0.1,function()
+            net.start()
+            net.writeString("wlibplysnd")
+            net.broadcast()
+        end)
+    end
+
+    function setSndPos(Pos)
+        net.setDTVar("Vector",1,Pos)
+
+        timer.simple(0.1,function()
+            net.start()
+            net.writeString("wlib_setsndpos")
+            net.broadcast()
+        end)
+    end
+else --client
+    permissions.register(permissions.PLAY_URL_SOUNDS)
+
+    function playCLSound()
+        snd = sounds.playURL(net.getDTVar("String",1),net.getDTVar("String",2),function(channel,a,callback)
+            if(not channel) then
+                if(callback == "BASS_ERROR_NO3D") then
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Audio Error 21. Try turning on 'Mono'")
+                else
+                    printColor(Color(255,95,215,255),"[PlaySound] ",Color(230,110,0,255),"Unknown Audio Error ",Color(255,0,0,255),callback)
+                end
+            else
+                if(ents.player() == ents.owner()) then
+                    net.start()
+                    net.writeString("wlib_playingsnd")
+                    net.sendToServer()
+
+                    timer.simple(1,function()
+                        net.start()
+                        net.writeString("wlib_playingsnd_unset")
+                        net.sendToServer()
+                    end)
+                end
+
+                audio = channel
+
+                audio:setVolume(net.getDTVar("Float",1))
+                audio:setPos(net.getDTVar("Vector",1))
+                audio:set3DFadeDistance(net.getDTVar("Int",1),net.getDTVar("Int",1)*1000)
+            end
+        end)
+    end
+
+    hook("net", "net", function()
+        local Str = net.readString()
+        if(Str == "wlibplysnd") then
+            playCLSound()
+        elseif(Str == "wlib_setsndpos") then
+            if(audio ~= nil and IsValid(audio)) then
+                audio:setPos(net.getDTVar("Vector",1))
+            end
+        end
+    end)
+end

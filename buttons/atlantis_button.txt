@@ -1,0 +1,47 @@
+--@name Atlantis Button
+--@author Nova Astral
+--@dependency STEAM_0:0:53930685 Novas-SFs/library/webaudio_lib.txt sh
+--@shared
+--@model models/boba_fett/props/buttons/atlantis_button.mdl
+
+if SERVER then
+    wire.createInputs({"Lockdown"},{"Normal"})
+    wire.createOutputs({"Pressed"},{"Normal"})
+
+    Delay = 0
+    ents.self():setSkin(0)
+
+    hook.add("playeruse","atlbuttonuse",function(ply,ent)
+        if(ent ~= ents.self()) then return end
+
+        if(wire.ports.Lockdown == nil or wire.ports.Lockdown == 0) then
+            if(Delay == 0) then
+                Delay = 1
+
+                wire.ports.Pressed = 1
+
+                ents.self():setSkin(1)
+
+                sounds.emitEntity(ents.self(),"door/atlantis_door_chime.wav",100,100)
+
+                timer.simple(1,function()
+                    Delay = 0
+                    ents.self():setSkin(0)
+                    wire.ports.Pressed = 0
+                end)
+            end
+        else
+            Delay = 1
+            ents.self():setSkin(1)
+
+            timer.simple(1,function()
+                Delay = 0
+                ents.self():setSkin(0)
+            end)
+
+            playSound(ents.self():pos(),"3d",25,1,100,"https://cloud.luna-code.net/s/WA4en2cR7JwBGCW/download")
+        end
+    end)
+else --client
+    starfall.showOverlay(false)
+end
